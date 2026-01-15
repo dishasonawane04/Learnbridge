@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>AI Tutor Input</title>
 </head>
+
 <body>
     <h2>Ask AI Tutor</h2>
 
@@ -19,8 +21,16 @@
     </form>
 
     {% if response %}
-        <h3>AI Response:</h3>
-        <p>{{ response }}</p>
+    {% if image_url %}
+    <h4>Uploaded Image:</h4>
+    <img src="{{ image_url }}" width="300">
     {% endif %}
+
+    <h3>AI Response:</h3>
+    {% if follow_up %}
+    <p><em>{{ follow_up }}</em></p>
+    {% endif %}
+
 </body>
+
 </html>
