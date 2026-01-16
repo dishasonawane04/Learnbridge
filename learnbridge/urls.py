@@ -23,6 +23,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('ai/', include('ai_tutor.urls')),
+    path('', include('quiz.urls')),
 ]
 
 if settings.DEBUG:

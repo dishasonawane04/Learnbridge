@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LearnBridge | AI Quiz</title>
+
+    <style>
+        /* ===== RESET ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+
+        body {
+            background: #f4f6f9;
+            color: #222;
+        }
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            background: #2563eb;
+            color: white;
+            padding: 18px 30px;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        /* ===== CONTAINER ===== */
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        /* ===== CARD ===== */
+        .card {
+            background: white;
+            padding: 35px;
+            border-radius: 14px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        /* ===== TIMER ===== */
+        #timer {
+            font-weight: bold;
+            color: #dc2626;
+            margin-bottom: 15px;
+        }
+
+        /* ===== PROGRESS BAR ===== */
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background: #e5e7eb;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            height: 100%;
+            width: 0%;
+            background: #2563eb;
+            transition: width 0.3s ease;
+        }
+
+        #progress-text {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 25px;
+        }
+
+        /* ===== QUESTIONS ===== */
+        .question-block {
+            margin-bottom: 20px;
+        }
+
+        .question-block p {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+
+        input[type="radio"] {
+            margin-right: 8px;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 25px 0;
+        }
+
+        /* ===== BUTTON ===== */
+        .btn {
+            padding: 12px 22px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #1e40af;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<div class="navbar">
+    LearnBridge
+</div>
+
+<!-- ===== QUIZ ===== -->
+<div class="container">
+    <div class="card">
+
+        <h2>AI Assessment Quiz</h2>
+
+        <!-- TIMER -->
+        <p id="timer"></p>
+
+        <!-- PROGRESS -->
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+        <p id="progress-text">
+            Answered 0 of {{ questions|length }}
+        </p>
+
+        <form method="post" id="quizForm">
+            {% csrf_token %}
+
+            {% for q in questions %}
+            <div class="question-block">
+                <p><b>{{ forloop.counter }}. {{ q.question }}</b></p>
+
+                {% for opt in q.options %}
+                <label>
+                    <input type="radio"
+                           name="q{{ forloop.parentloop.counter0 }}"
+                           value="{{ opt }}"
+                           onclick="updateProgress({{ forloop.parentloop.counter0 }})">
+                    {{ opt }}
+                </label>
+                {% endfor %}
+            </div>
+            <hr>
+            {% endfor %}
+
+            <button type="submit" class="btn">Submit Quiz</button>
+        </form>
+
+    </div>
+</div>
+
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+    const totalQuestions = {{ questions|length }};
+    const answered = new Set();
+
+    // ===== PROGRESS BAR =====
+    function updateProgress(index) {
+        answered.add(index);
+        const percent = (answered.size / totalQuestions) * 100;
+        document.getElementById("progress-bar").style.width = percent + "%";
+        document.getElementById("progress-text").innerText =
+            `Answered ${answered.size} of ${totalQuestions}`;
+    }
+
+    // ===== TIMER =====
+    let timeLeft = 300; // 5 minutes
+    let timerInterval = null;
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+
+            document.getElementById("timer").innerText =
+                `⏱ Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                alert("Time is up! Submitting quiz.");
+                document.getElementById("quizForm").submit();
+            }
+
+            timeLeft--;
+        }, 1000);
+    }
+
+    document.getElementById("quizForm").addEventListener("submit", function () {
+        if (timerInterval) clearInterval(timerInterval);
+    });
+
+    startTimer();
+</script>
+
+</body>
+</html>

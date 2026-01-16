@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LearnBridge | Quiz Result</title>
+
+    <style>
+        body {
+            background: #f4f6f9;
+            font-family: "Segoe UI", Arial, sans-serif;
+            margin: 0;
+        }
+
+        .navbar {
+            background: #2563eb;
+            color: white;
+            padding: 18px 30px;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 35px;
+            border-radius: 14px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+        }
+
+        h2 {
+            margin-bottom: 10px;
+        }
+
+        h3 {
+            margin-top: 25px;
+        }
+
+        p {
+            margin: 8px 0;
+        }
+
+        .correct {
+            color: #16a34a;
+            font-weight: 600;
+        }
+
+        .wrong {
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .question-review {
+            margin-top: 15px;
+        }
+
+        .explanation {
+            display: none;
+            margin-top: 10px;
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 25px 0;
+        }
+
+        .btn {
+            padding: 12px 22px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            background: #1e40af;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            background: #e5e7eb;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .btn-small:hover {
+            background: #d1d5db;
+        }
+
+        .next-level {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="navbar">
+    LearnBridge
+</div>
+
+<div class="container">
+    <div class="card">
+
+        <h2>📊 Your Result</h2>
+
+        <p><strong>Score:</strong> {{ score }} / {{ total }}</p>
+        <p><strong>Level:</strong> {{ level }}</p>
+
+        <h3>🤖 AI Feedback</h3>
+        <p>{{ feedback }}</p>
+
+        <hr>
+
+        <h3>📘 Answer Review</h3>
+
+        {% for r in results %}
+        <div class="question-review">
+            <p><strong>{{ forloop.counter }}. {{ r.question }}</strong></p>
+
+            <p>
+                Your Answer:
+                <span class="{% if r.is_correct %}correct{% else %}wrong{% endif %}">
+                    {{ r.user_answer }}
+                </span>
+            </p>
+
+            {% if not r.is_correct %}
+                <p><strong>Correct Answer:</strong> {{ r.correct_answer }}</p>
+
+                <button class="btn-small"
+                        onclick="toggleExplain('exp{{ forloop.counter }}')">
+                    🤖 Why?
+                </button>
+
+                <div id="exp{{ forloop.counter }}" class="explanation">
+                    {{ r.explanation }}
+                </div>
+            {% endif %}
+        </div>
+        <hr>
+        {% endfor %}
+
+        <div class="next-level">
+            <strong>Next Quiz Difficulty:</strong>
+            <span style="color:#2563eb;">{{ next_level|title }}</span>
+        </div>
+
+        <a href="/quiz/">
+            <button class="btn">Try Again</button>
+        </a>
+
+    </div>
+</div>
+
+<script>
+function toggleExplain(id) {
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === "block" ? "none" : "block";
+}
+</script>
+
+</body>
+</html>
