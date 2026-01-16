@@ -1,0 +1,14 @@
+# Virtual environments
+venv/
+ai_tutor/venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Database
+db.sqlite3
+
+# IDE
+.vscode/
+.idea/
