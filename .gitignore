@@ -6,7 +6,6 @@ _pycache_/
 # Virtual environments
 env/
 venv/
-iqac_env/
 .venv/
 */venv/
 
