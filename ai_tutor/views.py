@@ -1,40 +1,55 @@
-from django.shortcuts import render
-from django.core.files.storage import FileSystemStorage
+from django.shortcuts import render, redirect
+from .ai_logic import chat_with_ai
+
 
 def ai_home(request):
-    response = None
-    image_url = None
-    follow_up = None   # ✅ important
 
+    # Initialize session storage
+    if "all_chats" not in request.session:
+        request.session["all_chats"] = []
+
+    if "current_chat" not in request.session:
+        request.session["current_chat"] = []
+
+    # NEW CHAT clicked
+    if "new" in request.GET:
+        if request.session.get("current_chat"):
+            request.session["all_chats"].append(
+                request.session["current_chat"]
+            )
+            request.session["current_chat"] = []
+
+        request.session.modified = True
+        return redirect(request.path)
+
+
+
+    # MESSAGE SENT
     if request.method == "POST":
-        question = request.POST.get("question")
-        image = request.FILES.get("image")
+        message = request.POST.get("message")
 
-        if image:
-            fs = FileSystemStorage()
-            filename = fs.save(image.name, image)
-            image_url = fs.url(filename)
+        if message:
+            # User message
+            request.session["current_chat"].append({
+                "sender": "user",
+                "text": message
+            })
 
-            response = (
-                "I see you uploaded an image. "
-                "This image seems related to your question. "
-                "Here is a simple explanation based on what a teacher would say."
-            )
-            follow_up = "What do you think is the most important part of this image?"
+            # AI reply
+            ai_reply = chat_with_ai(message)
 
-        elif question:
-            response = (
-                f"Let me explain this step by step: {question} is an important topic. "
-                "Here is a simple explanation."
-            )
-            follow_up = "Can you explain this concept in your own words?"
+            request.session["current_chat"].append({
+                "sender": "assistant",
+                "text": ai_reply
+            })
+
+            request.session.modified = True
 
     return render(
         request,
         "ai_tutor/input.html",
         {
-            "response": response,
-            "image_url": image_url,
-            "follow_up": follow_up
+            "chat_history": request.session["current_chat"],
+            "all_chats": request.session["all_chats"]
         }
     )
