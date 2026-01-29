@@ -1,0 +1,189 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learning Support Assistant</title>
+    <!-- Reuse Primary Styles -->
+    <link rel="stylesheet" href="{% static 'ai_tutor/style.css' %}?v=4.0">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        /* Override Accents for Support App (Green Theme) */
+        :root {
+            --accent: #10b981;
+            /* Emerald */
+            --accent-hover: #059669;
+            --accent-glow: rgba(16, 185, 129, 0.3);
+        }
+
+        .user-message .content {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        /* Hint Buttons specific to Support */
+        .hint-bar {
+            display: flex;
+            gap: 10px;
+            padding: 0 2rem 1rem 2rem;
+            justify-content: center;
+        }
+
+        .hint-btn {
+            background: var(--bg-card);
+            color: var(--text-muted);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hint-btn:hover {
+            border-color: var(--accent);
+            color: var(--text-main);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar (Simplified for Support App) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo" style="color: var(--accent);">
+                    <i class="ph ph-life-buoy"></i> LearnBridge Support
+                </div>
+                <a href="{% url 'new_support_chat' %}" class="new-chat-btn"
+                    style="text-decoration: none; text-align: center;">
+                    <i class="ph ph-plus"></i> New Chat
+                </a>
+            </div>
+
+            <div class="history-list">
+                <div class="history-section">
+                    <div class="history-label">Previous Sessions</div>
+                    {% for session in all_sessions %}
+                    <a href="?chat_id={{ session.id }}" style="text-decoration: none;">
+                        <div
+                            class="history-item {% if current_chat and current_chat.id == session.id %}active{% endif %}">
+                            <i class="ph ph-chat-text"></i> {{ session.title|truncatechars:25 }}
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="empty-history" style="padding:10px; color:var(--text-muted); font-size:0.85rem;">No
+                        history yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="user-profile">
+                <div class="avatar" style="background: var(--accent);">
+                    {% if request.user.is_authenticated %}U{% else %}G{% endif %}
+                </div>
+                <div class="username">
+                    {% if request.user.is_authenticated %}
+                    {{ request.user.username }}
+                    {% else %}
+                    Guest Student
+                    {% endif %}
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-area">
+            <header class="chat-header">
+                <div class="ai-info">
+                    <div class="ai-avatar" style="color: var(--accent);">
+                        <i class="ph ph-life-buoy"></i>
+                    </div>
+                    <div>
+                        <h2>Learning Support AI</h2>
+                        <span class="status">{% if current_chat %}{{ current_chat.title }}{% else %}Stuck? Let's fix it
+                            together.{% endif %}</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="messages-container" id="messages-container" data-chat-id="{{ current_chat.id|default:'' }}">
+                {% if not chat_messages %}
+                <!-- Welcome Message (Only if empty) -->
+                <div class="message ai-message">
+                    <div class="avatar"><i class="ph ph-life-buoy"></i></div>
+                    <div class="content">
+                        Hello! I see you might be stuck. <br>
+                        I can give you <b>hints</b>, <b>simplify</b> concepts, or offer <b>examples</b>. <br>
+                        What are you working on?
+                    </div>
+                </div>
+                {% else %}
+                {% for msg in chat_messages %}
+                <div class="message {% if msg.sender == 'user' %}user-message{% else %}ai-message{% endif %}">
+                    {% if msg.sender == 'ai' %}
+                    <div class="avatar"><i class="ph ph-life-buoy"></i></div>
+                    <div class="content">{{ msg.content|linebreaksbr }}</div>
+                    {% else %}
+                    <div class="avatar"><i class="ph ph-user"></i></div>
+                    <div class="content">{{ msg.content|linebreaksbr }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <!-- Loading Indicator -->
+                <div class="message ai-message loading" id="loading-indicator" style="display: none;">
+                    <div class="avatar"><i class="ph ph-life-buoy"></i></div>
+                    <div class="content">
+                        <div class="typing-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hint Buttons -->
+            <div class="hint-bar">
+                <button class="hint-btn" onclick="sendQuickText('Give me a hint')"><i class="ph ph-puzzle-piece"></i>
+                    Need a hint</button>
+                <button class="hint-btn" onclick="sendQuickText('Explain simpler')"><i class="ph ph-brain"></i> Explain
+                    simpler</button>
+                <button class="hint-btn" onclick="sendQuickText('Give an example')"><i class="ph ph-lightbulb"></i>
+                    Example</button>
+            </div>
+
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <div class="input-row">
+                        <button class="attach-btn" id="voice-btn" title="Voice Mode">
+                            <i class="ph ph-microphone"></i>
+                        </button>
+                        <input type="text" id="chat-input" placeholder="Type your doubt here..." autocomplete="off">
+                        <button class="send-btn" id="send-btn">
+                            <i class="ph ph-paper-plane-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="disclaimer">AI can make mistakes. Check important info.</div>
+            </div>
+        </main>
+    </div>
+
+    <!-- CSRF Token -->
+    {% csrf_token %}
+    <script src="{% static 'learning_support/js/support_chat.js' %}"></script>
+
+</body>
+
+</html>

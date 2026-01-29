@@ -1,0 +1,50 @@
+{% extends 'letter_of_recommendation_generator/base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Letter of Recommendation Generator</h1>
+    <p class="page-subtitle">Create professional, personalized academic recommendations in seconds.</p>
+</div>
+
+<div style="display: flex; justify-content: flex-end; margin-bottom: 2rem;">
+    <a href="{% url 'letter_of_recommendation_generator:create_letter' %}" class="btn">
+        <i class="ph ph-plus-circle"></i> Create New Letter
+    </a>
+</div>
+
+{% if letters %}
+<div style="display: grid; gap: 1rem;">
+    {% for letter in letters %}
+    <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h3 style="margin-bottom: 0.5rem;">{{ letter.student_name }}</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+                {{ letter.get_purpose_display }} &bull; {{ letter.institution_name }}
+            </p>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.25rem;">
+                Generated on {{ letter.created_at|date:"M d, Y" }}
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{% url 'letter_of_recommendation_generator:preview_letter' letter.pk %}" class="btn btn-outline"
+                title="View/Edit">
+                <i class="ph ph-pencil"></i>
+            </a>
+            <a href="{% url 'letter_of_recommendation_generator:delete_letter' letter.pk %}"
+                class="btn btn-outline btn-danger" title="Delete" onclick="return confirm('Are you sure?')">
+                <i class="ph ph-trash"></i>
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align: center; padding: 4rem 2rem;">
+    <i class="ph ph-file-text" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+    <h3 style="margin-bottom: 0.5rem;">No Letters Yet</h3>
+    <p style="color: var(--text-muted); margin-bottom: 2rem;">Start by creating your first letter of recommendation.</p>
+    <a href="{% url 'letter_of_recommendation_generator:create_letter' %}" class="btn">Create Now</a>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,227 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz: {{ deck.title }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem;
+        }
+
+        .header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .quiz-card {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid #334155;
+            margin-bottom: 1.5rem;
+        }
+
+        .question {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        .options {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #334155;
+            padding: 1rem;
+            text-align: left;
+            border-radius: 8px;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .option-btn:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--accent);
+        }
+
+        .option-btn.selected {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .option-btn.correct {
+            background: var(--success) !important;
+            border-color: var(--success) !important;
+            color: white;
+        }
+
+        .option-btn.wrong {
+            background: var(--danger) !important;
+            border-color: var(--danger) !important;
+            color: white;
+        }
+
+        .result-box {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            background: var(--bg-card);
+            border-radius: 16px;
+            margin-top: 2rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-top: 2rem;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Quiz: {{ deck.title }}</h1>
+            <p class="text-muted">Test your knowledge based on your flashcards.</p>
+        </div>
+
+        <div id="quiz-container">
+            <!-- Questions injected here -->
+        </div>
+
+        <button id="submit-btn" class="btn-primary" onclick="submitQuiz()">Submit Quiz</button>
+
+        <div id="result-box" class="result-box">
+            <h2>Your Score</h2>
+            <h1 style="font-size: 3rem; margin: 1rem 0; color: var(--accent);" id="score-display">0/0</h1>
+            <a href="{% url 'flashcard_home' %}" style="color: var(--text-muted); text-decoration: underline;">Back to
+                Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        const quizData = JSON.parse('{{ quiz_data|escapejs }}');
+        const container = document.getElementById('quiz-container');
+        let userAnswers = {};
+
+        function renderQuiz() {
+            if (!quizData || quizData.length === 0) {
+                container.innerHTML = "<p style='text-align:center;'>Could not generate quiz from these cards.</p>";
+                document.getElementById('submit-btn').style.display = 'none';
+                return;
+            }
+
+            container.innerHTML = quizData.map((q, index) => `
+            <div class="quiz-card" id="q-${index}">
+                <div class="question">${index + 1}. ${q.question}</div>
+                <div class="options">
+                    ${q.options.map(opt => {
+                const letter = opt.charAt(0); // A, B, C, D
+                return `<button class="option-btn" onclick="selectOption(${index}, '${letter}', this)">${opt}</button>`;
+            }).join('')}
+                </div>
+            </div>
+        `).join('');
+        }
+
+        function selectOption(qIndex, letter, btn) {
+            userAnswers[qIndex] = letter;
+            // Visual update
+            const parent = document.getElementById(`q-${qIndex}`);
+            parent.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+
+        function submitQuiz() {
+            let score = 0;
+
+            quizData.forEach((q, index) => {
+                const card = document.getElementById(`q-${index}`);
+                const buttons = card.querySelectorAll('.option-btn');
+                const correctLetter = q.answer.trim();
+                const userLetter = userAnswers[index];
+
+                if (userLetter === correctLetter) {
+                    score++;
+                }
+
+                // Reveal answers
+                buttons.forEach(btn => {
+                    const optLetter = btn.innerText.charAt(0);
+                    if (optLetter === correctLetter) {
+                        btn.classList.add('correct');
+                    } else if (optLetter === userLetter && userLetter !== correctLetter) {
+                        btn.classList.add('wrong');
+                    }
+                });
+            });
+
+            document.getElementById('submit-btn').style.display = 'none';
+            const result = document.getElementById('result-box');
+            result.style.display = 'block';
+            document.getElementById('score-display').innerText = `${score} / ${quizData.length}`;
+
+            // Send score to server
+            fetch("{% url 'submit_quiz_api' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    deck_id: "{{ deck.id }}",
+                    score: score,
+                    total: quizData.length
+                })
+            }).catch(console.error);
+
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        renderQuiz();
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,187 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Readiness Report - LearnBridge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .score-card {
+            background: linear-gradient(135deg, #4f46e5, #9333ea);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .score-val {
+            font-size: 4rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .score-label {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .results-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .result-item {
+            background: var(--bg-card);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .status-icon {
+            font-size: 2rem;
+            padding: 0.5rem;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .status-strong {
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+
+        .status-weak {
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
+        }
+
+        .status-missing {
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        .item-content {
+            flex: 1;
+        }
+
+        .item-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .item-feedback {
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .actions {
+            margin-top: 3rem;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #4f46e5;
+        }
+
+        .btn-outline {
+            border: 1px solid #475569;
+            color: var(--text-muted);
+        }
+
+        .btn-outline:hover {
+            color: white;
+            border-color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <a href="/" style="color:var(--text-muted); text-decoration:none; display:inline-block; margin-bottom:1rem;">
+            <i class="ph ph-arrow-left"></i> Back to Hub
+        </a>
+
+        <div class="score-card">
+            <div class="score-val">{{ session.readiness_score }}%</div>
+            <div class="score-label">Readiness for {{ session.target_topic }}</div>
+            <p style="margin-top:1rem; opacity:0.8;">
+                {% if session.readiness_score >= 80 %}
+                Excellent! You are ready to dive in.
+                {% elif session.readiness_score >= 50 %}
+                Good start, but review the weak concepts below.
+                {% else %}
+                Foundational gaps detected. Recommended to review prerequisites first.
+                {% endif %}
+            </p>
+        </div>
+
+        <h3 style="margin-bottom:1.5rem;">Detailed Breakdown</h3>
+        <div class="results-grid">
+            {% for result in concepts %}
+            <div class="result-item">
+                <i class="ph 
+                    {% if result.status == 'Strong' %}ph-check-circle status-icon status-strong
+                    {% elif result.status == 'Weak' %}ph-warning-circle status-icon status-weak
+                    {% else %}ph-x-circle status-icon status-missing{% endif %}">
+                </i>
+                <div class="item-content">
+                    <div class="item-title">{{ result.concept_name }}</div>
+                    <div class="item-feedback">{{ result.feedback }}</div>
+                    <div style="margin-top:0.5rem; font-size:0.9rem; color:#64748b;">
+                        <strong>Your Answer:</strong> {{ result.user_answer|truncatechars:100 }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="actions">
+            <a href="{% url 'prerequisite_checker:home' %}" class="btn btn-outline">Check Another Topic</a>
+            <a href="/" class="btn btn-primary">Go to Dashboard</a>
+        </div>
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,166 @@
+{% extends 'letter_of_recommendation_generator/base.html' %}
+{% load static %}
+
+{% block title %}Verify OTP | LearnBridge{% endblock %}
+
+{% block content %}
+<style>
+    /* Reuse styles from forgot_password.html / login.html */
+    body {
+        background: url("{% static 'accounts/login_bg.png' %}") no-repeat center center fixed;
+        background-size: cover;
+        min-height: 100vh;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.75);
+        z-index: -2;
+    }
+
+    #canvas-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    .auth-card {
+        background-color: #111827;
+        border: 1px solid #374151;
+        border-radius: 1rem;
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        color: #f3f4f6;
+    }
+
+    .auth-title {
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+        color: #f3f4f6;
+    }
+
+    .auth-subtitle {
+        color: #9ca3af;
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+        text-align: left;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #d1d5db;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+
+    .form-control {
+        background-color: #1f2937 !important;
+        border: 1px solid #374151 !important;
+        color: #f3f4f6 !important;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        width: 100%;
+        font-size: 1rem;
+        display: block;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .btn-auth {
+        background-color: #6366f1;
+        color: white;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        width: 100%;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .btn-auth:hover {
+        background-color: #4f46e5;
+    }
+
+    nav,
+    footer {
+        display: none !important;
+    }
+
+    .container {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: 100vh !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .container>.alert {
+        display: none !important;
+    }
+</style>
+
+<div class="auth-card" style="text-align: center;">
+    <i class="ph ph-shield-check" style="font-size: 3rem; color: #6366f1; margin-bottom: 1rem;"></i>
+    <h2 class="auth-title">Verify OTP</h2>
+    <p class="auth-subtitle">Enter the 6-digit code sent to your email.</p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% if messages %}
+        {% for message in messages %}
+        <div
+            style="color: {% if message.tags == 'error' %}#f87171{% else %}#4ade80{% endif %}; font-size: 0.85rem; margin-bottom: 1rem; background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 4px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="form-group">
+            <label>{{ form.otp.label }}</label>
+            {{ form.otp }}
+            {% if form.otp.errors %}
+            <small style="color: #ef4444; display: block; margin-top: 0.25rem;">{{ form.otp.errors|striptags }}</small>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn-auth" style="margin-top: 1rem;">
+            Verify
+        </button>
+    </form>
+
+    <p style="margin-top: 1.5rem; font-size: 0.875rem;">
+        Didn't receive it? <a href="{% url 'accounts:forgot_password' %}"
+            style="color: #6366f1; text-decoration: none;">Resend</a>
+    </p>
+</div>
+
+<canvas id="canvas-overlay"></canvas>
+<script src="{% static 'accounts/constellation.js' %}"></script>
+{% endblock %}

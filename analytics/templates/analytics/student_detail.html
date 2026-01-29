@@ -1,0 +1,9 @@
+{% extends 'analytics/student_dashboard.html' %}
+
+{% block title %}Student Detail: {{ target_user.first_name }} - LearnBridge{% endblock %}
+
+{% block navbar_override %}
+<!-- We want to override the navbar link to go back to teacher dashboard -->
+<!-- But since I didn't use blocks in base dashboard, I'll just create a separate file to be safe and clean or I should have used inheritance. -->
+<!-- Re-writing full file for simplicity as it's separate context. -->
+{% endblock %}

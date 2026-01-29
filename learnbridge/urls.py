@@ -19,11 +19,20 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('ai/', include('ai_tutor.urls')),
-    path('', include('quiz.urls')),
+    path('support/', include('learning_support.urls')),
+    path('flashcards/', include('flashcard_generator.urls')),
+    path('quiz/', include('quiz.urls')),
+    path('assessment/', include('assessment.urls')),
+    path('lor/', include('letter_of_recommendation_generator.urls', namespace='letter_of_recommendation_generator')),
+    path('analytics/', include('analytics.urls')),
+    path('check-readiness/', include('prerequisite_checker.urls', namespace='prerequisite_checker')),
+    path('accounts/', include('accounts.urls')),
+    path('', views.dashboard, name='dashboard'),
 ]
 
 if settings.DEBUG:

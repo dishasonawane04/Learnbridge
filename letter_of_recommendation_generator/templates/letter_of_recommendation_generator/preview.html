@@ -1,0 +1,39 @@
+{% extends 'letter_of_recommendation_generator/base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Letter Preview</h1>
+    <p class="page-subtitle">Review, edit, and download your letter.</p>
+</div>
+
+<form method="post" class="card">
+    {% csrf_token %}
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin: 0;">Generated Content</h3>
+        <div style="display: flex; gap: 0.5rem;">
+            <button type="submit" class="btn btn-outline">
+                <i class="ph ph-floppy-disk"></i> Save Changes
+            </button>
+        </div>
+    </div>
+
+    <textarea name="letter_content" rows="20"
+        style="font-family: 'Times New Roman', serif; font-size: 1.1rem; line-height: 1.6; padding: 2rem;">{{ letter.generated_letter }}</textarea>
+
+    <div style="display: flex; gap: 1rem; margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+        <a href="{% url 'letter_of_recommendation_generator:download_letter_pdf' letter.pk %}" class="btn"
+            target="_blank">
+            <i class="ph ph-file-pdf"></i> Download PDF
+        </a>
+        <a href="{% url 'letter_of_recommendation_generator:download_letter_docx' letter.pk %}" class="btn"
+            target="_blank">
+            <i class="ph ph-file-doc"></i> Download Word
+        </a>
+        <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}" class="btn btn-outline"
+            style="margin-left: auto;">
+            Back to Dashboard
+        </a>
+    </div>
+</form>
+{% endblock %}
