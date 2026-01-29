@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .chat-input {
+        width: 100%;
+        height: 52px;
+        padding: 0 1.25rem;
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 26px;
+        color: white;
+        font-size: 1rem;
+        transition: all 0.2s;
+    }
+
+    .chat-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+
+    .plan-content {
+        white-space: pre-line;
+        line-height: 1.8;
+        color: var(--text-main);
+        font-size: 1.05rem;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 2rem;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .plan-content b,
+    .plan-content strong {
+        color: white;
+        font-weight: 700;
+    }
+
+    /* Simple subtle loading indicator */
+    #loading-state {
+        display: none;
+        text-align: center;
+        padding: 2.5rem;
+        margin-top: 2rem;
+        color: var(--text-light);
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        border-top-color: var(--primary);
+        animation: spin 1s ease-in-out infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
+<div style="max-width: 880px; margin: 0 auto; padding: 2.5rem 1rem;">
+
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <h1
+            style="font-size: 2.5rem; color: white; margin-bottom: 0.75rem; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+            AI Study Plan Generator
+        </h1>
+        <p style="color: var(--text-light); font-size: 1.1rem; max-width: 500px; margin: 0 auto;">
+            Tell me what you want to learn and I'll architect a personalized roadmap for your university success.
+        </p>
+    </div>
+
+    <!-- Input Card -->
+    <div class="glass-card fade-in"
+        style="padding: 2.5rem; margin-bottom: 2.5rem; border: 1px solid rgba(255,255,255,0.1);">
+        <form method="post" id="planForm" onsubmit="showLoading()">
+            {% csrf_token %}
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+                <div>
+                    <label
+                        style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.75rem;">
+                        Target Subject or Topic
+                    </label>
+                    <input type="text" name="topic" value="{{ topic|default:'' }}"
+                        placeholder="e.g. Quantum Physics, Machine Learning Fundamentals..." required class="chat-input"
+                        id="topicInput">
+                </div>
+
+                <div>
+                    <label
+                        style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.75rem;">
+                        Study Hours / Week
+                    </label>
+                    <input type="number" name="hours" min="1" max="40" value="{{ hours|default:5 }}" required
+                        class="chat-input">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary"
+                style="width: 100%; margin-top: 2rem; padding: 1rem; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem;">
+                <i class="fas fa-magic"></i> Generate My Study Plan
+            </button>
+        </form>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="glass-card">
+        <div class="spinner"></div>
+        <h3 style="color: white; margin-bottom: 0.5rem;">Architecting your journey...</h3>
+        <p style="color: var(--text-dim); font-size: 0.9rem;">Analyzing course material and optimizing your schedule</p>
+    </div>
+
+    <!-- Result -->
+    {% if plan %}
+    <div class="glass-card fade-in" style="padding: 3rem; margin-top: 2rem; border: 1px solid rgba(99, 102, 241, 0.2);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+            <div>
+                <h2 style="color: white; margin-bottom: 0.5rem; font-size: 1.75rem;">Your Goal: <span
+                        style="color: var(--primary);">{{ topic }}</span></h2>
+                <span class="badge"
+                    style="background: rgba(99, 102, 241, 0.2); color: var(--primary); padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem;">University
+                    Level Pathway</span>
+            </div>
+        </div>
+
+        <div class="plan-content">
+            {{ plan }}
+        </div>
+
+        <div
+            style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; align-items: center; gap: 1.5rem;">
+            <p style="color: var(--text-light); text-align: center;">Ready to start? Accelerate your learning with these
+                AI tools:</p>
+            <div style="display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center;">
+                <a href="{% url 'quiz_subjects' %}" class="glass-card"
+                    style="padding: 1rem 1.5rem; text-decoration: none; color: white; display: flex; align-items: center; gap: 0.75rem; transition: all 0.2s;">
+                    <i class="fas fa-question-circle" style="color: var(--primary);"></i> Practice Quiz
+                </a>
+                <a href="{% url 'notes' %}" class="glass-card"
+                    style="padding: 1rem 1.5rem; text-decoration: none; color: white; display: flex; align-items: center; gap: 0.75rem; transition: all 0.2s;">
+                    <i class="fas fa-sticky-note" style="color: var(--accent);"></i> Smart Notes
+                </a>
+                <a href="{% url 'sentence_explain' %}" class="glass-card"
+                    style="padding: 1rem 1.5rem; text-decoration: none; color: white; display: flex; align-items: center; gap: 0.75rem; transition: all 0.2s;">
+                    <i class="fas fa-robot" style="color: var(--success);"></i> AI Assistant
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+    function showLoading() {
+        document.getElementById('planForm').style.opacity = '0.5';
+        document.getElementById('planForm').style.pointerEvents = 'none';
+        document.getElementById('loading-state').style.display = 'block';
+        window.scrollTo({
+            top: document.getElementById('loading-state').offsetTop - 100,
+            behavior: 'smooth'
+        });
+    }
+
+    // Auto-focus input on load
+    window.onload = function () {
+        document.getElementById('topicInput').focus();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="fade-in" style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start;">
+
+    <!-- SCORE CARD -->
+    <div class="glass-card" style="text-align: center; position: sticky; top: 2rem;">
+        <h2 style="margin-bottom: 2rem; font-size: 1.8rem;">
+            {{ msg|default:"Assessment Complete" }}
+        </h2>
+
+        <div class="score-circle" style="--score: {{ percentage|default:0 }}">
+            <div class="score-inner">
+                <span class="score-number">{{ score }}</span>
+                <span class="score-label">of {{ total }} Correct</span>
+            </div>
+        </div>
+
+        <!-- LEVEL PROGRESSION -->
+        <div
+            style="margin-top: 2rem; padding: 1.25rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div style="text-align: left;">
+                    <div
+                        style="font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+                        Current Level</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">{{ level|title }}</div>
+                </div>
+                <div style="color: var(--text-light); font-size: 1.2rem;">→</div>
+                <div style="text-align: right;">
+                    <div
+                        style="font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+                        Next Level</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--success);">{{ next_level|title }}
+                    </div>
+                </div>
+            </div>
+
+            {% if passed %}
+            <div class="badge badge-success"
+                style="width: 100%; justify-content: center; font-size: 0.9rem; padding: 0.5rem;">
+                Level Up Achieved! 🚀
+            </div>
+            {% else %}
+            <div class="badge badge-primary"
+                style="width: 100%; justify-content: center; font-size: 0.9rem; padding: 0.5rem; background: rgba(99, 102, 241, 0.2);">
+                Keep Practicing to Level Up
+            </div>
+            {% endif %}
+        </div>
+
+        <div style="margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem;">
+            <a href="{% url 'quiz' %}?subject={{ request.session.subject }}" class="btn btn-primary"
+                style="width: 100%; box-sizing: border-box;">
+                {% if passed %} Start Next Level {% else %} Retry Level {% endif %}
+            </a>
+            <a href="{% url 'home' %}" class="btn btn-secondary" style="width: 100%; box-sizing: border-box;">
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- ANALYSIS -->
+    <div style="display: flex; flex-direction: column; gap: 2rem;">
+
+        <!-- AI FEEDBACK -->
+        <div class="glass-card" style="border-left: 4px solid var(--accent);">
+            <div style="display: flex; gap: 1rem; align-items: start;">
+                <div style="font-size: 2rem;">🤖</div>
+                <div>
+                    <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem;">AI Tutor Feedback</h3>
+                    <p style="font-size: 1.1rem; line-height: 1.6; color: var(--text-main); margin: 0;">
+                        {{ feedback }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- REVIEW -->
+        <div class="glass-card">
+            <h3 style="margin-bottom: 2rem;">Detailed Review</h3>
+
+            {% for r in results %}
+            <div style="margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--glass-border);">
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <span
+                        style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: rgba(255,255,255,0.1); border-radius: 50%; font-weight: 700; font-size: 0.9rem;">
+                        {{ forloop.counter }}
+                    </span>
+                    <div style="flex: 1;">
+                        <p style="font-weight: 600; font-size: 1.1rem; margin: 0.25rem 0 1rem 0;">
+                            {{ r.question }}
+                        </p>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <!-- User Answer -->
+                            <div
+                                style="padding: 1rem; border-radius: 8px; border: 1px solid {% if r.is_correct %}rgba(34, 197, 94, 0.3){% else %}rgba(239, 68, 68, 0.3){% endif %}; background: {% if r.is_correct %}rgba(34, 197, 94, 0.1){% else %}rgba(239, 68, 68, 0.1){% endif %};">
+                                <span
+                                    style="font-size: 0.85rem; display: block; margin-bottom: 0.25rem; color: {% if r.is_correct %}var(--success){% else %}var(--danger){% endif %};">Your
+                                    Answer</span>
+                                <span style="font-weight: 600;">{{ r.user_answer }}</span>
+                                <span style="float: right;">{% if r.is_correct %}✓{% else %}✗{% endif %}</span>
+                            </div>
+
+                            <!-- Correct Answer (if wrong) -->
+                            {% if not r.is_correct %}
+                            <div
+                                style="padding: 1rem; border-radius: 8px; border: 1px solid rgba(34, 197, 94, 0.3); background: rgba(34, 197, 94, 0.1);">
+                                <span
+                                    style="font-size: 0.85rem; display: block; margin-bottom: 0.25rem; color: var(--success);">Correct
+                                    Answer</span>
+                                <span style="font-weight: 600;">{{ r.correct_answer }}</span>
+                                <span style="float: right;">✓</span>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        {% if not r.is_correct %}
+                        <button class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;"
+                            onclick="toggleExplain('exp{{ forloop.counter }}')">
+                            💡 Why is this correct?
+                        </button>
+                        <div id="exp{{ forloop.counter }}" class="hidden"
+                            style="margin-top: 1rem; padding: 1.5rem; background: rgba(99, 102, 241, 0.1); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.2);">
+                            <div style="font-weight: 600; color: #a5b4fc; margin-bottom: 0.5rem;">AI Explanation:</div>
+                            {{ r.explanation }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function toggleExplain(id) {
+        const el = document.getElementById(id);
+        if (el.classList.contains('hidden')) {
+            el.classList.remove('hidden');
+            el.classList.add('fade-in');
+        } else {
+            el.classList.add('hidden');
+        }
+    }
+</script>
+
+{% endblock %}

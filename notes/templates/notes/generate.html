@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="padding: 2rem 0; max-width: 1000px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <h1 style="font-size: 2.5rem; color: white;">AI Notes Generator</h1>
+        <p style="color: var(--text-light); font-size: 1.1rem;">Turn your learning sessions into structured, exam-ready
+            notes.</p>
+    </div>
+
+    <div class="glass-card fade-in" style="padding: 2.5rem; margin-bottom: 2rem;">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="generate">
+            <div style="display: flex; gap: 1rem; align-items: flex-end;">
+                <div style="flex-grow: 1;">
+                    <label
+                        style="display: block; color: var(--text-light); margin-bottom: 0.8rem; font-size: 1rem;">Target
+                        Topic</label>
+                    <input type="text" name="topic" value="{{ topic }}"
+                        placeholder="e.g., 'Python Decorators' or 'Quadratic Equations'" class="form-control"
+                        style="width: 100%; padding: 1rem; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; outline: none;">
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 1rem 2.5rem; font-weight: 600;">
+                    <i class="fas fa-magic"></i> Generate Notes
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if response %}
+    <div id="notes-section" class="glass-card fade-in"
+        style="padding: 3rem; background: white; color: #1e293b; position: relative;">
+        <div style="position: absolute; top: 1rem; right: 2rem; display: flex; gap: 0.5rem;" class="no-print">
+
+            <form method="post" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save">
+                <input type="hidden" name="topic" value="{{ topic }}">
+                <input type="hidden" name="content" value="{{ response }}">
+                <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+                    <i class="fas fa-save"></i> Save to Notebook
+                </button>
+            </form>
+
+            <button onclick="window.print()" class="btn btn-secondary"
+                style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 0.5rem 1rem; font-size: 0.85rem;">
+                <i class="fas fa-print"></i> Print / PDF
+            </button>
+        </div>
+
+        <div style="line-height: 1.6; font-family: 'Inter', sans-serif;">
+            {{ response|linebreaks }}
+        </div>
+
+        <div style="margin-top: 4rem; text-align: center; display: flex; gap: 1rem; justify-content: center;"
+            class="no-print">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="padding: 0.8rem 2.5rem;">
+                Back to Dashboard
+            </a>
+            <a href="{% url 'notes_list' %}" class="btn btn-secondary" style="padding: 0.8rem 2.5rem;">
+                View My Notes
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+
+        body {
+            background: white !important;
+        }
+
+        .card {
+            box-shadow: none !important;
+            border: none !important;
+        }
+    }
+</style>
+{% endblock %}

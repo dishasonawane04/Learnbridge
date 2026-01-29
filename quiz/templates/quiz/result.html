@@ -1,180 +1,93 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>LearnBridge | Quiz Result</title>
+{% extends 'base.html' %}
 
-    <style>
-        body {
-            background: #f4f6f9;
-            font-family: "Segoe UI", Arial, sans-serif;
-            margin: 0;
-        }
+{% block content %}
+<div class="glass-card fade-in" style="max-width: 900px; margin: 0 auto;">
 
-        .navbar {
-            background: #2563eb;
-            color: white;
-            padding: 18px 30px;
-            font-size: 22px;
-            font-weight: 600;
-        }
+    <!-- Result Header -->
+    <div style="text-align: center; margin-bottom: 3rem;">
+        {% if passed %}
+        <div style="font-size: 4rem; margin-bottom: 1rem;">🎉</div>
+        <h1 style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--success);">Congratulations!</h1>
+        <p style="font-size: 1.2rem; color: var(--text-light);">You passed the {{ subject }} quiz!</p>
+        {% else %}
+        <div style="font-size: 4rem; margin-bottom: 1rem;">📚</div>
+        <h1 style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--warning);">Keep Learning!</h1>
+        <p style="font-size: 1.2rem; color: var(--text-light);">Review your answers and try again</p>
+        {% endif %}
+    </div>
 
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 20px;
-        }
+    <!-- Score Card -->
+    <div
+        style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1)); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 16px; padding: 2rem; margin-bottom: 3rem; text-align: center;">
+        <div
+            style="font-size: 4rem; font-weight: 700; margin-bottom: 0.5rem; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+            {{ percentage|floatformat:0 }}%
+        </div>
+        <div style="font-size: 1.5rem; color: var(--text-main); margin-bottom: 0.5rem;">
+            {{ score }} / {{ total }} Correct
+        </div>
+        <div style="font-size: 0.9rem; color: var(--text-light);">
+            Pass Score: 70%
+        </div>
+    </div>
 
-        .card {
-            background: white;
-            padding: 35px;
-            border-radius: 14px;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
-        }
+    <!-- Detailed Results -->
+    <h3 style="font-size: 1.5rem; margin-bottom: 1.5rem; color: var(--text-main);">Review Your Answers</h3>
 
-        h2 {
-            margin-bottom: 10px;
-        }
+    {% for result in results %}
+    <div class="result-card"
+        style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
 
-        h3 {
-            margin-top: 25px;
-        }
+        <div style="display: flex; align-items: start; gap: 1rem; margin-bottom: 1rem;">
+            <div
+                style="flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: {% if result.is_correct %}var(--success){% else %}var(--error){% endif %};">
+                {% if result.is_correct %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                {% endif %}
+            </div>
+            <div style="flex-grow: 1;">
+                <h4 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-main);">
+                    {{ forloop.counter }}. {{ result.question }}
+                </h4>
 
-        p {
-            margin: 8px 0;
-        }
-
-        .correct {
-            color: #16a34a;
-            font-weight: 600;
-        }
-
-        .wrong {
-            color: #dc2626;
-            font-weight: 600;
-        }
-
-        .question-review {
-            margin-top: 15px;
-        }
-
-        .explanation {
-            display: none;
-            margin-top: 10px;
-            background: #f1f5f9;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        hr {
-            border: none;
-            border-top: 1px solid #eee;
-            margin: 25px 0;
-        }
-
-        .btn {
-            padding: 12px 22px;
-            background: #2563eb;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-
-        .btn:hover {
-            background: #1e40af;
-        }
-
-        .btn-small {
-            padding: 6px 12px;
-            background: #e5e7eb;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            margin-top: 5px;
-        }
-
-        .btn-small:hover {
-            background: #d1d5db;
-        }
-
-        .next-level {
-            margin-top: 20px;
-            font-size: 16px;
-        }
-    </style>
-</head>
-
-<body>
-
-<div class="navbar">
-    LearnBridge
-</div>
-
-<div class="container">
-    <div class="card">
-
-        <h2>📊 Your Result</h2>
-
-        <p><strong>Score:</strong> {{ score }} / {{ total }}</p>
-        <p><strong>Level:</strong> {{ level }}</p>
-
-        <h3>🤖 AI Feedback</h3>
-        <p>{{ feedback }}</p>
-
-        <hr>
-
-        <h3>📘 Answer Review</h3>
-
-        {% for r in results %}
-        <div class="question-review">
-            <p><strong>{{ forloop.counter }}. {{ r.question }}</strong></p>
-
-            <p>
-                Your Answer:
-                <span class="{% if r.is_correct %}correct{% else %}wrong{% endif %}">
-                    {{ r.user_answer }}
-                </span>
-            </p>
-
-            {% if not r.is_correct %}
-                <p><strong>Correct Answer:</strong> {{ r.correct_answer }}</p>
-
-                <button class="btn-small"
-                        onclick="toggleExplain('exp{{ forloop.counter }}')">
-                    🤖 Why?
-                </button>
-
-                <div id="exp{{ forloop.counter }}" class="explanation">
-                    {{ r.explanation }}
+                <div style="margin-bottom: 0.75rem;">
+                    <span style="color: var(--text-light); font-size: 0.9rem;">Your Answer:</span>
+                    <span
+                        style="color: {% if result.is_correct %}var(--success){% else %}var(--error){% endif %}; font-weight: 600; margin-left: 0.5rem;">
+                        {{ result.user_answer }}
+                    </span>
                 </div>
-            {% endif %}
-        </div>
-        <hr>
-        {% endfor %}
 
-        <div class="next-level">
-            <strong>Next Quiz Difficulty:</strong>
-            <span style="color:#2563eb;">{{ next_level|title }}</span>
+                {% if not result.is_correct %}
+                <div>
+                    <span style="color: var(--text-light); font-size: 0.9rem;">Correct Answer:</span>
+                    <span style="color: var(--success); font-weight: 600; margin-left: 0.5rem;">
+                        {{ result.correct_answer }}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
         </div>
+    </div>
+    {% endfor %}
 
-        <a href="/quiz/">
-            <button class="btn">Try Again</button>
+    <!-- Actions -->
+    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 3rem;">
+        <a href="{% url 'quiz_start' %}?subject={{ subject }}" class="btn btn-primary">
+            Try Again
         </a>
-
+        <a href="{% url 'quiz_subjects' %}" class="btn btn-secondary">
+            Choose Another Subject
+        </a>
     </div>
 </div>
-
-<script>
-function toggleExplain(id) {
-    const el = document.getElementById(id);
-    el.style.display = el.style.display === "block" ? "none" : "block";
-}
-</script>
-
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "quiz/base.html" %}
+
+{% block content %}
+<div style="padding: 2rem 0; text-align: center;">
+    <h1 style="font-size: 2.5rem; margin-bottom: 1rem; color: white;">Teacher Dashboard</h1>
+    <p style="color: var(--text-light); margin-bottom: 3rem; font-size: 1.1rem;">Monitor your students' performance and
+        manage content.</p>
+
+    <div class="glass-card fade-in"
+        style="padding: 4rem; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; align-items: center;">
+        <div
+            style="width: 80px; height: 80px; background: rgba(236, 72, 153, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 2rem;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--secondary)" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+        </div>
+        <h2 style="color: white; margin-bottom: 1rem; font-size: 2rem;">Coming Soon</h2>
+        <p style="color: var(--text-light); font-size: 1.1rem; line-height: 1.6;">We are currently crafting advanced
+            analytics and management tools for teachers. Your command center will be ready shortly!</p>
+    </div>
+</div>
+{% endblock %}

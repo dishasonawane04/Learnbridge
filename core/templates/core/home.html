@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Hero Section -->
+<section style="text-align: center; padding: 6rem 1rem; position: relative; overflow: hidden;">
+    <!-- Background Glow -->
+    <div
+        style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 600px; background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0, 0, 0, 0) 70%); z-index: -1; pointer-events: none;">
+    </div>
+
+    <div class="fade-in">
+        <h1
+            style="font-size: 3.5rem; font-weight: 800; line-height: 1.2; margin-bottom: 1.5rem; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+            Your Courses. <span class="gradient-text">Smarter Learning.</span><br>
+            Powered by AI.
+        </h1>
+        <p style="font-size: 1.25rem; color: var(--text-light); max-width: 700px; margin: 0 auto 3rem;">
+            Learnbridge adapts to your syllabus—generating explanations, quizzes, notes, and study plans from your
+            course content.
+        </p>
+
+        <div style="display: flex; gap: 1.5rem; justify-content: center;">
+            {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="btn btn-primary"
+                style="padding: 1rem 3rem; font-size: 1.1rem; box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);">
+                Go to Dashboard
+            </a>
+            {% else %}
+            <a href="{% url 'login' %}" class="btn btn-primary"
+                style="padding: 1rem 3rem; font-size: 1.1rem; box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);">
+                Login / Sign Up
+            </a>
+            {% endif %}
+        </div>
+        <p style="margin-top: 1.5rem; color: var(--text-dim); font-size: 0.9rem;">Start learning from your courses</p>
+    </div>
+</section>
+
+<!-- Features Grid -->
+<section class="container" style="margin-bottom: 6rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem;">
+        <!-- Feature 1: AI Explainer -->
+        <div class="glass-card feature-card"
+            style="padding: 2.5rem; transition: transform 0.3s ease, border-color 0.3s ease;">
+            <div style="font-size: 2.5rem; margin-bottom: 1.5rem; color: var(--primary);">
+                <i class="fas fa-brain"></i>
+            </div>
+            <h3 style="font-size: 1.4rem; margin-bottom: 1rem; color: var(--text-main);">🧠 AI Explainer</h3>
+            <p style="color: var(--text-light); line-height: 1.6;">
+                Get instant, context-aware explanations from your course content. Understand concepts clearly, without
+                searching elsewhere.
+            </p>
+        </div>
+
+        <!-- Feature 2: Smart Analytics -->
+        <div class="glass-card feature-card"
+            style="padding: 2.5rem; border: 1px solid rgba(99, 102, 241, 0.2); transition: transform 0.3s ease, border-color 0.3s ease;">
+            <div style="font-size: 2.5rem; margin-bottom: 1.5rem; color: var(--accent);">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h3 style="font-size: 1.4rem; margin-bottom: 1rem; color: var(--text-main);">📊 Smart Analytics</h3>
+            <p style="color: var(--text-light); line-height: 1.6;">
+                AI tracks your learning progress, identifies weak areas, and shows where to focus next—automatically.
+            </p>
+        </div>
+
+        <!-- Feature 3: Personalized Learning Path -->
+        <div class="glass-card feature-card"
+            style="padding: 2.5rem; transition: transform 0.3s ease, border-color 0.3s ease;">
+            <div style="font-size: 2.5rem; margin-bottom: 1.5rem; color: var(--success);">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <h3 style="font-size: 1.4rem; margin-bottom: 1rem; color: var(--text-main);">🎓 Personalized Path</h3>
+            <p style="color: var(--text-light); line-height: 1.6;">
+                Your AI-generated study plan adapts as you learn, helping you prepare smarter for exams.
+            </p>
+        </div>
+
+        <!-- Feature 4: AI Notes Generator -->
+        <div class="glass-card feature-card"
+            style="padding: 2.5rem; transition: transform 0.3s ease, border-color 0.3s ease;">
+            <div style="font-size: 2.5rem; margin-bottom: 1.5rem; color: var(--primary);">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <h3 style="font-size: 1.4rem; margin-bottom: 1rem; color: var(--text-main);">✍️ AI Notes Generator</h3>
+            <p style="color: var(--text-light); line-height: 1.6;">
+                Automatically generate clean, structured notes from your syllabus, PDFs, or uploaded files—ready to
+                revise anytime.
+            </p>
+        </div>
+
+        <!-- Feature 5: Smart Question Generator -->
+        <div class="glass-card feature-card"
+            style="padding: 2.5rem; transition: transform 0.3s ease, border-color 0.3s ease;">
+            <div style="font-size: 2.5rem; margin-bottom: 1.5rem; color: var(--accent);">
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <h3 style="font-size: 1.4rem; margin-bottom: 1rem; color: var(--text-main);">❓ Smart Questions</h3>
+            <p style="color: var(--text-light); line-height: 1.6;">
+                AI creates meaningful questions from your course units to test understanding and reinforce learning.
+            </p>
+        </div>
+
+        <!-- Feature 6: Sentence & Concept Explainer -->
+        <div class="glass-card feature-card"
+            style="padding: 2.5rem; transition: transform 0.3s ease, border-color 0.3s ease;">
+            <div style="font-size: 2.5rem; margin-bottom: 1.5rem; color: var(--success);">
+                <i class="fas fa-lightbulb"></i>
+            </div>
+            <h3 style="font-size: 1.4rem; margin-bottom: 1rem; color: var(--text-main);">🗣️ Concept Explainer</h3>
+            <p style="color: var(--text-light); line-height: 1.6;">
+                Highlight any sentence or concept and let AI break it down in simple terms, step by step.
+            </p>
+        </div>
+    </div>
+</section>
+
+<style>
+    .feature-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(99, 102, 241, 0.5) !important;
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
+    }
+</style>
+{% endblock %}

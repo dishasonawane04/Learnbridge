@@ -17,13 +17,21 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from core import views as core_views
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('ai/', include('ai_tutor.urls')),
-    path('', include('quiz.urls')),
+    path('core/', include('core.urls')),
+    path('plan/', include('generator.urls')),
+    path('assessment/', include('assessment.urls')),
+    path('sentence-explain/', include('sentence_explain.urls')),
+    path('notes/', include('notes.urls')),
+    path('notes/', include('notes.urls')),
+    path('quiz/', include('quiz.urls')),
+    path('course/', include('course.urls')),
+    path('', core_views.home, name='home'),
 ]
 
 if settings.DEBUG:

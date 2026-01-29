@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
+    <div style="width: 100%; max-width: 800px; text-align: center;">
+        <h1 style="margin-bottom: 1rem;">Choose Your <span class="gradient-text">Role</span></h1>
+        <p style="color: var(--text-muted); margin-bottom: 3rem; font-size: 1.1rem;">Customize your Learnbridge AI
+            experience</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+            <!-- Student Card -->
+            <form method="post" style="display: contents;">
+                {% csrf_token %}
+                <input type="hidden" name="role" value="student">
+                <button type="submit" class="glass-card role-card"
+                    style="padding: 3rem; text-align: center; cursor: pointer; width: 100%;">
+                    <div
+                        style="width: 80px; height: 80px; background: rgba(99, 102, 241, 0.1); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--primary)"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 10v6M2 10l10-5 10 5-10 5L2 10z" />
+                            <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                        </svg>
+                    </div>
+                    <h2 style="font-size: 1.5rem; color: white; margin-bottom: 1rem;">I'm a Student</h2>
+                    <p style="color: var(--text-muted); line-height: 1.5;">Access AI tutors, take adaptive quizzes, and
+                        track your learning progress.</p>
+                </button>
+            </form>
+
+            <!-- Teacher Card -->
+            <form method="post" style="display: contents;">
+                {% csrf_token %}
+                <input type="hidden" name="role" value="teacher">
+                <button type="submit" class="glass-card role-card"
+                    style="padding: 3rem; text-align: center; cursor: pointer; width: 100%;">
+                    <div
+                        style="width: 80px; height: 80px; background: rgba(236, 72, 153, 0.1); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--secondary)"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M12 11c0 3.517-1.009 6.799-2.753 9.571m0 0A9.994 9.994 0 014 12c0-5.523 4.477-10 10-10s10 4.477 10 10a9.994 9.994 0 01-5.247 8.771m-4.753 0L12 11" />
+                        </svg>
+                    </div>
+                    <h2 style="font-size: 1.5rem; color: white; margin-bottom: 1rem;">I'm a Teacher</h2>
+                    <p style="color: var(--text-light); line-height: 1.5;">Create educational content, monitor student
+                        performance, and manage classes.</p>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .role-card:hover {
+        transform: translateY(-8px);
+        border-color: var(--primary) !important;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .role-card:active {
+        transform: scale(0.98);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}{{ note.topic }} - Smart Notes{% endblock %}
+
+{% block extra_css %}
+<style>
+    .note-content h1,
+    .note-content h2,
+    .note-content h3 {
+        color: white;
+        margin-top: 1.5rem;
+    }
+
+    .note-content p {
+        color: var(--text-light);
+        line-height: 1.7;
+        margin-bottom: 1rem;
+    }
+
+    .note-content ul,
+    .note-content ol {
+        color: var(--text-light);
+        padding-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .note-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    .note-content code {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-family: 'JetBrains Mono', monospace;
+        color: #e2e8f0;
+    }
+
+    .note-content pre {
+        background: rgba(15, 23, 42, 0.6);
+        padding: 1rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        border: 1px solid var(--glass-border);
+    }
+
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+
+        .note-container,
+        .note-container * {
+            visibility: visible;
+        }
+
+        .note-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: white;
+            color: black;
+        }
+
+        .glass-card {
+            background: none;
+            border: none;
+            backdrop-filter: none;
+        }
+
+        .btn,
+        .main-nav,
+        footer {
+            display: none;
+        }
+
+        .note-content h1,
+        .note-content h2,
+        .note-content h3,
+        .note-content p,
+        .note-content li {
+            color: black !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container note-container" style="padding: 2rem 0;">
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'notes_list' %}" class="btn btn-secondary"
+            style="display: inline-flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-arrow-left"></i> Back to Notes
+        </a>
+    </div>
+
+    <div class="glass-card fade-in" style="padding: 3rem;">
+        <div
+            style="border-bottom: 1px solid var(--glass-border); padding-bottom: 2rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: start;">
+            <div>
+                <span class="badge badge-primary" style="margin-bottom: 1rem;">Topic</span>
+                <h1 style="margin: 0.5rem 0; font-size: 2.5rem;">{{ note.topic }}</h1>
+                <p style="color: var(--text-muted);">Generated on {{ note.created_at|date:"F j, Y" }}</p>
+            </div>
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="fas fa-download"></i> Download / Print PDF
+            </button>
+        </div>
+
+        <div class="note-content">
+            {{ html_content|safe }}
+        </div>
+    </div>
+</div>
+{% endblock %}
