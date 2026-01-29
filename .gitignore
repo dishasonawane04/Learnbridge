@@ -1,7 +1,9 @@
 # Byte-compiled / optimized
-_pycache_/
-*.py[cod]
-*.so
+__pycache__/
+*.pyc
+db.sqlite3
+.env
+*.pid
 
 # Virtual environments
 env/
