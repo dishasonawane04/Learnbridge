@@ -1,218 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>LearnBridge | AI Quiz</title>
+{% extends 'base.html' %}
 
-    <style>
-        /* ===== RESET ===== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "Segoe UI", Arial, sans-serif;
-        }
+{% block content %}
+<div class="glass-card fade-in" style="max-width: 900px; margin: 0 auto;">
 
-        body {
-            background: #f4f6f9;
-            color: #222;
-        }
-
-        /* ===== NAVBAR ===== */
-        .navbar {
-            background: #2563eb;
-            color: white;
-            padding: 18px 30px;
-            font-size: 22px;
-            font-weight: 600;
-        }
-
-        /* ===== CONTAINER ===== */
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 20px;
-        }
-
-        /* ===== CARD ===== */
-        .card {
-            background: white;
-            padding: 35px;
-            border-radius: 14px;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
-        }
-
-        .card h2 {
-            margin-bottom: 20px;
-            font-size: 28px;
-        }
-
-        /* ===== TIMER ===== */
-        #timer {
-            font-weight: bold;
-            color: #dc2626;
-            margin-bottom: 15px;
-        }
-
-        /* ===== PROGRESS BAR ===== */
-        .progress-container {
-            width: 100%;
-            height: 10px;
-            background: #e5e7eb;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            overflow: hidden;
-        }
-
-        #progress-bar {
-            height: 100%;
-            width: 0%;
-            background: #2563eb;
-            transition: width 0.3s ease;
-        }
-
-        #progress-text {
-            font-size: 14px;
-            color: #555;
-            margin-bottom: 25px;
-        }
-
-        /* ===== QUESTIONS ===== */
-        .question-block {
-            margin-bottom: 20px;
-        }
-
-        .question-block p {
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 6px;
-            cursor: pointer;
-        }
-
-        input[type="radio"] {
-            margin-right: 8px;
-        }
-
-        hr {
-            border: none;
-            border-top: 1px solid #eee;
-            margin: 25px 0;
-        }
-
-        /* ===== BUTTON ===== */
-        .btn {
-            padding: 12px 22px;
-            background: #2563eb;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-        }
-
-        .btn:hover {
-            background: #1e40af;
-        }
-    </style>
-</head>
-
-<body>
-
-<!-- ===== NAVBAR ===== -->
-<div class="navbar">
-    LearnBridge
-</div>
-
-<!-- ===== QUIZ ===== -->
-<div class="container">
-    <div class="card">
-
-        <h2>AI Assessment Quiz</h2>
-
-        <!-- TIMER -->
-        <p id="timer"></p>
-
-        <!-- PROGRESS -->
-        <div class="progress-container">
-            <div id="progress-bar"></div>
+    <!-- Header -->
+    <div
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+        <div>
+            <h2
+                style="font-size: 2rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+                {{ subject }} Quiz
+            </h2>
+            <p style="color: var(--text-light);">Answer all questions and submit when ready</p>
         </div>
-        <p id="progress-text">
-            Answered 0 of {{ questions|length }}
-        </p>
+        <div class="badge badge-primary" style="padding: 0.75rem 1.5rem; font-size: 1rem;">
+            {{ questions|length }} Questions
+        </div>
+    </div>
 
-        <form method="post" id="quizForm">
-            {% csrf_token %}
+    <!-- Quiz Form -->
+    <form method="post" id="quizForm">
+        {% csrf_token %}
 
-            {% for q in questions %}
-            <div class="question-block">
-                <p><b>{{ forloop.counter }}. {{ q.question }}</b></p>
+        {% for q in questions %}
+        <div class="question-card"
+            style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
 
+            <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1.5rem; color: var(--text-main);">
+                <span style="color: var(--primary); margin-right: 0.75rem;">{{ forloop.counter }}.</span>
+                {{ q.question }}
+            </h3>
+
+            <div class="options-group">
                 {% for opt in q.options %}
-                <label>
-                    <input type="radio"
-                           name="q{{ forloop.parentloop.counter0 }}"
-                           value="{{ opt }}"
-                           onclick="updateProgress({{ forloop.parentloop.counter0 }})">
-                    {{ opt }}
+                <label class="option-label"
+                    style="display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; margin-bottom: 0.75rem; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                    <input type="radio" name="q{{ forloop.parentloop.counter0 }}" value="{{ opt }}"
+                        style="width: 1.2rem; height: 1.2rem; cursor: pointer; accent-color: var(--primary);">
+                    <span style="font-size: 1rem; color: var(--text-main);">{{ opt }}</span>
                 </label>
                 {% endfor %}
             </div>
-            <hr>
-            {% endfor %}
+        </div>
+        {% endfor %}
 
-            <button type="submit" class="btn">Submit Quiz</button>
-        </form>
-
-    </div>
+        <!-- Submit Button -->
+        <div style="text-align: center; margin-top: 3rem;">
+            <button type="submit" class="btn btn-primary"
+                style="font-size: 1.1rem; padding: 1rem 3rem; background: linear-gradient(135deg, var(--success), #16a34a);">
+                Submit Quiz
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    style="margin-left: 0.5rem; vertical-align: middle;">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </button>
+        </div>
+    </form>
 </div>
 
-<!-- ===== JAVASCRIPT ===== -->
-<script>
-    const totalQuestions = {{ questions|length }};
-    const answered = new Set();
-
-    // ===== PROGRESS BAR =====
-    function updateProgress(index) {
-        answered.add(index);
-        const percent = (answered.size / totalQuestions) * 100;
-        document.getElementById("progress-bar").style.width = percent + "%";
-        document.getElementById("progress-text").innerText =
-            `Answered ${answered.size} of ${totalQuestions}`;
+<style>
+    .option-label:hover {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: var(--primary) !important;
     }
 
-    // ===== TIMER =====
-    let timeLeft = 300; // 5 minutes
-    let timerInterval = null;
-
-    function startTimer() {
-        timerInterval = setInterval(() => {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-
-            document.getElementById("timer").innerText =
-                `⏱ Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-
-            if (timeLeft <= 0) {
-                clearInterval(timerInterval);
-                alert("Time is up! Submitting quiz.");
-                document.getElementById("quizForm").submit();
-            }
-
-            timeLeft--;
-        }, 1000);
+    .option-label:has(input:checked) {
+        background: rgba(99, 102, 241, 0.15) !important;
+        border-color: var(--primary) !important;
     }
-
-    document.getElementById("quizForm").addEventListener("submit", function () {
-        if (timerInterval) clearInterval(timerInterval);
-    });
-
-    startTimer();
-</script>
-
-</body>
-</html>
+</style>
+{% endblock %}

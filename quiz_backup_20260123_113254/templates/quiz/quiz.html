@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="glass-card fade-in" style="max-width: 900px; margin: 0 auto;">
+
+    <!-- HEADER -->
+    <div
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div
+                style="font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+                Adaptive Assessment
+            </div>
+            <h2
+                style="margin: 0; font-size: 1.75rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--text-light) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+                {{ subject|default:"General" }}
+            </h2>
+        </div>
+
+        <div class="badge badge-primary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+            Level: {{ difficulty|title }}
+        </div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div
+            style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px; padding: 0.75rem; text-align: center;">
+            <div
+                style="font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+                Questions</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary);">{{questions|length}}</div>
+        </div>
+        <div
+            style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 0.75rem; text-align: center;">
+            <div
+                style="font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+                Pass Score</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--success);">70%</div>
+        </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div style="margin-bottom: 2rem;">
+        <div
+            style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 500;">
+            <span id="question-counter" style="color: var(--text-main);">Question 1 of {{questions|length}}</span>
+            <span id="answered-container" style="color: var(--text-light);">Answered: <span id="progress-text">0</span>
+                / <span id="total-text">{{questions|length}}</span></span>
+        </div>
+        <div class="progress-track" aria-hidden="true">
+            <div id="progress-bar" class="progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- QUIZ CONTAINER WITH SIDEBAR -->
+    <div style="display: grid; grid-template-columns: 1fr 250px; gap: 2rem;">
+
+        <!-- MAIN QUIZ AREA -->
+        <div>
+            <form method="post" id="quizForm">
+                {% csrf_token %}
+
+                {% for q in questions %}
+                <div class="question-block" id="q-block-{{ forloop.counter0 }}" data-index="{{ forloop.counter0 }}"
+                    style="margin-bottom: 2.5rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;">
+
+                    <h3
+                        style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1.5rem; line-height: 1.5; color: var(--text-main);">
+                        <span style="color: var(--primary); margin-right: 0.5rem;">{{ forloop.counter }}.</span>
+                        {{ q.question }}
+                    </h3>
+
+                    <!-- OPTIONS -->
+                    <div class="option-group" role="radiogroup" aria-labelledby="q-text-{{ forloop.counter0 }}">
+                        {% for opt in q.options %}
+                        <label class="option-card" for="q{{ forloop.parentloop.counter0 }}-o{{ forloop.counter0 }}"
+                            style="cursor: pointer; display: flex; align-items: center; gap: 0.75rem; padding: 1rem; width: 100%; box-sizing: border-box; transition: all 0.2s; margin-bottom: 0.75rem;">
+                            <input type="radio" id="q{{ forloop.parentloop.counter0 }}-o{{ forloop.counter0 }}"
+                                name="q{{ forloop.parentloop.counter0 }}" value="{{ opt }}"
+                                onclick="selectOption(this, '{{ forloop.parentloop.counter0 }}')"
+                                style="width: 1.1rem; height: 1.1rem; margin: 0; flex-shrink: 0; cursor: pointer; accent-color: var(--primary);">
+                            <span
+                                style="font-size: 0.95rem; flex-grow: 1; pointer-events: none; color: var(--text-main);">{{
+                                opt }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- SUBMIT BUTTON -->
+                <div
+                    style="position: sticky; bottom: 0; background: var(--bg-main); padding: 1.5rem 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary"
+                        style="background: linear-gradient(135deg, var(--success), #16a34a); font-size: 1rem; width: 100%; padding: 1rem;">
+                        Submit Quiz
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- QUESTION NAVIGATOR SIDEBAR -->
+        <div style="position: sticky; top: 1rem; height: fit-content;">
+            <div
+                style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.5rem;">
+                <h4
+                    style="font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Questions
+                </h4>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem;">
+                    {% for q in questions %}
+                    <button type="button" class="question-nav-btn" data-question="{{ forloop.counter0 }}"
+                        onclick="scrollToQuestion({{ forloop.counter0 }})"
+                        style="aspect-ratio: 1; border: 1px solid rgba(99, 102, 241, 0.3); background: rgba(99, 102, 241, 0.1); border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: var(--primary); cursor: pointer; transition: all 0.2s;">
+                        {{ forloop.counter }}
+                    </button>
+                    {% endfor %}
+                </div>
+                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                    <div
+                        style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.5rem;">
+                        <div
+                            style="width: 12px; height: 12px; background: rgba(16, 185, 129, 0.3); border: 1px solid var(--success); border-radius: 3px;">
+                        </div>
+                        <span>Answered</span>
+                    </div>
+                    <div
+                        style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--text-light);">
+                        <div
+                            style="width: 12px; height: 12px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 3px;">
+                        </div>
+                        <span>Unanswered</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const totalQuestions = parseInt('{{ questions|length }}');
+
+    function scrollToQuestion(index) {
+        const questionBlock = document.getElementById(`q-block-${index}`);
+        if (questionBlock) {
+            questionBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Add highlight effect
+            questionBlock.style.transform = 'scale(1.01)';
+            setTimeout(() => {
+                questionBlock.style.transform = 'scale(1)';
+            }, 300);
+        }
+    }
+
+    function selectOption(input, qIndex) {
+        const group = input.closest('.option-group');
+        group.querySelectorAll('.option-card').forEach(card => card.classList.remove('selected'));
+        input.closest('.option-card').classList.add('selected');
+        updateProgress();
+        updateNavigatorButtons();
+    }
+
+    function updateProgress() {
+        const answered = document.querySelectorAll('input[type="radio"]:checked').length;
+        const percent = (answered / totalQuestions) * 100;
+
+        const progressBar = document.getElementById("progress-bar");
+        if (progressBar) progressBar.style.width = percent + "%";
+
+        const progressText = document.getElementById("progress-text");
+        if (progressText) progressText.innerText = answered;
+    }
+
+    function updateNavigatorButtons() {
+        const navButtons = document.querySelectorAll('.question-nav-btn');
+        navButtons.forEach((btn, index) => {
+            const questionInput = document.querySelector(`input[name="q${index}"]:checked`);
+            if (questionInput) {
+                // Answered - green style
+                btn.style.background = 'rgba(16, 185, 129, 0.3)';
+                btn.style.borderColor = 'var(--success)';
+                btn.style.color = 'var(--success)';
+            } else {
+                // Unanswered - default blue style
+                btn.style.background = 'rgba(99, 102, 241, 0.1)';
+                btn.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+                btn.style.color = 'var(--primary)';
+            }
+        });
+    }
+
+    // Initialize on page load
+    updateProgress();
+    updateNavigatorButtons();
+</script>
+
+{% endblock %}

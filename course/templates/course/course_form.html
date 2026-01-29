@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Create Course - Learnbridge{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 4rem 0;">
+    <div style="max-width: 600px; margin: 0 auto;">
+        <div class="glass-card fade-in" style="padding: 3rem;">
+            <h2 class="gradient-text" style="margin-bottom: 0.5rem;">Create New Course</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2.5rem;">Define your course core info to get started.</p>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-light);">Course Title</label>
+                    <input type="text" name="title" required placeholder="e.g. Advanced Machine Learning"
+                        style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-light);">Level</label>
+                    <select name="level"
+                        style="width: 100%; padding: 1rem; background: rgba(30,41,59,1); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                        <option value="UG">Undergraduate</option>
+                        <option value="PG">Postgraduate</option>
+                        <option value="PROF">Professional</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 2.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-light);">Description</label>
+                    <textarea name="description" rows="4" placeholder="Briefly describe what this course covers..."
+                        style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1; padding: 1rem;">Create Course</button>
+                    <a href="{% url 'course_list' %}" class="btn btn-secondary" style="padding: 1rem 2rem;">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

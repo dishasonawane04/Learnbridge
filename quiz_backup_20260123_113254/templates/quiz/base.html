@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>LearnBridge | Intelligent Assessment</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Google Fonts: Inter due to license availability, generic sans-serif fallback -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700&display=swap"
+        rel="stylesheet">
+
+    <!-- Centralized CSS -->
+    {% load static %}
+    <!-- Centralized CSS -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'quiz/style.css' %}">
+</head>
+
+<body>
+
+    <!-- ================= NAVBAR ================= -->
+    <nav class="glass-card"
+        style="margin: 20px auto; max-width: 1200px; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-radius: 16px;">
+        <div style="display: flex; gap: 2rem; align-items: center;">
+            <a href="{% url 'home' %}"
+                style="font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #a5b4fc 0%, #f472b6 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none;">
+                LearnBridge AI
+            </a>
+
+            <div style="display: flex; gap: 1.5rem;">
+                <a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a>
+                <a href="{% url 'explore_courses' %}" class="nav-link">📚 Courses</a>
+                <a href="{% url 'subjects' %}" class="nav-link">Take Quiz</a>
+                <a href="{% url 'study_plan' %}" class="nav-link">Study Plan</a>
+                <a href="{% url 'sentence_explain' %}" class="nav-link">Sentence Explain</a>
+                <a href="{% url 'notes' %}" class="nav-link">Notes</a>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            {% if user.is_authenticated %}
+            <span style="color: var(--text-light); font-size: 0.9rem;">{{ user.username }}</span>
+            <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary"
+                    style="padding: 0.5rem 1rem; font-size: 0.85rem;">Logout</button>
+            </form>
+            {% else %}
+            <a href="{% url 'login' %}" class="btn btn-primary"
+                style="padding: 0.5rem 1rem; font-size: 0.85rem;">Login</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <style>
+        .nav-link {
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+        }
+    </style>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <div class="container">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+</body>
+
+</html>

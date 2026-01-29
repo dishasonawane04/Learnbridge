@@ -11,6 +11,10 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Email Backend (Console for Development)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -23,12 +27,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-(qu4$_2ie%x65r0e3zzd!m@r%dup%bx_eg42qsao0kwjr7!_9p"
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG") == "True"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -40,15 +44,22 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "ai_tutor",
     "quiz",
     'assessment',
+<<<<<<< HEAD
     'learning_support',
     'flashcard_generator',
     'letter_of_recommendation_generator',
     'accounts',
     'analytics',
     'prerequisite_checker',
+=======
+    "core",
+    "sentence_explain",
+    "notes",
+    "generator",
+    "course",
+>>>>>>> a308bc6ddc579d8c8c7d185a879f27e44969e3b4
 ]
 
 MIDDLEWARE = [
@@ -66,7 +77,11 @@ ROOT_URLCONF = "learnbridge.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
+<<<<<<< HEAD
         "DIRS": [BASE_DIR / 'templates'],
+=======
+        "DIRS": [BASE_DIR / "templates"],
+>>>>>>> a308bc6ddc579d8c8c7d185a879f27e44969e3b4
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -133,9 +148,19 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+<<<<<<< HEAD
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 LOGIN_URL = '/accounts/login/'
+=======
+# Ollama AI Configuration
+OLLAMA_MODEL_TEXT = "llama3.2:1b"
+OLLAMA_MODEL_VISION = "llava:latest"
+
+LOGIN_REDIRECT_URL = 'home'
+LOGIN_URL = 'login'
+>>>>>>> a308bc6ddc579d8c8c7d185a879f27e44969e3b4

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.title }} - Learnbridge{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2rem 0;">
+    <!-- Course Header -->
+    <div class="glass-card fade-in"
+        style="margin-bottom: 3rem; padding: 2.5rem; background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+                <span class="badge badge-primary">{{ course.get_level_display }}</span>
+                <p style="color: var(--text-muted); max-width: 800px;">{{ course.description }}</p>
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <a href="{% url 'study_plan' %}?topic={{ course.title }}&course_id={{ course.id }}"
+                        class="btn btn-primary" style="font-size: 0.9rem;">
+                        <i class="fas fa-calendar-alt"></i> Generate Study Plan
+                    </a>
+                    <a href="{% url 'sentence_explain' %}?course_id={{ course.id }}" class="btn btn-secondary"
+                        style="font-size: 0.9rem;">
+                        <i class="fas fa-language"></i> AI Explain
+                    </a>
+                    <a href="{% url 'learning_support' %}?course_id={{ course.id }}" class="btn btn-secondary"
+                        style="font-size: 0.9rem;">
+                        <i class="fas fa-question-circle"></i> Simplified Support
+                    </a>
+                </div>
+            </div>
+            <button class="btn btn-secondary" onclick="document.getElementById('unit-modal').style.display='flex'">
+                <i class="fas fa-plus"></i> Add Unit
+            </button>
+        </div>
+    </div>
+
+    <!-- Units Grid -->
+    <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
+        {% for unit in course.units.all %}
+        <div class="glass-card" style="padding: 2rem;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
+                <h3 style="margin: 0;">Unit {{ forloop.counter }}: {{ unit.title }}</h3>
+                <div style="display: flex; gap: 0.5rem;">
+                    <form action="{% url 'material_upload' unit.id %}" method="post" enctype="multipart/form-data"
+                        id="upload-form-{{ unit.id }}">
+                        {% csrf_token %}
+                        <input type="file" name="file" onchange="this.form.submit()" style="display: none;"
+                            id="file-{{ unit.id }}">
+                        <label for="file-{{ unit.id }}" class="btn btn-primary"
+                            style="font-size: 0.85rem; padding: 0.5rem 1rem; cursor: pointer;">
+                            <i class="fas fa-upload"></i> Upload Material
+                        </label>
+                    </form>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                {% for material in unit.materials.all %}
+                <div
+                    style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 12px; display: flex; align-items: center; gap: 1rem;">
+                    <div
+                        style="width: 40px; height: 40px; border-radius: 8px; background: rgba(99, 102, 241, 0.1); display: flex; align-items: center; justify-content: center;">
+                        <i class="fas {% if material.file_type == 'pdf' %}fa-file-pdf{% elif material.file_type == 'ppt' %}fa-file-powerpoint{% elif material.file_type == 'image' %}fa-file-image{% else %}fa-file-alt{% endif %}"
+                            style="color: var(--primary);"></i>
+                    </div>
+                    <div style="overflow: hidden;">
+                        <p
+                            style="margin: 0; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{ material.file.name|cut:"course_materials/" }}</p>
+                        <span style="font-size: 0.75rem; color: var(--text-dim);">Processed</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-dim); font-size: 0.9rem; grid-column: 1/-1;">No materials uploaded for this
+                    unit yet.</p>
+                {% endfor %}
+            </div>
+
+            <!-- Quick Actions for this Unit -->
+            {% if unit.materials.exists %}
+            <div
+                style="margin-top: 2rem; display: flex; gap: 1rem; padding-top: 1.5rem; border-top: 1px dashed var(--glass-border);">
+                <a href="{% url 'quiz_start' %}?subject={{ unit.title }}&course_id={{ course.id }}"
+                    class="btn btn-secondary" style="font-size: 0.85rem;"><i class="fas fa-brain"></i> Generate Quiz</a>
+                <a href="{% url 'notes' %}?topic={{ unit.title }}&course_id={{ course.id }}" class="btn btn-secondary"
+                    style="font-size: 0.85rem;"><i class="fas fa-sticky-note"></i> Create
+                    Notes</a>
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 4rem;">
+            <p style="color: var(--text-muted);">No units added yet. Add your first unit to organize your content.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add Unit Modal -->
+<div id="unit-modal"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="glass-card" style="width: 100%; max-width: 500px; padding: 2.5rem;">
+        <h3 style="margin-bottom: 1.5rem;">Add New Unit</h3>
+        <form action="{% url 'unit_add' course.id %}" method="post">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem;">Unit Title</label>
+                <input type="text" name="title" required
+                    style="width: 100%; padding: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+            </div>
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label style="display: block; margin-bottom: 0.5rem;">Display Order</label>
+                <input type="number" name="order" value="{{ course.units.count|add:1 }}"
+                    style="width: 100%; padding: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">Add Unit</button>
+                <button type="button" class="btn btn-secondary"
+                    onclick="document.getElementById('unit-modal').style.display='none'">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

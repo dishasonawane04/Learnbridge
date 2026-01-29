@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- HERO SECTION (Compact) -->
+<div style="position: relative; padding: 4rem 0; text-align: center; overflow: hidden;">
+    <!-- Background Glow -->
+    <div
+        style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; height: 500px; background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%); filter: blur(80px); z-index: -1;">
+    </div>
+
+    <div class="fade-in" style="max-width: 700px; margin: 0 auto;">
+        <span class="badge badge-primary" style="margin-bottom: 1.5rem;">AI-Powered Learning V2.0</span>
+
+        <h1 style="margin-bottom: 1.5rem;">
+            Master Any Subject with <span class="gradient-text">Advanced AI</span>
+        </h1>
+
+        <p
+            style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 2.5rem; line-height: 1.6; max-width: 500px; margin-left: auto; margin-right: auto;">
+            LearnBridge adapts to your speed, identifies your gaps, and guides you to mastery with university-grade
+            precision.
+        </p>
+
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+            <a href="{% url 'explore_courses' %}" class="btn btn-primary">
+                Start Learning <i class="fas fa-arrow-right"></i>
+            </a>
+            <a href="#features" class="btn btn-secondary">
+                Explore Features
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="glass-card fade-in"
+    style="margin-bottom: 8rem; padding: 1.5rem 3rem; display: flex; justify-content: space-around; background: rgba(15, 23, 42, 0.4); border-color: rgba(255,255,255,0.05);">
+    <div style="text-align: center;">
+        <div style="font-size: 1.5rem; font-weight: 800; color: white;">5,000+</div>
+        <div style="font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em;">AI
+            Questions</div>
+    </div>
+    <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
+    <div style="text-align: center;">
+        <div style="font-size: 1.5rem; font-weight: 800; color: white;">100%</div>
+        <div style="font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em;">
+            Adaptive Logic</div>
+    </div>
+    <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
+    <div style="text-align: center;">
+        <div style="font-size: 1.5rem; font-weight: 800; color: white;">24/7</div>
+        <div style="font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em;">
+            Smart Mentoring</div>
+    </div>
+</div>
+
+
+
+<!-- FEATURES SECTION -->
+<div id="features" style="padding: 8rem 0;">
+    <div
+        style="background: rgba(99, 102, 241, 0.03); border-radius: 40px; padding: 6rem 4rem; border: 1px solid rgba(255,255,255,0.03);">
+        <h2 style="text-align: center; font-size: 3rem; margin-bottom: 5rem;">Built for Mastery</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 4rem;">
+            <div style="text-align: left;">
+                <div style="color: var(--primary); margin-bottom: 1.5rem;">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
+                        </path>
+                    </svg>
+                </div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Adaptive Engine</h3>
+                <p style="color: var(--text-light); line-height: 1.6;">Our algorithm updates the difficulty in real-time
+                    based on your performance, ensuring you're always challenged but never overwhelmed.</p>
+            </div>
+            <div style="text-align: left;">
+                <div style="color: var(--secondary); margin-bottom: 1.5rem;">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">AI Explanations</h3>
+                <p style="color: var(--text-light); line-height: 1.6;">Get instant, context-aware breakdowns for every
+                    answer. Understand the 'why' behind every concept with LLM-powered insights.</p>
+            </div>
+            <div style="text-align: left;">
+                <div style="color: var(--accent); margin-bottom: 1.5rem;">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21.21 15.89A10 10 0 1 1 8 2.83M22 12A10 10 0 0 0 12 2v10z" />
+                    </svg>
+                </div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Visual Progress</h3>
+                <p style="color: var(--text-light); line-height: 1.6;">Track your learning arc with sophisticated
+                    analytics and clear difficulty ladders. Visualize your journey toward subject mastery.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA SECTION -->
+<div
+    style="margin: 4rem 0 8rem; text-align: center; padding: 6rem; border-radius: 40px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(236, 72, 153, 0.05) 100%); border: 1px solid rgba(255,255,255,0.05);">
+    <h2 style="font-size: 3rem; margin-bottom: 1.5rem;">Ready to Level Up?</h2>
+    <p
+        style="color: var(--text-light); font-size: 1.25rem; margin-bottom: 3rem; max-width: 600px; margin-inline: auto;">
+        Join thousands of students building their future with LearnBridge AI.</p>
+    <a href="{% url 'explore_courses' %}" class="btn btn-primary" style="padding: 1.2rem 3rem; font-size: 1.1rem;">
+        Get Started Now
+    </a>
+</div>
+
+<footer class="main-footer">
+    <div style="margin-bottom: 2rem;">
+        <span
+            style="font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #a5b4fc 0%, #f472b6 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">LearnBridge
+            AI</span>
+    </div>
+    <p>© 2026 LearnBridge • The Future of Intelligent Assessment</p>
+</footer>
+
+{% endblock %}

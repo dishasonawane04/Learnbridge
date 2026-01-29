@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* ChatGPT-style Refinements */
+    #chat-wrapper {
+        max-width: 800px;
+        margin: 0 auto;
+        height: calc(100vh - 140px);
+        display: flex;
+        flex-direction: column;
+    }
+
+    #chat-container {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 2rem;
+        margin-bottom: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        background: transparent;
+        border: none;
+    }
+
+    .chat-input {
+        width: 100%;
+        height: 52px;
+        padding: 0 1.25rem;
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 26px;
+        color: white;
+        font-size: 1rem;
+        transition: all 0.2s;
+    }
+
+    .chat-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+
+    .icon-btn,
+    .send-btn {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-light);
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .icon-btn:hover,
+    .send-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    .send-btn {
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        border: none;
+    }
+
+    .chip {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.6rem 1.2rem;
+        border-radius: 20px;
+        color: var(--text-light);
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .chip:hover {
+        background: rgba(99, 102, 241, 0.15);
+        border-color: var(--primary);
+        color: white;
+    }
+
+    .typing-dots span {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: var(--text-light);
+        border-radius: 50%;
+        animation: typing 1.4s infinite ease-in-out both;
+        margin: 0 2px;
+    }
+
+    .typing-dots span:nth-child(1) {
+        animation-delay: -0.32s;
+    }
+
+    .typing-dots span:nth-child(2) {
+        animation-delay: -0.16s;
+    }
+
+    @keyframes typing {
+
+        0%,
+        80%,
+        100% {
+            transform: scale(0);
+        }
+
+        40% {
+            transform: scale(1);
+        }
+    }
+</style>
+
+<div id="chat-wrapper">
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 1.5rem; flex-shrink: 0; position: relative;">
+        <h1
+            style="font-size: 2rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+            AI Explainer
+        </h1>
+        <div style="display: flex; justify-content: center; gap: 1.5rem; align-items: center;">
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Smart context-aware assistant</p>
+            <form method="get" action="?clear=true" style="margin:0;">
+                <button type="button" onclick="location.href='?clear=true'"
+                    style="background: none; border: none; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; text-decoration: underline;">Clear
+                    Chat</button>
+            </form>
+        </div>
+
+        <button id="stopSpeakingBtn" onclick="stopSpeaking()"
+            style="display: none; position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: rgba(239, 68, 68, 0.2); color: var(--error); border: 1px solid var(--error); padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; font-size: 0.9rem; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-stop"></i> Stop Audio
+        </button>
+    </div>
+
+    <!-- Chat Area -->
+    <div id="chat-container">
+        {% if not chat_history %}
+        <div style="text-align: center; color: var(--text-light); margin: auto; padding: 2rem;">
+            <h3 style="font-weight: 600; font-size: 1.5rem; margin-bottom: 0.75rem; color: white;">
+                Ask anything from your course
+            </h3>
+            <p style="font-size: 1rem; color: var(--text-dim); max-width: 450px; margin: 0 auto;">
+                I'll explain concepts, provide examples, and answer questions based on your study material.
+            </p>
+        </div>
+        {% endif %}
+
+        {% for msg in chat_history %}
+        {% if msg.role == 'user' %}
+        <div style="align-self: flex-end; max-width: 80%;">
+            <div
+                style="background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.3); padding: 1rem 1.5rem; border-radius: 20px 20px 0 20px; color: white;">
+                {% if msg.image %}
+                <img src="{{ msg.image }}" alt="Uploaded"
+                    style="max-width: 100%; border-radius: 12px; margin-bottom: 0.5rem;">
+                {% endif %}
+                {{ msg.content }}
+            </div>
+        </div>
+        {% else %}
+        <div style="align-self: flex-start; max-width: 90%;">
+            <div style="display: flex; gap: 1rem;">
+                <div
+                    style="flex-shrink: 0; width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-robot" style="color: white; font-size: 0.9rem;"></i>
+                </div>
+                <div>
+                    <div
+                        style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 1.25rem; border-radius: 0 20px 20px 20px; color: var(--text-main); line-height: 1.6;">
+                        {{ msg.content|linebreaks }}
+                    </div>
+                    <button data-text="{{ msg.content }}" onclick="speakText(this.dataset.text)" class="btn-text"
+                        style="margin-top: 0.6rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; background: none; border: none; cursor: pointer; padding: 0;">
+                        <i class="fas fa-volume-up"></i> Read Aloud
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+
+        <div id="loading-indicator" style="display: none; align-self: flex-start; max-width: 80%;">
+            <div style="display: flex; gap: 1rem;">
+                <div
+                    style="flex-shrink: 0; width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%;">
+                </div>
+                <div
+                    style="background: rgba(255, 255, 255, 0.05); padding: 1rem 1.5rem; border-radius: 0 20px 20px 20px;">
+                    <div class="typing-dots"><span></span><span></span><span></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div style="padding: 1rem 0; flex-shrink: 0;">
+        <div style="display: flex; gap: 0.75rem; justify-content: center; margin-bottom: 1.5rem; flex-wrap: wrap;">
+            <button type="button" onclick="setQuickPrompt('Explain this concept simply')" class="chip">Explain
+                simply</button>
+            <button type="button" onclick="setQuickPrompt('Give me an example')" class="chip">Give example</button>
+            <button type="button" onclick="setQuickPrompt('How does this work?')" class="chip">How it works?</button>
+            <button type="button" onclick="setQuickPrompt('Summarize key points')" class="chip">Summarize</button>
+        </div>
+
+        <div class="glass-card" style="padding: 1rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 30px;">
+            <form method="post" enctype="multipart/form-data" onsubmit="handleSubmit()"
+                style="display: flex; gap: 0.75rem; align-items: center;">
+                {% csrf_token %}
+                <input type="file" id="imageInput" name="image" accept="image/*" style="display: none;"
+                    onchange="updateImagePreview()">
+
+                <button type="button" onclick="document.getElementById('imageInput').click()" class="icon-btn">
+                    <i class="fas fa-image" id="imageIcon"></i>
+                </button>
+
+                <div style="flex-grow: 1;">
+                    <input type="text" id="sentenceInput" name="sentence"
+                        placeholder="Ask a question, explain a sentence, or upload an image…" required
+                        class="chat-input">
+                </div>
+
+                <button type="submit" class="send-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+        <p style="text-align: center; font-size: 0.75rem; color: var(--text-dim); margin-top: 1rem;">
+            Explaining based on your course content context
+        </p>
+    </div>
+</div>
+
+<script>
+    const chatContainer = document.getElementById('chat-container');
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    function handleSubmit() {
+        document.getElementById('loading-indicator').style.display = 'block';
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        document.getElementById('sentenceInput').placeholder = "AI is thinking...";
+    }
+
+    function setQuickPrompt(text) {
+        const input = document.getElementById('sentenceInput');
+        input.value = text;
+        input.focus();
+        input.style.borderColor = 'var(--primary)';
+        setTimeout(() => input.style.borderColor = 'rgba(255, 255, 255, 0.1)', 500);
+    }
+
+    function updateImagePreview() {
+        if (document.getElementById('imageInput').files[0]) {
+            document.getElementById('imageIcon').style.color = 'var(--success)';
+            document.getElementById('sentenceInput').placeholder = "Image attached! Click send...";
+            document.getElementById('sentenceInput').required = false;
+        }
+    }
+
+    function speakText(text) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.95;
+        utterance.pitch = 1.0;
+        utterance.volume = 1;
+        utterance.lang = "en-US";
+
+        function loadVoicesAndSpeak() {
+            const voices = window.speechSynthesis.getVoices();
+            const preferred = voices.find(v => v.name.includes("Google US English")) ||
+                voices.find(v => v.name.includes("Samantha")) ||
+                voices.find(v => v.lang === "en-US");
+
+            if (preferred) utterance.voice = preferred;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        if (window.speechSynthesis.getVoices().length === 0) {
+            window.speechSynthesis.onvoiceschanged = loadVoicesAndSpeak;
+        } else {
+            loadVoicesAndSpeak();
+        }
+
+        utterance.onstart = () => document.getElementById('stopSpeakingBtn').style.display = 'flex';
+        utterance.onend = () => document.getElementById('stopSpeakingBtn').style.display = 'none';
+    }
+
+    function stopSpeaking() {
+        window.speechSynthesis.cancel();
+        document.getElementById('stopSpeakingBtn').style.display = 'none';
+    }
+
+    window.onload = function () {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        const input = document.getElementById('sentenceInput');
+        input.placeholder = "Ask a question, explain a sentence, or upload an image…";
+    }
+</script>
+{% endblock %}

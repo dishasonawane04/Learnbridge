@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}My Smart Notes - Learnbridge{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2rem 0;">
+    <div class="glass-card fade-in" style="padding: 2rem; margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h1 style="margin: 0; font-size: 2rem;">My <span class="gradient-text">Smart Notes</span></h1>
+                <p style="color: var(--text-muted); margin-top: 0.5rem;">Access your AI-generated study materials.</p>
+            </div>
+            <a href="{% url 'notes' %}?new=true" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Generate New Note
+            </a>
+        </div>
+
+        {% if notes %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+            {% for note in notes %}
+            <div class="glass-card"
+                style="padding: 1.5rem; transition: transform 0.2s; border: 1px solid rgba(255,255,255,0.05); background: rgba(15, 23, 42, 0.4);">
+                <h3 style="margin-top: 0; font-size: 1.25rem;">{{ note.topic }}</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">
+                    <i class="far fa-calendar-alt"></i> Created: {{ note.created_at|date:"M d, Y" }}
+                </p>
+                <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+                    <a href="{% url 'note_detail' note.id %}" class="btn btn-secondary"
+                        style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                        View Note <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 4rem 2rem; background: rgba(255,255,255,0.02); border-radius: 12px;">
+            <div
+                style="width: 64px; height: 64px; background: rgba(99, 102, 241, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                <i class="far fa-sticky-note" style="font-size: 2rem; color: var(--primary);"></i>
+            </div>
+            <h3>No notes yet</h3>
+            <p style="color: var(--text-muted); max-width: 400px; margin: 0 auto 1.5rem;">
+                Start by generating some notes with our AI tutor. It can summarize complex topics in seconds.
+            </p>
+            <a href="{% url 'notes' %}" class="btn btn-primary">Get Started</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

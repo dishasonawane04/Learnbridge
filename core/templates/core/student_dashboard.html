@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container" style="padding: 2rem 0;">
+    <!-- Dashboard Hero -->
+    <div class="glass-card fade-in"
+        style="margin-bottom: 3rem; position: relative; overflow: hidden; padding: 3rem; background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);">
+        <div style="position: relative; z-index: 1;">
+            <span class="badge badge-primary" style="margin-bottom: 1.5rem;">Student Dashboard</span>
+            <h1 style="margin-top: 0.5rem;">Welcome back,
+                <span class="gradient-text">
+                    {{ request.user.first_name|default:request.user.username }}
+                </span>!
+            </h1>
+            <p style="color: var(--text-muted); margin-top: 1.5rem; font-size: 1.25rem; max-width: 600px;">
+                Ready to continue your learning journey? Your personalized study path is waiting for you.
+            </p>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2.5rem;">
+                <a href="{% url 'quiz_subjects' %}" class="btn btn-primary" style="padding: 1rem 2rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                    Take a Quick Quiz
+                </a>
+                <a href="{% url 'study_plan' %}" class="btn btn-secondary" style="padding: 1rem 2rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    New Study Plan
+                </a>
+                <a href="{% url 'course_list' %}" class="btn btn-secondary" style="padding: 1rem 2rem;">
+                    <i class="fas fa-book"></i> Courses
+                </a>
+            </div>
+        </div>
+
+        <!-- Abstract background blobs -->
+        <div
+            style="position: absolute; top: -50px; right: -50px; width: 250px; height: 250px; background: var(--primary); filter: blur(100px); opacity: 0.15; border-radius: 50%;">
+        </div>
+        <div
+            style="position: absolute; bottom: -50px; left: -50px; width: 200px; height: 200px; background: var(--secondary); filter: blur(80px); opacity: 0.15; border-radius: 50%;">
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <!-- Streak Card -->
+        <div class="glass-card"
+            style="padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; border-left: 4px solid var(--warning);">
+            <div
+                style="width: 48px; height: 48px; background: rgba(245, 158, 11, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-fire" style="color: var(--warning); font-size: 1.5rem;"></i>
+            </div>
+            <div>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Study Streak</p>
+                <h3 style="font-size: 1.5rem; margin: 0.2rem 0 0 0;">{{ streak }} Days</h3>
+            </div>
+        </div>
+
+        <div class="glass-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem;">
+            <div
+                style="width: 48px; height: 48px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-check-circle" style="color: var(--primary); font-size: 1.5rem;"></i>
+            </div>
+            <div>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Topics Mastered</p>
+                <h3 style="font-size: 1.5rem; margin: 0.2rem 0 0 0;">{{ completed_topics }}</h3>
+            </div>
+        </div>
+
+        <div class="glass-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem;">
+            <div
+                style="width: 48px; height: 48px; background: rgba(16, 185, 129, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-clock" style="color: var(--success); font-size: 1.5rem;"></i>
+            </div>
+            <div>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Learning Time</p>
+                <h3 style="font-size: 1.5rem; margin: 0.2rem 0 0 0;">{{ total_time }}m</h3>
+            </div>
+        </div>
+
+        <div class="glass-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem;">
+            <div
+                style="width: 48px; height: 48px; background: rgba(236, 72, 153, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-star" style="color: var(--secondary); font-size: 1.5rem;"></i>
+            </div>
+            <div>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Avg Accuracy</p>
+                <h3 style="font-size: 1.5rem; margin: 0.2rem 0 0 0;">{{ avg_score }}%</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Recommendations Row -->
+    <div style="margin-bottom: 3rem;">
+        <h3 style="margin-bottom: 1.5rem;"><i class="fas fa-sparkles gradient-text"></i> AI-Powered Recommendations</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            {% for rec in recommendations %}
+            <div class="glass-card" style="padding: 1.5rem; border-top: 4px solid var(--primary);">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <h4 style="font-size: 1.1rem; margin: 0;">{{ rec.topic }}</h4>
+                    <span class="badge badge-primary">AI Peak</span>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">{{ rec.reason }}</p>
+                <a href="#" class="btn btn-primary" style="width: 100%; border-radius: 8px;">{{ rec.action }}</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Mastery & Analytics Grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+        <!-- Topic Mastery Heatmap-style list -->
+        <div class="glass-card">
+            <h3 style="font-size: 1.25rem; margin-bottom: 1.5rem;">Topic Mastery</h3>
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                {% for item in mastery_data %}
+                <div>
+                    <div
+                        style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                        <span>{{ item.topic }}</span>
+                        <span style="color: var(--text-muted);">{{ item.mastery }}%</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                        <div
+                            style="width: {{ item.mastery }}%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary));">
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-muted); text-align: center; padding: 1rem;">Start practicing to see mastery
+                    data.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <h3 style="font-size: 1.25rem; margin-bottom: 1.5rem;">Learning Focus</h3>
+            <canvas id="topicChart" height="250"></canvas>
+        </div>
+    </div>
+
+    <!-- Performance Trend -->
+    <div class="glass-card" style="padding: 2rem; margin-bottom: 3rem;">
+        <h3 style="font-size: 1.25rem; margin-bottom: 1.5rem;">Performance Trend</h3>
+        <canvas id="performanceChart" height="80"></canvas>
+    </div>
+
+    <!-- Activity Timeline -->
+    <div class="glass-card" style="padding: 2rem;">
+        <h3 style="margin: 0 0 1.5rem 0; font-size: 1.25rem;">Recent Activity</h3>
+        {% if recent_activity %}
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for act in recent_activity %}
+            <div
+                style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: rgba(15, 23, 42, 0.3); border-radius: 12px; border-left: 4px solid var(--primary);">
+                <div>
+                    <h4 style="margin: 0; font-size: 1.05rem;">{{ act.topic }}</h4>
+                    <p style="margin: 0.2rem 0 0 0; font-size: 0.9rem; color: var(--text-light);">
+                        {{ act.app_name|title }} • {{ act.timestamp|timesince }} ago</p>
+                </div>
+                <div style="text-align: right;">
+                    {% if act.quiz_score is not None %}
+                    <span class="badge {% if act.quiz_score >= 70 %}badge-success{% else %}badge-warning{% endif %}">
+                        {{ act.quiz_score }}%
+                    </span>
+                    {% endif %}
+                    <div style="font-size: 0.8rem; color: var(--text-light); margin-top: 0.3rem;">{{ act.time_spent }}s
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color: var(--text-light); text-align: center; padding: 2rem;">No recent activity found. Start a lesson
+            to see progress!</p>
+        {% endif %}
+    </div>
+</div>
+
+{{ topic_dist|json_script:"topic-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Mock Data for demonstration if empty, or use real data
+    const perfCtx = document.getElementById('performanceChart').getContext('2d');
+    new Chart(perfCtx, {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Score %',
+                data: [65, 78, 82, 70, 85, 92, 88],
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+
+    const topicData = JSON.parse(document.getElementById('topic-data').textContent);
+
+    const topicCtx = document.getElementById('topicChart').getContext('2d');
+    new Chart(topicCtx, {
+        type: 'doughnut',
+        data: {
+            labels: topicData.map(t => t.topic),
+            datasets: [{
+                data: topicData.map(t => t.count),
+                backgroundColor: ['#6366f1', '#ec4899', '#34d399', '#fbbf24'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } },
+            cutout: '70%'
+        }
+    });
+</script>
+{% endblock %}
