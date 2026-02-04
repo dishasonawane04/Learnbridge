@@ -4,7 +4,13 @@
 {% block content %}
 <!-- Hero Section -->
 <section style="text-align: center; padding: 6rem 1rem; position: relative; overflow: hidden;">
-    <!-- Background Glow -->
+    <!-- Background Glow & Animated Blobs -->
+    <div
+        style="position: absolute; top: 10%; left: 5%; width: 300px; height: 300px; background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%); filter: blur(40px); animation: float 15s infinite alternate; z-index: -1;">
+    </div>
+    <div
+        style="position: absolute; top: 60%; right: 5%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(168, 85, 247, 0.08) 0%, transparent 70%); filter: blur(50px); animation: float 20s infinite alternate-reverse; z-index: -1;">
+    </div>
     <div
         style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 600px; background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0, 0, 0, 0) 70%); z-index: -1; pointer-events: none;">
     </div>
@@ -12,8 +18,8 @@
     <div class="fade-in">
         <h1
             style="font-size: 3.5rem; font-weight: 800; line-height: 1.2; margin-bottom: 1.5rem; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
-            Your Courses. <span class="gradient-text">Smarter Learning.</span><br>
-            Powered by AI.
+            Your Courses <span class="gradient-text">Smarter Learning</span><br>
+            Powered by AI
         </h1>
         <p style="font-size: 1.25rem; color: var(--text-light); max-width: 700px; margin: 0 auto 3rem;">
             Learnbridge adapts to your syllabus—generating explanations, quizzes, notes, and study plans from your
@@ -34,6 +40,27 @@
             {% endif %}
         </div>
         <p style="margin-top: 1.5rem; color: var(--text-dim); font-size: 0.9rem;">Start learning from your courses</p>
+    </div>
+</section>
+
+<!-- About Section -->
+<section class="container" style="margin-bottom: 6rem; text-align: center;">
+    <div class="glass-card fade-in"
+        style="padding: 4rem 2rem; border: 1px solid rgba(99, 102, 241, 0.2); position: relative; overflow: hidden;">
+        <!-- Subtle Glow -->
+        <div
+            style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%); pointer-events: none;">
+        </div>
+
+        <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem; color: var(--text-main); font-weight: 700;">What is
+            Learnbridge?</h2>
+        <p style="font-size: 1.2rem; color: var(--text-light); max-width: 850px; margin: 0 auto; line-height: 1.8;">
+            Learnbridge is your AI-powered personal tutor that transforms static course materials into dynamic,
+            interactive learning experiences.
+            We bridge the gap between complex content and student understanding by providing instant clarity,
+            personalized guidance, and
+            smarter study tools tailored specifically to your syllabus.
+        </p>
     </div>
 </section>
 
@@ -216,14 +243,280 @@
             <a href="{% url 'analytics:student_dashboard' %}" class="btn btn-primary" style="text-align: center;">View
                 Analytics</a>
         </div>
-    </div>
-</section>
+        <!-- How It Works Section -->
+        <section class="container" style="margin-bottom: 8rem; position: relative;">
+            <div style="text-align: center; margin-bottom: 5rem;">
+                <h2 style="font-size: 3rem; margin-bottom: 1rem; color: var(--text-main); font-weight: 800;">How It
+                    Works</h2>
+                <p style="color: var(--text-dim); font-size: 1.1rem;">Your journey to mastery in three simple steps</p>
+            </div>
 
-<style>
-    .feature-card:hover {
-        transform: translateY(-5px);
-        border-color: rgba(99, 102, 241, 0.5) !important;
-        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
-    }
-</style>
-{% endblock %}
+            <!-- Visual Connector Line (Desktop Only) -->
+            <div class="step-connector"
+                style="position: absolute; top: 180px; left: 15%; right: 15%; height: 2px; background: repeating-linear-gradient(to right, var(--glass-border) 0%, var(--glass-border) 50%, transparent 50%, transparent 100%); background-size: 20px 100%; z-index: -1;">
+            </div>
+
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 4rem; position: relative;">
+                <!-- Step 1 -->
+                <div class="step-card" style="text-align: center; position: relative;">
+                    <div class="step-icon"
+                        style="width: 100px; height: 100px; margin: 0 auto 2.5rem; background: rgba(99, 102, 241, 0.1); border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: var(--primary); border: 2px solid rgba(99, 102, 241, 0.3); transform: rotate(-5deg); transition: transform 0.3s ease;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div
+                        style="font-size: 0.8rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;">
+                        Step 01</div>
+                    <h3 style="font-size: 1.5rem; margin-bottom: 1.2rem; color: var(--text-main);">Upload Materials</h3>
+                    <p style="color: var(--text-light); line-height: 1.6;">Upload your PDFs, textbooks, or classroom
+                        notes. Our
+                        AI supports various formats to get you started instantly.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-card" style="text-align: center; position: relative;">
+                    <div class="step-icon"
+                        style="width: 100px; height: 100px; margin: 0 auto 2.5rem; background: rgba(168, 85, 247, 0.1); border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: var(--accent); border: 2px solid rgba(168, 85, 247, 0.3); transform: rotate(5deg); transition: transform 0.3s ease;">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <div
+                        style="font-size: 0.8rem; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;">
+                        Step 02</div>
+                    <h3 style="font-size: 1.5rem; margin-bottom: 1.2rem; color: var(--text-main);">AI Analysis</h3>
+                    <p style="color: var(--text-light); line-height: 1.6;">Our AI processes your content, extracting key
+                        concepts and creating a structured learning roadmap just for you.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="step-card" style="text-align: center; position: relative;">
+                    <div class="step-icon"
+                        style="width: 100px; height: 100px; margin: 0 auto 2.5rem; background: rgba(34, 197, 94, 0.1); border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: var(--success); border: 2px solid rgba(34, 197, 94, 0.3); transform: rotate(-5deg); transition: transform 0.3s ease;">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div
+                        style="font-size: 0.8rem; font-weight: 800; color: var(--success); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;">
+                        Step 03</div>
+                    <h3 style="font-size: 1.5rem; margin-bottom: 1.2rem; color: var(--text-main);">Master Your Course
+                    </h3>
+                    <p style="color: var(--text-light); line-height: 1.6;">Generate quizzes, get simple explanations,
+                        and follow
+                        an adaptive study plan to reach your academic goals.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section class="container" style="margin-bottom: 8rem;">
+            <div style="text-align: center; margin-bottom: 5rem;">
+                <h2 style="font-size: 2.8rem; margin-bottom: 1rem; color: var(--text-main); font-weight: 800;">Trusted
+                    by
+                    Students</h2>
+                <p style="color: var(--text-dim); font-size: 1.1rem;">See how Learnbridge is transforming the learning
+                    experience</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2.5rem;">
+                <!-- Testimonial 1 -->
+                <div class="glass-card" style="padding: 2.5rem; position: relative;">
+                    <div style="font-size: 1.5rem; color: var(--primary); margin-bottom: 1.5rem;"><i
+                            class="fas fa-quote-left"></i></div>
+                    <p style="color: var(--text-light); line-height: 1.7; font-style: italic; margin-bottom: 2rem;">
+                        "Learnbridge turned my 500-page textbook into manageable quizzes and study plans. I went from
+                        feeling
+                        overwhelmed to feeling prepared in days."
+                    </p>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div
+                            style="width: 45px; height: 45px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                            AS</div>
+                        <div>
+                            <div style="font-weight: 700; color: var(--text-main);">Alex Smith</div>
+                            <div style="font-size: 0.85rem; color: var(--text-dim);">CS Undergraduate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 2 -->
+                <div class="glass-card" style="padding: 2.5rem; position: relative;">
+                    <div style="font-size: 1.5rem; color: var(--accent); margin-bottom: 1.5rem;"><i
+                            class="fas fa-quote-left"></i></div>
+                    <p style="color: var(--text-light); line-height: 1.7; font-style: italic; margin-bottom: 2rem;">
+                        "The AI Explainer is like having a professor on call 24/7. It breaks down technical concepts in
+                        exactly
+                        the way I need to hear them."
+                    </p>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div
+                            style="width: 45px; height: 45px; background: linear-gradient(135deg, var(--accent), var(--success)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                            LM</div>
+                        <div>
+                            <div style="font-weight: 700; color: var(--text-main);">Lisa Miller</div>
+                            <div style="font-size: 0.85rem; color: var(--text-dim);">Medical Student</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 3 -->
+                <div class="glass-card" style="padding: 2.5rem; position: relative;">
+                    <div style="font-size: 1.5rem; color: var(--success); margin-bottom: 1.5rem;"><i
+                            class="fas fa-quote-left"></i></div>
+                    <p style="color: var(--text-light); line-height: 1.7; font-style: italic; margin-bottom: 2rem;">
+                        "I love how it links everything together. The notes generation and quiz integration make my
+                        revision
+                        sessions incredibly efficient."
+                    </p>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div
+                            style="width: 45px; height: 45px; background: linear-gradient(135deg, var(--success), var(--primary)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                            RJ</div>
+                        <div>
+                            <div style="font-weight: 700; color: var(--text-main);">Ryan Jones</div>
+                            <div style="font-size: 0.85rem; color: var(--text-dim);">Economics Major</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="container" style="margin-bottom: 8rem; max-width: 900px;">
+            <div style="text-align: center; margin-bottom: 4rem;">
+                <h2 style="font-size: 2.5rem; color: var(--text-main); font-weight: 800; margin-bottom: 1rem;">
+                    Frequently Asked
+                    Questions</h2>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <details class="glass-card faq-item"
+                    style="padding: 1.5rem 2rem; border-radius: 16px; cursor: pointer;">
+                    <summary
+                        style="font-weight: 700; color: var(--text-main); font-size: 1.1rem; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                        How does the AI process my files?
+                        <i class="fas fa-chevron-down" style="font-size: 0.9rem; transition: transform 0.3s ease;"></i>
+                    </summary>
+                    <p style="margin-top: 1.5rem; color: var(--text-light); line-height: 1.6;">
+                        Our AI uses advanced NLP models to scan your PDFs, documents, or notes. It extracts key
+                        concepts,
+                        identifies definitions, and maps out the relationships between different topics to create your
+                        personalized learning roadmap.
+                    </p>
+                </details>
+
+                <details class="glass-card faq-item"
+                    style="padding: 1.5rem 2rem; border-radius: 16px; cursor: pointer;">
+                    <summary
+                        style="font-weight: 700; color: var(--text-main); font-size: 1.1rem; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                        Can I use it for any subject?
+                        <i class="fas fa-chevron-down" style="font-size: 0.9rem; transition: transform 0.3s ease;"></i>
+                    </summary>
+                    <p style="margin-top: 1.5rem; color: var(--text-light); line-height: 1.6;">
+                        Yes! Learnbridge is designed to be subject-agnostic. Whether you're studying STEM subjects,
+                        humanities,
+                        or law, the AI can analyze your specific course content and generate relevant study materials.
+                    </p>
+                </details>
+
+                <details class="glass-card faq-item"
+                    style="padding: 1.5rem 2rem; border-radius: 16px; cursor: pointer;">
+                    <summary
+                        style="font-weight: 700; color: var(--text-main); font-size: 1.1rem; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                        Is my data secure?
+                        <i class="fas fa-chevron-down" style="font-size: 0.9rem; transition: transform 0.3s ease;"></i>
+                    </summary>
+                    <p style="margin-top: 1.5rem; color: var(--text-light); line-height: 1.6;">
+                        Data privacy is our top priority. Your uploaded materials are encrypted and stored securely. We
+                        do not
+                        use your personal notes to train public AI models.
+                    </p>
+                </details>
+            </div>
+        </section>
+
+        <!-- Final CTA Section -->
+        <section class="container" style="margin-bottom: 6rem;">
+            <div class="glass-card"
+                style="padding: 5rem 2rem; text-align: center; border: 1px solid rgba(99, 102, 241, 0.4); background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1), transparent); border-radius: 32px;">
+                <h2
+                    style="font-size: 3rem; font-weight: 800; margin-bottom: 2rem; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+                    Ready to Master Your Future?
+                </h2>
+                <p style="font-size: 1.25rem; color: var(--text-light); max-width: 600px; margin: 0 auto 3rem;">
+                    Join thousands of students using AI to learn smarter, not harder.
+                </p>
+                {% if not user.is_authenticated %}
+                <a href="{% url 'login' %}" class="btn btn-primary"
+                    style="padding: 1.25rem 4rem; font-size: 1.2rem; box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);">
+                    Start Your Journey Now <i class="fas fa-arrow-right" style="margin-left: 0.75rem;"></i>
+                </a>
+                {% else %}
+                <a href="{% url 'dashboard' %}" class="btn btn-primary"
+                    style="padding: 1.25rem 4rem; font-size: 1.2rem; box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);">
+                    Level Up Your Skills <i class="fas fa-chevron-right" style="margin-left: 0.75rem;"></i>
+                </a>
+                {% endif %}
+            </div>
+        </section>
+        <style>
+            .feature-card:hover {
+                transform: translateY(-5px);
+                border-color: rgba(99, 102, 241, 0.5) !important;
+                box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
+            }
+
+            .step-card:hover .step-icon {
+                transform: rotate(0deg) scale(1.1) !important;
+                background: rgba(99, 102, 241, 0.2);
+            }
+
+            details[open] summary i {
+                transform: rotate(180deg);
+            }
+
+            .faq-item:hover {
+                border-color: rgba(99, 102, 241, 0.4) !important;
+            }
+
+            /* Scroll Reveal Classes */
+            .reveal {
+                opacity: 0;
+                transform: translateY(30px);
+                transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+            }
+
+            .reveal.active {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            @keyframes float {
+                0% {
+                    transform: translate(0, 0) rotate(0deg);
+                }
+
+                100% {
+                    transform: translate(20px, 40px) rotate(5deg);
+                }
+            }
+        </style>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const observerOptions = {
+                    threshold: 0.15
+                };
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('active');
+                        }
+                    });
+                }, observerOptions);
+
+                document.querySelectorAll('section, .glass-card, .step-card').forEach(el => {
+                    el.classList.add('reveal');
+                    observer.observe(el);
+                });
+            });
+        </script>
+        {% endblock %}

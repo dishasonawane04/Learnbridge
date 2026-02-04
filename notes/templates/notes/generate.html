@@ -29,31 +29,30 @@
     </div>
 
     {% if response %}
-    <div id="notes-section" class="glass-card fade-in"
-        style="padding: 3rem; background: white; color: #1e293b; position: relative;">
-        <div style="position: absolute; top: 1rem; right: 2rem; display: flex; gap: 0.5rem;" class="no-print">
-
+    <div id="notes-section" class="glass-card fade-in note-preview-container"
+        style="padding: 3rem; position: relative; margin-top: 2rem;">
+        <div style="position: absolute; top: 1.5rem; right: 2rem; display: flex; gap: 0.75rem;" class="no-print">
             <form method="post" style="display: inline;">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="save">
                 <input type="hidden" name="topic" value="{{ topic }}">
                 <input type="hidden" name="content" value="{{ response }}">
-                <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
-                    <i class="fas fa-save"></i> Save to Notebook
+                <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">
+                    <i class="fas fa-save" style="margin-right: 0.5rem;"></i> Save to Notebook
                 </button>
             </form>
 
             <button onclick="window.print()" class="btn btn-secondary"
-                style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 0.5rem 1rem; font-size: 0.85rem;">
-                <i class="fas fa-print"></i> Print / PDF
+                style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">
+                <i class="fas fa-print" style="margin-right: 0.5rem;"></i> Print / PDF
             </button>
         </div>
 
-        <div style="line-height: 1.6; font-family: 'Inter', sans-serif;">
-            {{ response|linebreaks }}
+        <div class="note-content">
+            {{ response_html|safe }}
         </div>
 
-        <div style="margin-top: 4rem; text-align: center; display: flex; gap: 1rem; justify-content: center;"
+        <div style="margin-top: 4rem; text-align: center; display: flex; gap: 1.25rem; justify-content: center;"
             class="no-print">
             <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="padding: 0.8rem 2.5rem;">
                 Back to Dashboard
@@ -67,6 +66,66 @@
 </div>
 
 <style>
+    .note-preview-container {
+        background: rgba(15, 23, 42, 0.4) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        color: var(--text-main) !important;
+    }
+
+    .note-content {
+        line-height: 1.8;
+        font-family: 'Inter', sans-serif;
+        color: var(--text-main);
+    }
+
+    .note-content h1,
+    .note-content h2,
+    .note-content h3 {
+        color: white;
+        margin-top: 2.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .note-content h1 {
+        font-size: 2.2rem;
+        border-bottom: 2px solid var(--primary);
+        padding-bottom: 0.75rem;
+    }
+
+    .note-content h2 {
+        font-size: 1.6rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 0.5rem;
+    }
+
+    .note-content ul,
+    .note-content ol {
+        padding-left: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .note-content li {
+        margin-bottom: 0.75rem;
+    }
+
+    .note-content code {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-family: 'Fira Code', monospace;
+        font-size: 0.9em;
+        color: var(--accent);
+    }
+
+    .note-content pre {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 1.5rem;
+        border-radius: 12px;
+        overflow-x: auto;
+        margin: 1.5rem 0;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
     @media print {
         .no-print {
             display: none !important;
@@ -74,11 +133,25 @@
 
         body {
             background: white !important;
+            color: black !important;
         }
 
-        .card {
-            box-shadow: none !important;
+        .note-preview-container {
+            background: white !important;
+            color: black !important;
             border: none !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+        }
+
+        .note-content h1,
+        .note-content h2,
+        .note-content h3 {
+            color: black !important;
+        }
+
+        .note-content {
+            color: #333 !important;
         }
     }
 </style>

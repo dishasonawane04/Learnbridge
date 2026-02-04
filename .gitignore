@@ -1,5 +1,5 @@
 # ===============================
-# Python bytecode
+# Python / Byte-compiled
 # ===============================
 __pycache__/
 *.pyc
@@ -11,27 +11,16 @@ __pycache__/
 # ===============================
 db.sqlite3
 *.sqlite3
+.env
+*.env
+**/.env
+*.pid
+*.log
 staticfiles/
 media/
 
 # ===============================
-# Environment variables
-# ===============================
-.env
-*.env
-**/.env
-
-# ===============================
-# Logs & temp files
-# ===============================
-*.log
-check_log.txt
-check_results.txt
-error_output.txt
-migration_error.txt
-
-# ===============================
-# Virtual environments
+# Virtual Environments
 # ===============================
 env/
 venv/
@@ -39,12 +28,17 @@ venv/
 */venv/
 
 # ===============================
+# Django Migrations
+# ===============================
+**/migrations/__pycache__/
+
+# ===============================
 # IDEs & Editors
 # ===============================
 .vscode/
 .idea/
 *.suo
-*.ntvs*
+.ntvs*
 *.njsproj
 *.sln
 
@@ -55,29 +49,29 @@ venv/
 Thumbs.db
 
 # ===============================
-# Backup / generated data files
+# Backup / Sensitive Data
 # ===============================
 sqlite_backup.json
 clean_backup.json
 full_data.json
+emt.txt
 
 # ===============================
-# Allow important files explicitly
+# Data files (ignore by default)
 # ===============================
-!requirements.txt
-!README.md
-!IMPLEMENTATION_SUMMARY.md
-!QUICKSTART.md
-!VERIFICATION_CHECKLIST.md
+*.json
+
+# Allow specific JSON files
+!docs/*.json
+!suite/field_config/*.json
 
 # ===============================
-# Allow Node manifests if present
+# Node (allowed)
 # ===============================
 !package.json
 !package-lock.json
 
 # ===============================
-# Allow config JSONs (important)
+# Visual testing
 # ===============================
-!suite/field_config/*.json
-!docs/*.json
+visual-tests/**-snapshots

@@ -9,12 +9,12 @@ import asyncio
 from asgiref.sync import async_to_sync
 
 SUBJECTS = [
-    {"key": "Python", "name": "Python Programming", "icon": "🐍"},
-    {"key": "Machine Learning", "name": "Machine Learning", "icon": "🤖"},
-    {"key": "Data Science", "name": "Data Science", "icon": "📊"},
-    {"key": "Web Development", "name": "Web Development", "icon": "💻"},
-    {"key": "Database", "name": "Database & SQL", "icon": "🗄️"},
-    {"key": "Cloud Computing", "name": "Cloud Computing", "icon": "☁️"},
+    {"key": "Python", "name": "Python Programming", "icon": "fab fa-python"},
+    {"key": "Machine Learning", "name": "Machine Learning", "icon": "fas fa-brain"},
+    {"key": "Data Science", "name": "Data Science", "icon": "fas fa-chart-bar"},
+    {"key": "Web Development", "name": "Web Development", "icon": "fas fa-code"},
+    {"key": "Database", "name": "Database & SQL", "icon": "fas fa-database"},
+    {"key": "Cloud Computing", "name": "Cloud Computing", "icon": "fas fa-cloud"},
 ]
 
 async def generate_quiz_questions(subject, num_questions=5, context=None):
