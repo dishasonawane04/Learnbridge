@@ -12,14 +12,18 @@ except Exception as e:
     SUPPORT_SYSTEM_PROMPT = "You are a helpful Learning Support Assistant."
     print(f"Error loading prompt: {e}")
 
-def get_support_response(user_message, mode='text', stream=False):
+def get_support_response(user_message, mode='text', stream=False, context=None):
     """
     Generates a response from Ollama using the Support Persona.
     Supports streaming.
     """
     try:
+        current_system_prompt = SUPPORT_SYSTEM_PROMPT
+        if context:
+            current_system_prompt += f"\n\nCONTEXT:\n{context}"
+
         messages = [
-            {'role': 'system', 'content': SUPPORT_SYSTEM_PROMPT},
+            {'role': 'system', 'content': current_system_prompt},
             {'role': 'user', 'content': user_message}
         ]
 

@@ -1,0 +1,155 @@
+{% extends 'letter_of_recommendation_generator/base.html' %}
+{% load static %}
+
+{% block title %}{{ unit.title }} | {{ unit.course.title }}{% endblock %}
+
+{% block content %}
+<style>
+    .hub-card {
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        transition: transform 0.3s ease, border-color 0.3s ease;
+        cursor: pointer;
+    }
+
+    .hub-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--primary) !important;
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.15);
+        background: rgba(15, 23, 42, 0.6);
+    }
+
+    .content-area {
+        background: rgba(15, 23, 42, 0.3);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 3rem;
+        min-height: 400px;
+        line-height: 1.8;
+        font-size: 1.05rem;
+    }
+</style>
+
+<div class="mb-4 d-flex justify-content-between align-items-center fade-in">
+    <a href="{% url 'course:detail' unit.course.id %}" class="text-decoration-none text-muted hover-text-primary">
+        <i class="fas fa-arrow-left"></i> Back to {{ unit.course.title }}
+    </a>
+
+    <div>
+        {% if previous_unit %}
+        <a href="{% url 'course:unit_detail' previous_unit.id %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-chevron-left"></i> Previous
+        </a>
+        {% endif %}
+        {% if next_unit %}
+        <a href="{% url 'course:unit_detail' next_unit.id %}" class="btn btn-outline-secondary btn-sm">
+            Next <i class="fas fa-chevron-right"></i>
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mb-5 fade-in">
+    <div class="col-12 text-center">
+        <h6 class="text-uppercase text-primary fw-bold tracking-wide mb-2">Unit {{ unit.order }}</h6>
+        <h1 class="display-4 fw-bold text-white mb-3">{{ unit.title }}</h1>
+    </div>
+</div>
+
+<!-- Integration Hub -->
+<div class="row mb-5 g-4 justify-content-center fade-in" style="animation-delay: 0.1s;">
+    <!-- AI Tutor -->
+    <div class="col-md-3">
+        <a href="{% url 'ai_tutor:start_unit_chat' unit.id %}" class="text-decoration-none">
+            <div class="card h-100 hub-card text-center py-4 px-3">
+                <div class="card-body p-0">
+                    <div class="mb-3" style="font-size: 2.5rem; color: var(--primary);">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h5 class="card-title text-white mb-2">AI Tutor</h5>
+                    <p class="card-text text-muted small">Ask questions about this unit</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Learning Support -->
+    <div class="col-md-3">
+        <a href="{% url 'learning_support:start_unit_support' unit.id %}" class="text-decoration-none">
+            <div class="card h-100 hub-card text-center py-4 px-3">
+                <div class="card-body p-0">
+                    <div class="mb-3" style="font-size: 2.5rem; color: var(--warning);">
+                        <i class="fas fa-life-ring"></i>
+                    </div>
+                    <h5 class="card-title text-white mb-2">Help Me Understand</h5>
+                    <p class="card-text text-muted small">Get simplified explanations & hints</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Flashcards -->
+    <div class="col-md-3">
+        <a href="{% url 'flashcard_generator:generate_from_unit' unit.id %}" class="text-decoration-none">
+            <div class="card h-100 hub-card text-center py-4 px-3">
+                <div class="card-body p-0">
+                    <div class="mb-3" style="font-size: 2.5rem; color: var(--success);">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <h5 class="card-title text-white mb-2">Flashcards</h5>
+                    <p class="card-text text-muted small">Generate cards from these notes</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Prerequisite Check -->
+    <div class="col-md-3">
+        <a href="{% url 'prerequisite_checker:check_unit_readiness' unit.id %}" class="text-decoration-none">
+            <div class="card h-100 hub-card text-center py-4 px-3">
+                <div class="card-body p-0">
+                    <div class="mb-3" style="font-size: 2.5rem; color: var(--danger);">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h5 class="card-title text-white mb-2">Am I Ready?</h5>
+                    <p class="card-text text-muted small">Check prerequisites for this unit</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Content/Notes Section -->
+<div class="row fade-in" style="animation-delay: 0.2s;">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="text-white"><i class="fas fa-book-open text-primary"></i> Study Notes</h3>
+            {% if request.user.userprofile.role == 'Teacher' %}
+            <button class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-pen"></i> Edit Content
+            </button>
+            {% endif %}
+        </div>
+
+        <div class="content-area text-white shadow-lg">
+            {% if unit.content %}
+            {{ unit.content|linebreaks }}
+            {% else %}
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-file-alt fs-1 mb-3 opacity-50"></i>
+                <p>No notes have been added for this unit yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-text-primary:hover {
+        color: var(--primary) !important;
+    }
+</style>
+{% endblock %}

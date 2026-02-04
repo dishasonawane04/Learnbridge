@@ -8,6 +8,8 @@ from .ai_logic import generate_recommendation_letter
 from accounts.decorators import teacher_required
 from analytics.models import ActivityLog
 import io
+from django.db.models import Avg
+from course.models import Course
 
 # Document generation imports
 from xhtml2pdf import pisa
@@ -52,7 +54,30 @@ def create_letter(request):
 
             return redirect('letter_of_recommendation_generator:preview_letter', pk=letter_request.pk)
     else:
-        form = LetterRequestForm()
+        initial_data = {}
+        course_id = request.GET.get('course_id')
+        student_id = request.GET.get('student_id')
+        
+        if course_id and student_id:
+            # Auto-fill Logic
+            # 1. Get Course & Student info (mock or real if User model had name)
+            # student = User.objects.get(id=student_id) ...
+            
+            # 2. Analyze Performance
+            # Calculate avg quiz score, decks created, etc.
+            logs = ActivityLog.objects.filter(user_id=student_id)
+            
+            quiz_score_avg = logs.filter(activity_type='quiz_completed').aggregate(Avg('score'))['score__avg']
+            decks_count = logs.filter(activity_type='deck_generated').count()
+            
+            perf_text = f"Analyzed Data:\n- Flashcard Decks Created: {decks_count}\n"
+            if quiz_score_avg:
+                perf_text += f"- Average Quiz Score: {quiz_score_avg:.1f}%\n"
+                
+            initial_data['academic_performance'] = perf_text
+            initial_data['purpose'] = 'higher_studies' # Default
+            
+        form = LetterRequestForm(initial=initial_data)
     
     return render(request, 'letter_of_recommendation_generator/form.html', {'form': form})
 

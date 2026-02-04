@@ -21,6 +21,7 @@ class Course(models.Model):
 class CourseUnit(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='units')
     title = models.CharField(max_length=255)
+    content = models.TextField(blank=True, help_text="Main content/notes for this unit")
     order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 

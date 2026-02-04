@@ -29,7 +29,7 @@ def forgot_password_view(request):
             send_mail(
                 'Password Reset OTP - LearnBridge',
                 f'Your One-Time Password for password reset is: {otp}\n\nThis code expires in 10 minutes.',
-                'noreply@learnbridge.com',
+                settings.DEFAULT_FROM_EMAIL,
                 [email],
                 fail_silently=False,
             )
@@ -121,7 +121,7 @@ def login_view(request):
             login(request, user)
             
             try:
-                profile = user.userprofile
+                profile = user.account_profile
                 messages.success(request, f"Welcome back, {profile.full_name} ({profile.role})!")
             except UserProfile.DoesNotExist:
                 # Handle fallback if no profile exists (e.g., admin users created via CLI)

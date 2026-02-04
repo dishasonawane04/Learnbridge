@@ -9,6 +9,7 @@ import os
 from .models import FlashcardDeck, Flashcard
 from .services.flashcard_ai import generate_flashcards, explain_card_content, generate_quiz_from_cards
 from analytics.models import ActivityLog
+from course.models import CourseUnit
 
 def flashcard_home(request):
     # Get decks ordered by creation
@@ -286,3 +287,48 @@ def submit_quiz_api(request):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
     return JsonResponse({"error": "Invalid method"}, status=405)
+
+@csrf_exempt
+def generate_from_unit(request, unit_id):
+    """Generates a flashcard deck directly from a Course Unit."""
+    unit = get_object_or_404(CourseUnit, id=unit_id)
+    
+    # Check if a deck already exists for this unit?
+    existing_deck = FlashcardDeck.objects.filter(unit=unit).last()
+         
+    if not unit.content or len(unit.content) < 50:
+        return redirect('course:unit_detail', unit_id=unit.id)
+
+    # Call AI Service
+    cards_data = generate_flashcards(input_text=unit.content, difficulty="Medium")
+    
+    if not cards_data:
+        return redirect('course:unit_detail', unit_id=unit.id)
+        
+    # Create Deck linked to Unit
+    deck = FlashcardDeck.objects.create(
+        title=f"Revise: {unit.title}",
+        unit=unit,
+        difficulty="Medium"
+    )
+    
+    for card in cards_data:
+        if 'front' in card and 'back' in card:
+            Flashcard.objects.create(
+                deck=deck,
+                front=card['front'],
+                back=card['back'],
+                exam_tip=card.get('exam_tip', "")
+            )
+            
+    # Log Activity
+    if request.user.is_authenticated:
+        ActivityLog.objects.create(
+            user=request.user,
+            app_name='flashcard',
+            activity_type='deck_generated',
+            topic=deck.title,
+            metadata={'deck_id': str(deck.id), 'source': 'course_unit'}
+        )
+
+    return redirect('flashcard_generator:study_deck', deck_id=deck.id)

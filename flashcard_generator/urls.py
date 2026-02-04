@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
+app_name = 'flashcard_generator'
+
 urlpatterns = [
     path('', views.flashcard_home, name='flashcard_home'),
     path('study/<int:deck_id>/', views.study_deck_view, name='study_deck'),
@@ -13,4 +15,5 @@ urlpatterns = [
     path('api/deck/<int:deck_id>/delete/', views.delete_deck_api, name='delete_deck_api'),
     path('api/quiz/submit/', views.submit_quiz_api, name='submit_quiz_api'),
     path('progress/', views.progress_view, name='flashcard_progress'),
+    path('from-unit/<int:unit_id>/', views.generate_from_unit, name='generate_from_unit'),
 ]

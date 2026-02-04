@@ -72,7 +72,12 @@ def dashboard(request):
     
     if request.user.is_authenticated:
         try:
-            user_role = request.user.userprofile.role
+            # Try accounts profile first
+            if hasattr(request.user, 'account_profile'):
+                user_role = request.user.account_profile.role
+            elif hasattr(request.user, 'core_profile'):
+                # Fallback to core profile if it has role, though core profile role field might be different
+                 user_role = request.user.core_profile.role.capitalize() # core uses 'student'/'teacher' lowercase
             print(f"DEBUG: User {request.user.username} has role: {user_role}")
         except Exception as e:
             print(f"DEBUG: Error getting profile for {request.user.username}: {e}")
@@ -94,4 +99,4 @@ def dashboard(request):
         if show_app:
             visible_apps.append(app)
 
-    return render(request, "dashboard.html", {"apps": visible_apps})
+    return render(request, "dashboard.html", {"apps": visible_apps, "user_role": user_role})

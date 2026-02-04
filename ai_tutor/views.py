@@ -9,6 +9,7 @@ import os
 from .models import Chat, ChatMessage
 from .ai_logic import chat_with_ai
 from analytics.models import ActivityLog
+from course.models import CourseUnit
 
 # @login_required # Removed for Anonymous Access
 def tutor_home(request):
@@ -113,6 +114,14 @@ def chat_api(request):
             prompt_for_ai = user_message
             if not user_message and (image_path or doc_path):
                 prompt_for_ai = "Analyze this content."
+            
+            # --- CONTEXT INJECTION FROM COURSE UNIT ---
+            if chat.unit and chat.unit.content:
+                context_prompt = f"Context: You are helping the student with the course unit '{chat.unit.title}'.\n"
+                context_prompt += f"Unit Content:\n{chat.unit.content}\n\n"
+                context_prompt += f"User Question: {prompt_for_ai}"
+                prompt_for_ai = context_prompt
+            # ------------------------------------------
 
             mode = 'voice' if msg_type == 'voice' else 'text'
 
@@ -282,3 +291,19 @@ def get_share_link(request, chat_id):
     # Ensure absolute URL
     share_url = request.build_absolute_uri(f"/ai/share/{chat.share_token}/")
     return JsonResponse({"status": "success", "url": share_url})
+
+@login_required
+def start_unit_chat(request, unit_id):
+    """Creates a new chat linked to a Course Unit."""
+    unit = get_object_or_404(CourseUnit, id=unit_id)
+    
+    # Create Chat linked to Unit
+    chat = Chat.objects.create(
+        user=request.user,
+        unit=unit,
+        title=f"Study: {unit.title}"
+    )
+    
+    # Redirect to Tutor with chat_id
+    # Assuming /ai/ loads the tutorial interface. We might need to pass chat_id as get param.
+    return redirect(f'/ai/?chat_id={chat.id}')

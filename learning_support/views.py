@@ -7,6 +7,7 @@ import json
 import json
 import uuid
 from analytics.models import ActivityLog
+from course.models import CourseUnit
 
 def support_home(request):
     """Renders the Learning Support Chat Interface with History."""
@@ -127,7 +128,12 @@ def support_chat_api(request):
                 if new_chat_created:
                     yield json.dumps({"type": "meta", "chat_id": str(session.id)}) + "\n"
 
-                generator = get_support_response(user_message, mode=mode, stream=True)
+                generator = get_support_response(
+                    user_message, 
+                    mode=mode, 
+                    stream=True,
+                    context=f"Unit: {session.unit.title}\nNotes: {session.unit.content}" if session.unit else None
+                )
                 for chunk in generator:
                     full_response.append(chunk)
                     yield chunk
@@ -142,3 +148,20 @@ def support_chat_api(request):
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Invalid method"}, status=405)
+
+def start_unit_support(request, unit_id):
+    """Creates a new support session linked to a Course Unit."""
+    unit = get_object_or_404(CourseUnit, id=unit_id)
+    
+    # Create Session linked to Unit
+    if request.user.is_authenticated:
+        session = SupportSession.objects.create(
+            user=request.user,
+            unit=unit,
+            title=f"Help: {unit.title}"
+        )
+    else:
+        # Require login for course features generally, but handle anonymous safe
+        return redirect('course:list') # Or login
+
+    return redirect(f'/support/?chat_id={session.id}')

@@ -34,7 +34,7 @@
                     </svg>
                     New Study Plan
                 </a>
-                <a href="{% url 'course_list' %}" class="btn btn-secondary" style="padding: 1rem 2rem;">
+                <a href="{% url 'course:list' %}" class="btn btn-secondary" style="padding: 1rem 2rem;">
                     <i class="fas fa-book"></i> Courses
                 </a>
             </div>
@@ -96,6 +96,107 @@
                 <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Avg Accuracy</p>
                 <h3 style="font-size: 1.5rem; margin: 0.2rem 0 0 0;">{{ avg_score }}%</h3>
             </div>
+        </div>
+    </div>
+
+    <!-- My Apps Grid -->
+    <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+        <!-- App 1: AI Tutor -->
+        <div class="glass-card feature-card"
+            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
+            <div>
+                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary);">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--text-main);">🤖 AI Tutor</h3>
+                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                    Your personal AI tutor. Chat, ask questions, and get instant explanations.
+                </p>
+            </div>
+            <a href="{% url 'ai_tutor:tutor_home' %}" class="btn btn-primary" style="text-align: center;">Open AI
+                Tutor</a>
+        </div>
+
+        <!-- App 2: Learning Support -->
+        <div class="glass-card feature-card"
+            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
+            <div>
+                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--success);">
+                    <i class="fas fa-life-ring"></i>
+                </div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--text-main);">🤝 Support</h3>
+                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                    Get guided hints and simplified break-downs to help you solve problems.
+                </p>
+            </div>
+            <a href="{% url 'learning_support:support_home' %}" class="btn btn-primary" style="text-align: center;">Open
+                Support</a>
+        </div>
+
+        <!-- App 3: Flashcard Generator -->
+        <div class="glass-card feature-card"
+            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
+            <div>
+                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--accent);">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--text-main);">🗂️ Flashcards</h3>
+                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                    Generate active recall flashcards from your study materials.
+                </p>
+            </div>
+            <a href="{% url 'flashcard_generator:flashcard_home' %}" class="btn btn-primary"
+                style="text-align: center;">Go to
+                Flashcards</a>
+        </div>
+
+        <!-- App 4: Prerequisite Checker -->
+        <div class="glass-card feature-card"
+            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
+            <div>
+                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary);">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--text-main);">✅ Readiness</h3>
+                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                    Check your readiness for new topics with quick quizzes.
+                </p>
+            </div>
+            <a href="{% url 'prerequisite_checker:home' %}" class="btn btn-primary" style="text-align: center;">Check
+                Readiness</a>
+        </div>
+
+        <!-- App 5: LOR Generator -->
+        <div class="glass-card feature-card"
+            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
+            <div>
+                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--success);">
+                    <i class="fas fa-file-signature"></i>
+                </div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--text-main);">✍️ LOR Gen</h3>
+                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                    Draft professional Letters of Recommendation quickly.
+                </p>
+            </div>
+            <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}" class="btn btn-primary"
+                style="text-align: center;">Create LOR</a>
+        </div>
+
+        <!-- App 6: Analytics Dashboard -->
+        <div class="glass-card feature-card"
+            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
+            <div>
+                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--accent);">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--text-main);">📊 Analytics</h3>
+                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                    Visualize your learning progress and performance.
+                </p>
+            </div>
+            <a href="{% url 'analytics:student_dashboard' %}" class="btn btn-primary" style="text-align: center;">View
+                Analytics</a>
         </div>
     </div>
 
@@ -235,4 +336,12 @@
         }
     });
 </script>
+
+<style>
+    .feature-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(99, 102, 241, 0.5) !important;
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
+    }
+</style>
 {% endblock %}

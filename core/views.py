@@ -11,11 +11,15 @@ def home(request):
 
 @login_required
 def dashboard(request):
-    try:
-        profile = request.user.userprofile
-    except UserProfile.DoesNotExist:
+    profile = None
+    if hasattr(request.user, 'account_profile'):
+        profile = request.user.account_profile
+    elif hasattr(request.user, 'core_profile'):
+        profile = request.user.core_profile
+    else:
+        # Fallback: create core profile if none exists
         UserProfile.objects.create(user=request.user, role='student')
-        profile = request.user.userprofile
+        profile = request.user.core_profile
 
     # 1. Analytics logic
     activities = UserActivity.objects.filter(user=request.user).order_by('-timestamp')

@@ -1,55 +1,83 @@
-# Byte-compiled / optimized
+# ===============================
+# Python bytecode
+# ===============================
 __pycache__/
 *.pyc
-db.sqlite3
-.env
-*.pid
+*.pyo
+*.pyd
 
+# ===============================
+# Django
+# ===============================
+db.sqlite3
+*.sqlite3
+staticfiles/
+media/
+
+# ===============================
+# Environment variables
+# ===============================
+.env
+*.env
+**/.env
+
+# ===============================
+# Logs & temp files
+# ===============================
+*.log
+check_log.txt
+check_results.txt
+error_output.txt
+migration_error.txt
+
+# ===============================
 # Virtual environments
+# ===============================
 env/
 venv/
 .venv/
 */venv/
 
-# Django-specific
-*.log
-*.sqlite3
-db.sqlite3
-staticfiles/
-.env
-*.env
-**/.env
-
-# Migrations (optional – keep only if you regenerate often)
-*/migrations/.py
-**/migrations/_pycache_/
-
-# IDEs and editors
+# ===============================
+# IDEs & Editors
+# ===============================
 .vscode/
 .idea/
 *.suo
-.ntvs
+*.ntvs*
 *.njsproj
 *.sln
 
-# OS
+# ===============================
+# OS files
+# ===============================
 .DS_Store
 Thumbs.db
-# Backup JSON files (containing secrets)
+
+# ===============================
+# Backup / generated data files
+# ===============================
 sqlite_backup.json
 clean_backup.json
 full_data.json
-# Data files
-*.json
-emt.txt
-# Allow Node package manifests
+
+# ===============================
+# Allow important files explicitly
+# ===============================
+!requirements.txt
+!README.md
+!IMPLEMENTATION_SUMMARY.md
+!QUICKSTART.md
+!VERIFICATION_CHECKLIST.md
+
+# ===============================
+# Allow Node manifests if present
+# ===============================
 !package.json
 !package-lock.json
-# Include AI field configuration
+
+# ===============================
+# Allow config JSONs (important)
+# ===============================
 !suite/field_config/*.json
 !docs/*.json
-
-media/
-
-# Visual test snapshots
-visual-tests/**-snapshots

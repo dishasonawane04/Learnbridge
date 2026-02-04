@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ("ai_tutor", "0001_initial"),
+        ("generator", "0001_initial"),
     ]
 
     operations = [

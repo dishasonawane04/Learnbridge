@@ -1,43 +1,53 @@
-{% extends "base.html" %}
+{% extends 'letter_of_recommendation_generator/base.html' %}
+{% load static %}
 
-{% block title %}Manage Courses - Learnbridge{% endblock %}
+{% block title %}My Courses | LearnBridge{% endblock %}
 
 {% block content %}
-<div class="container" style="padding: 2rem 0;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;">
-        <div>
-            <h1 class="gradient-text">Your Courses</h1>
-            <p style="color: var(--text-muted);">Manage your knowledge brain and learning materials.</p>
-        </div>
-        <a href="{% url 'course_create' %}" class="btn btn-primary" style="padding: 1rem 2rem;">
-            <i class="fas fa-plus"></i> Create New Course
-        </a>
-    </div>
-
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2rem;">
-        {% for course in courses %}
-        <div class="glass-card fade-in" style="padding: 2rem; border-top: 4px solid var(--primary);">
-            <span class="badge badge-primary" style="margin-bottom: 1rem;">{{ course.get_level_display }}</span>
-            <h3>{{ course.title }}</h3>
-            <p style="color: var(--text-muted); margin-bottom: 2rem;">{{ course.description|truncatewords:20 }}</p>
-
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.85rem; color: var(--text-dim);">
-                    <i class="fas fa-layer-group"></i> {{ course.units.count }} Units
-                </span>
-                <a href="{% url 'course_detail' course.id %}" class="btn btn-secondary">Manage <i
-                        class="fas fa-arrow-right"></i></a>
-            </div>
-        </div>
-        {% empty %}
-        <div class="glass-card" style="grid-column: 1 / -1; padding: 4rem; text-align: center;">
-            <i class="fas fa-book-open" style="font-size: 3rem; color: var(--glass-border); margin-bottom: 1.5rem;"></i>
-            <h3>No courses yet</h3>
-            <p style="color: var(--text-muted); margin-bottom: 2rem;">Create your first course to start building your
-                knowledge brain.</p>
-            <a href="{% url 'course_create' %}" class="btn btn-primary">Get Started</a>
-        </div>
-        {% endfor %}
+<div class="fade-in mb-4">
+    <div class="col-12 text-center" style="margin-bottom: 4rem;">
+        <h1 class="display-4 fw-bold text-white mb-2">My <span class="gradient-text">Courses</span></h1>
+        <p class="text-muted" style="font-size: 1.1rem;">Continue your learning journey.</p>
     </div>
 </div>
+
+<div class="row fade-in">
+    {% for course in courses %}
+    <div class="col-md-4 mb-4">
+        <div class="glass-card h-100 p-4"
+            style="transition: transform 0.3s ease; border: 1px solid var(--glass-border);">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{
+                    course.get_level_display }}</span>
+                <small class="text-muted"><i class="fas fa-layer-group"></i> {{ course.units.count }} Units</small>
+            </div>
+
+            <h3 class="card-title text-white mb-3" style="font-weight: 600;">{{ course.title }}</h3>
+            <p class="card-text text-muted mb-4" style="line-height: 1.6;">{{ course.description|truncatewords:20 }}</p>
+
+            <div class="d-grid">
+                <a href="{% url 'course:detail' course.id %}" class="btn btn-primary">
+                    View Syllabus
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5 glass-card">
+        <div class="text-muted mb-3">
+            <i class="fas fa-book-open" style="font-size: 3rem; opacity: 0.5;"></i>
+        </div>
+        <h3 class="text-white">No courses enrolled yet.</h3>
+        <p class="text-muted mb-0">Contact your administrator or teacher to get started.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    .glass-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.15);
+        border-color: var(--primary) !important;
+    }
+</style>
 {% endblock %}

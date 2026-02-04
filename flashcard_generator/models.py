@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 
 class FlashcardDeck(models.Model):
     title = models.CharField(max_length=200)
+    unit = models.ForeignKey('course.CourseUnit', on_delete=models.SET_NULL, null=True, blank=True, related_name='flashcard_decks')
     created_at = models.DateTimeField(default=timezone.now)
     difficulty = models.CharField(max_length=20, default="Medium")
     

@@ -7,6 +7,7 @@ class PrerequisiteSession(models.Model):
     Stores the overall session for a prerequisite check.
     """
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='prerequisite_sessions')
+    unit = models.ForeignKey('course.CourseUnit', on_delete=models.SET_NULL, null=True, blank=True, related_name='prerequisite_sessions')
     target_topic = models.CharField(max_length=255)
     readiness_score = models.IntegerField(null=True, blank=True) # 0-100
     created_at = models.DateTimeField(default=timezone.now)

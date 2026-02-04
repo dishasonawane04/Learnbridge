@@ -25,16 +25,19 @@ def extract_json(text):
         print(f"JSON Parsing Error: {e}")
         return None
 
-def get_prerequisites(topic):
+def get_prerequisites(topic, context=None):
     """
     Analyzes a topic and returns a list of prerequisite concepts.
     Returns: list of strings e.g. ["Linear Algebra", "Calculus"]
     """
-    prompt = (
-        f"Identify the top 3-5 critical prerequisite concepts required to understand: '{topic}'.\n"
-        "Return ONLY a JSON object with a single key 'prerequisites' containing a list of strings.\n"
-        "Example: {\"prerequisites\": [\"Concept A\", \"Concept B\"]}"
-    )
+    prompt = f"Identify the top 3-5 critical prerequisite concepts required to understand: '{topic}'."
+    
+    if context:
+        prompt += f"\n\nContext Content:\n{context}\n\n"
+        prompt += "Based on the specific content above, what prior knowledge is needed?"
+
+    prompt += "\nReturn ONLY a JSON object with a single key 'prerequisites' containing a list of strings.\n"
+    prompt += "Example: {\"prerequisites\": [\"Concept A\", \"Concept B\"]}"
     
     try:
         response = ollama.chat(

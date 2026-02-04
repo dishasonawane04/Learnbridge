@@ -6,6 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import PrerequisiteSession, ConceptResult
 from .ai_logic import get_prerequisites, generate_questions, evaluate_readiness
 import json
+from course.models import CourseUnit
 
 @login_required
 def topic_input_view(request):
@@ -111,3 +112,39 @@ def result_view(request, session_id):
         'session': session,
         'concepts': concepts
     })
+
+@login_required
+def check_unit_readiness(request, unit_id):
+    """
+    Start prerequisite check for a specific unit.
+    """
+    unit = get_object_or_404(CourseUnit, id=unit_id)
+    
+    session = PrerequisiteSession.objects.create(
+        user=request.user,
+        unit=unit,
+        target_topic=unit.title
+    )
+    
+    # Get Prerequisites with Context
+    prereqs = get_prerequisites(unit.title, context=unit.content)
+    
+    if not prereqs:
+        prereqs = get_prerequisites(unit.title)
+        
+    if not prereqs:
+         return redirect('course:unit_detail', unit_id=unit.id)
+
+    # Generate Questions
+    questions = generate_questions(prereqs)
+    
+    # Store questions
+    for item in questions:
+        ConceptResult.objects.create(
+            session=session,
+            concept_name=item['concept'],
+            diagnostic_question=item['question'],
+            status='Pending'
+        )
+    
+    return redirect('prerequisite_checker:quiz_view', session_id=session.id)

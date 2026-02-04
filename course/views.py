@@ -50,3 +50,26 @@ def material_upload(request, unit_id):
         extract_content(material)
         return redirect('course_detail', course_id=unit.course.id)
     return redirect('course_detail', course_id=unit.course.id)
+
+@login_required
+def unit_detail(request, unit_id):
+    """
+    The Central Hub View.
+    Displays Notes and links to other apps.
+    """
+    unit = get_object_or_404(CourseUnit, id=unit_id)
+    
+    # Ensure user owns the course
+    if unit.course.user != request.user:
+        return redirect('course:list')
+
+    # Get Previous and Next units for navigation
+    previous_unit = CourseUnit.objects.filter(course=unit.course, order__lt=unit.order).order_by('-order').first()
+    next_unit = CourseUnit.objects.filter(course=unit.course, order__gt=unit.order).order_by('order').first()
+
+    context = {
+        'unit': unit,
+        'previous_unit': previous_unit,
+        'next_unit': next_unit
+    }
+    return render(request, 'course/unit_detail.html', context)

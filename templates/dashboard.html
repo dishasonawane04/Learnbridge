@@ -185,7 +185,7 @@
         <div class="user-menu">
             {% if user.is_authenticated %}
             <span>Hello, {{ user.first_name|default:user.username }}</span>
-            {% if user.userprofile.role == 'Teacher' %}
+            {% if user_role == 'Teacher' %}
             <span
                 style="background:rgba(16, 185, 129, 0.2); color:#10b981; padding:0.25rem 0.5rem; border-radius:4px; font-size:0.8rem;">TEACHER</span>
             {% endif %}
@@ -217,7 +217,7 @@
     </div>
 
     {% if user.is_authenticated %}
-    {% if user.userprofile.role == 'Teacher' %}
+    {% if user_role == 'Teacher' %}
     <a href="{% url 'analytics:teacher_dashboard' %}" class="analytics-link">
         <i class="ph ph-chart-line-up"></i> Teacher Analytics
     </a>

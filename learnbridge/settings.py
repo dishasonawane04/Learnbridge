@@ -15,9 +15,16 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+# Force server reload for templatetags discovery
 
-# Email Backend (Console for Development)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Email Backend (SMTP for Production/Development with real emails)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -34,6 +41,11 @@ DEBUG = os.getenv("DEBUG") == "True"
 
 ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'localhost']
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+
 
 # Application definition
 
@@ -46,20 +58,18 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "quiz",
     'assessment',
-<<<<<<< HEAD
     'learning_support',
     'flashcard_generator',
     'letter_of_recommendation_generator',
     'accounts',
     'analytics',
     'prerequisite_checker',
-=======
     "core",
     "sentence_explain",
     "notes",
     "generator",
     "course",
->>>>>>> a308bc6ddc579d8c8c7d185a879f27e44969e3b4
+    "ai_tutor",
 ]
 
 MIDDLEWARE = [
@@ -77,11 +87,7 @@ ROOT_URLCONF = "learnbridge.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-<<<<<<< HEAD
         "DIRS": [BASE_DIR / 'templates'],
-=======
-        "DIRS": [BASE_DIR / "templates"],
->>>>>>> a308bc6ddc579d8c8c7d185a879f27e44969e3b4
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -152,15 +158,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-<<<<<<< HEAD
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/accounts/login/'
-LOGIN_URL = '/accounts/login/'
-=======
 # Ollama AI Configuration
 OLLAMA_MODEL_TEXT = "llama3.2:1b"
 OLLAMA_MODEL_VISION = "llava:latest"
 
-LOGIN_REDIRECT_URL = 'home'
-LOGIN_URL = 'login'
->>>>>>> a308bc6ddc579d8c8c7d185a879f27e44969e3b4
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+LOGIN_URL = '/accounts/login/'

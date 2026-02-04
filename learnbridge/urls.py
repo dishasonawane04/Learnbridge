@@ -24,7 +24,6 @@ from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-<<<<<<< HEAD
     path('ai/', include('ai_tutor.urls')),
     path('support/', include('learning_support.urls')),
     path('flashcards/', include('flashcard_generator.urls')),
@@ -34,18 +33,16 @@ urlpatterns = [
     path('analytics/', include('analytics.urls')),
     path('check-readiness/', include('prerequisite_checker.urls', namespace='prerequisite_checker')),
     path('accounts/', include('accounts.urls')),
-    path('', views.dashboard, name='dashboard'),
-=======
+    # path('', views.dashboard, name='dashboard'),
+    path('', core_views.home, name='home'),
+
+    # Incoming App URLs
     path('core/', include('core.urls')),
     path('plan/', include('generator.urls')),
-    path('assessment/', include('assessment.urls')),
     path('sentence-explain/', include('sentence_explain.urls')),
     path('notes/', include('notes.urls')),
-    path('notes/', include('notes.urls')),
-    path('quiz/', include('quiz.urls')),
     path('course/', include('course.urls')),
-    path('', core_views.home, name='home'),
->>>>>>> a308bc6ddc579d8c8c7d185a879f27e44969e3b4
+    # path('', core_views.home, name='home'), # Conflits with dashboard
 ]
 
 if settings.DEBUG:

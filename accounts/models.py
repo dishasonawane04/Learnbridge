@@ -7,7 +7,7 @@ class UserProfile(models.Model):
         ('Teacher', 'Teacher'),
     ]
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='account_profile')
     full_name = models.CharField(max_length=255)
     role = models.CharField(max_length=50, choices=ROLE_CHOICES)
 

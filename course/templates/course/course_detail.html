@@ -1,123 +1,77 @@
-{% extends "base.html" %}
+{% extends 'letter_of_recommendation_generator/base.html' %}
+{% load static %}
 
-{% block title %}{{ course.title }} - Learnbridge{% endblock %}
+{% block title %}{{ course.title }} | LearnBridge{% endblock %}
 
 {% block content %}
-<div class="container" style="padding: 2rem 0;">
-    <!-- Course Header -->
-    <div class="glass-card fade-in"
-        style="margin-bottom: 3rem; padding: 2.5rem; background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);">
-        <div style="display: flex; justify-content: space-between; align-items: start;">
-            <div>
-                <span class="badge badge-primary">{{ course.get_level_display }}</span>
-                <p style="color: var(--text-muted); max-width: 800px;">{{ course.description }}</p>
-                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                    <a href="{% url 'study_plan' %}?topic={{ course.title }}&course_id={{ course.id }}"
-                        class="btn btn-primary" style="font-size: 0.9rem;">
-                        <i class="fas fa-calendar-alt"></i> Generate Study Plan
-                    </a>
-                    <a href="{% url 'sentence_explain' %}?course_id={{ course.id }}" class="btn btn-secondary"
-                        style="font-size: 0.9rem;">
-                        <i class="fas fa-language"></i> AI Explain
-                    </a>
-                    <a href="{% url 'learning_support' %}?course_id={{ course.id }}" class="btn btn-secondary"
-                        style="font-size: 0.9rem;">
-                        <i class="fas fa-question-circle"></i> Simplified Support
-                    </a>
-                </div>
-            </div>
-            <button class="btn btn-secondary" onclick="document.getElementById('unit-modal').style.display='flex'">
-                <i class="fas fa-plus"></i> Add Unit
-            </button>
-        </div>
-    </div>
+<div class="mb-4 fade-in">
+    <a href="{% url 'course:list' %}" class="text-decoration-none text-muted hover-text-primary">
+        <i class="fas fa-arrow-left"></i> Back to Courses
+    </a>
+</div>
 
-    <!-- Units Grid -->
-    <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
-        {% for unit in course.units.all %}
-        <div class="glass-card" style="padding: 2rem;">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
-                <h3 style="margin: 0;">Unit {{ forloop.counter }}: {{ unit.title }}</h3>
-                <div style="display: flex; gap: 0.5rem;">
-                    <form action="{% url 'material_upload' unit.id %}" method="post" enctype="multipart/form-data"
-                        id="upload-form-{{ unit.id }}">
-                        {% csrf_token %}
-                        <input type="file" name="file" onchange="this.form.submit()" style="display: none;"
-                            id="file-{{ unit.id }}">
-                        <label for="file-{{ unit.id }}" class="btn btn-primary"
-                            style="font-size: 0.85rem; padding: 0.5rem 1rem; cursor: pointer;">
-                            <i class="fas fa-upload"></i> Upload Material
-                        </label>
-                    </form>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
-                {% for material in unit.materials.all %}
-                <div
-                    style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 12px; display: flex; align-items: center; gap: 1rem;">
-                    <div
-                        style="width: 40px; height: 40px; border-radius: 8px; background: rgba(99, 102, 241, 0.1); display: flex; align-items: center; justify-content: center;">
-                        <i class="fas {% if material.file_type == 'pdf' %}fa-file-pdf{% elif material.file_type == 'ppt' %}fa-file-powerpoint{% elif material.file_type == 'image' %}fa-file-image{% else %}fa-file-alt{% endif %}"
-                            style="color: var(--primary);"></i>
-                    </div>
-                    <div style="overflow: hidden;">
-                        <p
-                            style="margin: 0; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            {{ material.file.name|cut:"course_materials/" }}</p>
-                        <span style="font-size: 0.75rem; color: var(--text-dim);">Processed</span>
-                    </div>
-                </div>
-                {% empty %}
-                <p style="color: var(--text-dim); font-size: 0.9rem; grid-column: 1/-1;">No materials uploaded for this
-                    unit yet.</p>
-                {% endfor %}
-            </div>
-
-            <!-- Quick Actions for this Unit -->
-            {% if unit.materials.exists %}
-            <div
-                style="margin-top: 2rem; display: flex; gap: 1rem; padding-top: 1.5rem; border-top: 1px dashed var(--glass-border);">
-                <a href="{% url 'quiz_start' %}?subject={{ unit.title }}&course_id={{ course.id }}"
-                    class="btn btn-secondary" style="font-size: 0.85rem;"><i class="fas fa-brain"></i> Generate Quiz</a>
-                <a href="{% url 'notes' %}?topic={{ unit.title }}&course_id={{ course.id }}" class="btn btn-secondary"
-                    style="font-size: 0.85rem;"><i class="fas fa-sticky-note"></i> Create
-                    Notes</a>
-            </div>
-            {% endif %}
-        </div>
-        {% empty %}
-        <div style="text-align: center; padding: 4rem;">
-            <p style="color: var(--text-muted);">No units added yet. Add your first unit to organize your content.</p>
-        </div>
-        {% endfor %}
+<div class="row mb-5 fade-in">
+    <div class="col-12 text-center">
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-3">{{
+            course.get_level_display }}</span>
+        <h1 class="display-4 fw-bold text-white mb-3">{{ course.title }}</h1>
+        <p class="lead text-muted mx-auto" style="max-width: 800px;">{{ course.description }}</p>
     </div>
 </div>
 
-<!-- Add Unit Modal -->
-<div id="unit-modal"
-    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
-    <div class="glass-card" style="width: 100%; max-width: 500px; padding: 2.5rem;">
-        <h3 style="margin-bottom: 1.5rem;">Add New Unit</h3>
-        <form action="{% url 'unit_add' course.id %}" method="post">
-            {% csrf_token %}
-            <div class="form-group" style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem;">Unit Title</label>
-                <input type="text" name="title" required
-                    style="width: 100%; padding: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+<div class="row fade-in">
+    <div class="col-12 max-w-4xl mx-auto">
+        <h3 class="text-white mb-4" style="font-weight: 600;"><i class="fas fa-list-ol text-primary"></i> Course Modules
+        </h3>
+
+        <div class="d-grid gap-3">
+            {% for unit in course.units.all %}
+            <a href="{% url 'course:unit_detail' unit.id %}" class="text-decoration-none">
+                <div class="glass-card p-4 d-flex justify-content-between align-items-center unit-card"
+                    style="transition: all 0.2s ease;">
+                    <div class="d-flex align-items-center gap-4">
+                        <div class="unit-number d-flex align-items-center justify-content-center"
+                            style="width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); border-radius: 10px; color: var(--primary); font-weight: bold;">
+                            {{ forloop.counter }}
+                        </div>
+                        <div>
+                            <h5 class="mb-1 text-white fw-semibold">{{ unit.title }}</h5>
+                            <small class="text-muted">
+                                {% if unit.content %}
+                                <span class="text-success"><i class="fas fa-check-circle"></i> Notes Available</span>
+                                {% else %}
+                                <span class="text-muted"><i class="fas fa-circle"></i> No Content</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="action-icon">
+                        <i class="fas fa-chevron-right text-muted"></i>
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <div class="glass-card p-5 text-center">
+                <p class="text-muted mb-0">No units have been added to this course yet.</p>
             </div>
-            <div class="form-group" style="margin-bottom: 2rem;">
-                <label style="display: block; margin-bottom: 0.5rem;">Display Order</label>
-                <input type="number" name="order" value="{{ course.units.count|add:1 }}"
-                    style="width: 100%; padding: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
-            </div>
-            <div style="display: flex; gap: 1rem;">
-                <button type="submit" class="btn btn-primary" style="flex: 1;">Add Unit</button>
-                <button type="button" class="btn btn-secondary"
-                    onclick="document.getElementById('unit-modal').style.display='none'">Cancel</button>
-            </div>
-        </form>
+            {% endfor %}
+        </div>
     </div>
 </div>
+
+<style>
+    .unit-card:hover {
+        transform: translateX(5px);
+        border-color: var(--primary) !important;
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .unit-card:hover .action-icon i {
+        color: var(--primary) !important;
+    }
+
+    .hover-text-primary:hover {
+        color: var(--primary) !important;
+    }
+</style>
 {% endblock %}
