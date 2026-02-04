@@ -16,6 +16,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Email Backend (Console for Development)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -43,11 +46,20 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "quiz",
     'assessment',
+<<<<<<< HEAD
+    'learning_support',
+    'flashcard_generator',
+    'letter_of_recommendation_generator',
+    'accounts',
+    'analytics',
+    'prerequisite_checker',
+=======
     "core",
     "sentence_explain",
     "notes",
     "generator",
     "course",
+>>>>>>> a308bc6ddc579d8c8c7d185a879f27e44969e3b4
 ]
 
 MIDDLEWARE = [
@@ -65,7 +77,11 @@ ROOT_URLCONF = "learnbridge.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
+<<<<<<< HEAD
+        "DIRS": [BASE_DIR / 'templates'],
+=======
         "DIRS": [BASE_DIR / "templates"],
+>>>>>>> a308bc6ddc579d8c8c7d185a879f27e44969e3b4
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -136,9 +152,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+<<<<<<< HEAD
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+LOGIN_URL = '/accounts/login/'
+=======
 # Ollama AI Configuration
 OLLAMA_MODEL_TEXT = "llama3.2:1b"
 OLLAMA_MODEL_VISION = "llava:latest"
 
 LOGIN_REDIRECT_URL = 'home'
 LOGIN_URL = 'login'
+>>>>>>> a308bc6ddc579d8c8c7d185a879f27e44969e3b4

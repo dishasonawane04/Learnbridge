@@ -1,0 +1,79 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ chat.title }} | Shared Chat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="{% static 'ai_tutor/style.css' %}">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-y: auto;
+            background: var(--bg-dark);
+        }
+
+        .shared-header {
+            padding: 1rem 2rem;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .shared-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="shared-header">
+        <h2 style="margin:0; font-size:1.2rem;">{{ chat.title }}</h2>
+        <a href="/"
+            style="padding: 0.5rem 1rem; background: var(--primary-color); color: white; text-decoration: none; border-radius: 8px; font-size: 0.9rem;">Try
+            AI Tutor</a>
+    </div>
+
+    <div class="shared-container">
+        {% for msg in messages %}
+        <div class="message {% if msg.sender == 'user' %}user-message{% else %}ai-message{% endif %}">
+            <div class="avatar">
+                {% if msg.sender == 'user' %}U{% else %}
+                <i class="ph ph-robot"></i>
+                {% endif %}
+            </div>
+            <div class="message-content">
+                {% if msg.attachment %}
+                <div class="attachment-preview">
+                    {% if msg.msg_type == 'image' %}
+                    <img src="{{ msg.attachment.url }}" alt="Uploaded Image">
+                    {% elif msg.msg_type == 'audio' %}
+                    <audio controls src="{{ msg.attachment.url }}"></audio>
+                    {% else %}
+                    <a href="{{ msg.attachment.url }}" target="_blank">View Attachment</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {{ msg.content|linebreaksbr }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+
+</html>

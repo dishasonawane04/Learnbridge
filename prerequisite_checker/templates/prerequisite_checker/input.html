@@ -1,0 +1,151 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Check Prerequisites - LearnBridge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #6366f1;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .input-card {
+            background: var(--bg-card);
+            padding: 2.5rem;
+            border-radius: 16px;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            color: white;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+            /* Fix for width issue */
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn-start {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .btn-start:hover {
+            background: #4f46e5;
+        }
+
+        .nav-back {
+            margin-top: 2rem;
+            display: inline-block;
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 1rem;
+            color: var(--accent);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Prerequisite Checker</h1>
+        <p>Ensure you have the strong foundation needed for advanced topics.</p>
+
+        <form class="input-card" method="POST" onsubmit="showLoading()">
+            {% csrf_token %}
+            {% if error %}
+            <div
+                style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                {{ error }}
+            </div>
+            {% endif %}
+            <label for="topic"
+                style="display:block; text-align:left; margin-bottom:0.5rem; color:#cbd5e1; font-weight:600;">I want to
+                learn:</label>
+            <input type="text" id="topic" name="topic" placeholder="e.g. Neural Networks, Calculus, React Hooks"
+                required>
+
+            <button type="submit" class="btn-start">
+                Check My Readiness <i class="ph ph-arrow-right"></i>
+            </button>
+            <div id="loading-msg" class="loading">
+                <i class="ph ph-spinner ph-spin"></i> Analyzing topic...
+            </div>
+        </form>
+
+        <a href="/" class="nav-back"><i class="ph ph-arrow-left"></i> Back to Hub</a>
+    </div>
+
+    <script>
+        function showLoading() {
+            document.querySelector('.btn-start').style.display = 'none';
+            document.getElementById('loading-msg').style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>

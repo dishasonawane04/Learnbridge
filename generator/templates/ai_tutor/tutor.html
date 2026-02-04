@@ -1,0 +1,195 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LearnBridge AI Tutor</title>
+    <link rel="stylesheet" href="{% static 'ai_tutor/style.css' %}?v=2.0">
+    <!-- Google Fonts for Premium Feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons for clean icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="ph ph-graduation-cap"></i> LearnBridge.AI
+                </div>
+                <button class="new-chat-btn" onclick="startNewChat()">
+                    <i class="ph ph-plus"></i> New Chat
+                </button>
+                <div class="search-wrapper" style="margin-top: 1rem;">
+                    <i class="ph ph-magnifying-glass search-icon"></i>
+                    <input type="text" id="chat-search" placeholder="Search chats..." onkeyup="filterChats()">
+                </div>
+            </div>
+
+            <div class="history-list">
+                <!-- Pinned Chats -->
+                <div class="history-section" id="pinned-section">
+                    <div class="history-label">Pinned</div>
+                    {% for chat in all_chats %}
+                    {% if chat.is_pinned %}
+                    <div class="history-item {% if chat.id|stringformat:'s' == request.GET.chat_id %}active{% endif %}"
+                        onclick="loadChat('{{ chat.id }}')" data-id="{{ chat.id }}">
+                        <div class="chat-title">
+                            <i class="ph ph-push-pin"></i>
+                            <span>{{ chat.title }}</span>
+                        </div>
+                        <div class="chat-options">
+                            <button class="opts-btn" onclick="toggleMenu(event, '{{ chat.id }}')"><i
+                                    class="ph ph-dots-three"></i></button>
+                            <div class="opts-menu" id="menu-{{ chat.id }}">
+                                <button onclick="renameChat(event, '{{ chat.id }}')"><i class="ph ph-pencil"></i>
+                                    Rename</button>
+                                <button onclick="pinChat(event, '{{ chat.id }}')"><i class="ph ph-push-pin-slash"></i>
+                                    Unpin</button>
+                                <button onclick="archiveChat(event, '{{ chat.id }}')"><i class="ph ph-archive"></i>
+                                    Archive</button>
+                                <button onclick="deleteChat(event, '{{ chat.id }}')" class="delete-opt"><i
+                                        class="ph ph-trash"></i> Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Recent Chats -->
+                <div class="history-section">
+                    <div class="history-label">Recent</div>
+                    {% for chat in all_chats %}
+                    {% if not chat.is_pinned %}
+                    <div class="history-item {% if chat.id|stringformat:'s' == request.GET.chat_id %}active{% endif %}"
+                        onclick="loadChat('{{ chat.id }}')" data-id="{{ chat.id }}">
+                        <div class="chat-title">
+                            <i class="ph ph-chat-circle-text"></i>
+                            <span>{{ chat.title }}</span>
+                        </div>
+                        <div class="chat-options">
+                            <button class="opts-btn" onclick="toggleMenu(event, '{{ chat.id }}')"><i
+                                    class="ph ph-dots-three"></i></button>
+                            <div class="opts-menu" id="menu-{{ chat.id }}">
+                                <button onclick="renameChat(event, '{{ chat.id }}')"><i class="ph ph-pencil"></i>
+                                    Rename</button>
+                                <button onclick="pinChat(event, '{{ chat.id }}')"><i class="ph ph-push-pin"></i>
+                                    Pin</button>
+                                <button onclick="archiveChat(event, '{{ chat.id }}')"><i class="ph ph-archive"></i>
+                                    Archive</button>
+                                <button onclick="shareChat(event, '{{ chat.id }}')"><i class="ph ph-share-network"></i>
+                                    Share</button>
+                                <button onclick="deleteChat(event, '{{ chat.id }}')" class="delete-opt"><i
+                                        class="ph ph-trash"></i> Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% empty %}
+                    <div class="empty-history" id="no-chats-msg">No active chats</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Archived Link -->
+            <a href="{% url 'archived_chats' %}" class="archived-link" style="text-decoration: none;">
+                <i class="ph ph-archive"></i> Archived Chats
+            </a>
+
+            <div class="user-profile">
+                <div class="avatar">
+                    {% if request.user.is_authenticated %}U{% else %}G{% endif %}
+                </div>
+                <div class="username">
+                    {% if request.user.is_authenticated %}
+                    {{ request.user.username }}
+                    {% else %}
+                    Guest Student
+                    {% endif %}
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-area">
+            <header class="chat-header">
+                <div class="ai-info">
+                    <div class="ai-avatar">
+                        <i class="ph ph-robot"></i>
+                    </div>
+                    <div>
+                        <h2>AI Tutor</h2>
+                        <span class="status">Always here to help</span>
+                    </div>
+                </div>
+                <!-- Mobile Menu Toggle could go here -->
+            </header>
+
+            <div class="messages-container" id="messages-container">
+                <!-- Content injected via JS -->
+                <div class="welcome-screen" id="welcome-screen">
+                    <div class="welcome-icon">
+                        <i class="ph ph-sparkle"></i>
+                    </div>
+                    <h1>How can I help you learn today?</h1>
+                    <div class="suggestions">
+                        <button onclick="sendSuggestion('Explain briefly: What is photosynthesis?')">Explain
+                            Photosynthesis</button>
+                        <button onclick="sendSuggestion('Bullet points: Key events of WWII')">WWII Key Events</button>
+                        <button onclick="sendSuggestion('Paragraph: Summary of Romeo and Juliet')">Romeo & Juliet
+                            Summary</button>
+                    </div>
+                </div>
+
+                <!-- Loading Indicator (Hidden initially) -->
+                <div class="message ai-message loading" id="loading-indicator" style="display: none;">
+                    <div class="avatar"><i class="ph ph-robot"></i></div>
+                    <div class="content">
+                        <div class="typing-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <!-- File Preview Container -->
+                    <div id="file-preview-container" class="file-preview-container" style="display: none;"></div>
+
+                    <!-- Input Row -->
+                    <div class="input-row">
+                        <button class="attach-btn" id="attach-btn">
+                            <i class="ph ph-plus"></i>
+                        </button>
+                        <div class="attachment-menu" id="attachment-menu">
+                            <button data-type="image"><i class="ph ph-image"></i> Image</button>
+                            <button data-type="audio"><i class="ph ph-microphone"></i> Voice Mode</button>
+                            <button data-type="doc"><i class="ph ph-file-text"></i> Document</button>
+                        </div>
+                        <input type="file" id="fi-uploader" style="display: none;">
+                        <input type="text" id="chat-input" placeholder="Ask anything... (or upload an image)"
+                            autocomplete="off">
+                        <button class="send-btn" id="send-btn">
+                            <i class="ph ph-paper-plane-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="disclaimer">AI can make mistakes. Check important info.</div>
+            </div>
+        </main>
+    </div>
+
+    <!-- CSRF Token -->
+    {% csrf_token %}
+
+    <script src="{% static 'ai_tutor/script.js' %}?v=4.0"></script>
+</body>
+
+</html>

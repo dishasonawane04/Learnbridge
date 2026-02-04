@@ -1,0 +1,187 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Analytics - LearnBridge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #10b981;
+            /* Green for teacher */
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(15, 23, 42, 0.95);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .navbar .logo span {
+            color: var(--accent);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        h1 {
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .student-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .student-table th,
+        .student-table td {
+            text-align: left;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #334155;
+        }
+
+        .student-table th {
+            background: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .student-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .student-link {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .student-link:hover {
+            color: var(--accent);
+        }
+
+        .btn-view {
+            padding: 0.5rem 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent);
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .btn-view:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-home {
+            background: var(--accent);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="logo">
+            <i class="ph ph-chalkboard-teacher"></i>
+            LearnBridge<span>.Teacher</span>
+        </a>
+        <a href="/" class="btn-home">Back to Hub</a>
+    </nav>
+
+    <div class="container">
+        <h1>Class Progress Overview</h1>
+        <p class="subtitle">Monitor student engagement and performance.</p>
+
+        <div style="overflow-x: auto;">
+            <table class="student-table">
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>AI Interactions</th>
+                        <th>Flashcards Generated</th>
+                        <th>Avg Quiz Score</th>
+                        <th>Last Active</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'analytics:teacher_student_detail' student.user.id %}" class="student-link">
+                                <i class="ph ph-user-circle"></i> {{ student.full_name }}
+                            </a>
+                        </td>
+                        <td>{{ student.ai_interactions }}</td>
+                        <td>{{ student.flashcards_generated }}</td>
+                        <td>{{ student.quiz_avg|floatformat:1 }}%</td>
+                        <td>{{ student.last_active|timesince|default:"Never" }} ago</td>
+                        <td>
+                            <a href="{% url 'analytics:teacher_student_detail' student.user.id %}" class="btn-view">View
+                                Detail</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted);">No active students found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</body>
+
+</html>

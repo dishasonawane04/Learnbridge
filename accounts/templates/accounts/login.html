@@ -1,0 +1,203 @@
+{% extends 'letter_of_recommendation_generator/base.html' %}
+{% load static %}
+<!-- Reusing the base implementation for quick styling, assuming standard block structure -->
+
+{% block title %}Login | LearnBridge{% endblock %}
+
+{% block content %}
+<style>
+    /* Animated Background */
+    body {
+        background: url("{% static 'accounts/login_bg.png' %}") no-repeat center center fixed;
+        background-size: cover;
+        min-height: 100vh;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Overlay for readability */
+    body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.75);
+        /* Dark blue overlay */
+        z-index: -2;
+    }
+
+    /* Animation Canvas */
+    #canvas-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        /* Above overlay, below card */
+        pointer-events: none;
+    }
+
+    @keyframes gradientBG {
+        0% {
+            background-position: 0% 50%;
+        }
+
+        50% {
+            background-position: 100% 50%;
+        }
+
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+
+    /* Card Styling */
+    .auth-card {
+        background-color: #111827;
+        border: 1px solid #374151;
+        border-radius: 1rem;
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Typography */
+    .auth-title {
+        color: #f3f4f6;
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+    }
+
+    .auth-subtitle {
+        color: #9ca3af;
+        margin-bottom: 2rem;
+    }
+
+    /* Form Controls */
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #d1d5db;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+
+    .form-control {
+        background-color: #1f2937 !important;
+        border: 1px solid #374151 !important;
+        color: #f3f4f6 !important;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 1rem;
+        transition: all 0.2s;
+        display: block;
+        /* Ensure block display to fix spacing */
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Button */
+    .btn-auth {
+        background-color: #6366f1;
+        color: white;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        width: 100%;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .btn-auth:hover {
+        background-color: #4f46e5;
+    }
+
+    /* Override Base Styles */
+    nav,
+    footer {
+        display: none !important;
+    }
+
+    /* Ensure container centers the card */
+    .container {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: 100vh !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+
+    /* Hide base alerts */
+    .container>.alert {
+        display: none !important;
+    }
+</style>
+
+<div class="auth-card" style="text-align: center;">
+    <i class="ph ph-sign-in" style="font-size: 3rem; color: #6366f1; margin-bottom: 1rem;"></i>
+    <h2 class="auth-title">Welcome Back</h2>
+    <p class="auth-subtitle">Sign in to continue your learning journey.</p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert"
+            style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1.5rem; font-size: 0.875rem;">
+            {{ form.non_field_errors|striptags }}
+        </div>
+        {% endif %}
+
+        <div class="form-group" style="text-align: left;">
+            <label>Username</label>
+            {{ form.username }}
+        </div>
+
+        <div class="form-group" style="text-align: left; position: relative;">
+            <label>Password</label>
+            {{ form.password }}
+            <button type="button" class="password-toggle" data-target="{{ form.password.id_for_label }}"
+                style="position: absolute; right: 10px; top: 38px; background: none; border: none; color: #9ca3af; cursor: pointer;">
+                <i class="ph ph-eye-slash" style="font-size: 1.2rem;"></i>
+            </button>
+            <div style="text-align: right; margin-top: 0.5rem;">
+                <a href="{% url 'accounts:forgot_password' %}"
+                    style="color: #6366f1; text-decoration: none; font-size: 0.85rem;">Forgot Password?</a>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-auth" style="margin-top: 1rem;">
+            Login
+        </button>
+    </form>
+
+    <p style="margin-top: 1.5rem; color: #9ca3af; font-size: 0.875rem;">
+        Don't have an account? <a href="{% url 'accounts:signup' %}"
+            style="color: #6366f1; text-decoration: none; font-weight: 500;">Sign up</a>
+    </p>
+</div>
+
+<!-- Background Animation Canvas -->
+<canvas id="canvas-overlay"></canvas>
+<script src="{% static 'accounts/constellation.js' %}"></script>
+<script src="{% static 'accounts/auth.js' %}"></script>
+{% endblock %}

@@ -1,6 +1,13 @@
 asgiref==3.11.0
 Django==4.2
 sqlparse==0.5.5
+<<<<<<< HEAD
+Pillow
+pypdf
+python-docx
+ollama
+=======
 python-dotenv
 ollama
 markdown
+>>>>>>> a308bc6ddc579d8c8c7d185a879f27e44969e3b4

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>LearnBridge AI</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6fb;
+        }
+
+        .app {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 260px;
+            background: #111827;
+            color: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar h2 {
+            padding: 15px;
+            margin: 0;
+            border-bottom: 1px solid #374151;
+        }
+
+        .new-chat {
+            margin: 10px;
+            padding: 10px;
+            background: #1f2937;
+            border: 1px solid #374151;
+            color: white;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+
+        .chat-history {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+        }
+
+        .chat-item {
+            padding: 8px;
+            background: #1f2937;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        /* CHAT AREA */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        .chat-header {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+        }
+
+        .chat-box {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .user {
+            background: #4f46e5;
+            color: white;
+            margin-left: auto;
+        }
+
+        .assistant {
+            background: #e5e7eb;
+            color: black;
+        }
+
+        /* INPUT */
+        .chat-input {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            border-top: 1px solid #ddd;
+            position: relative;
+        }
+
+        .plus {
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .media-menu {
+            position: absolute;
+            bottom: 55px;
+            left: 10px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 8px;
+            display: none;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .media-icon {
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        textarea {
+            flex: 1;
+            resize: none;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app">
+
+        <!-- LEFT -->
+        <div class="sidebar">
+            <h2>LearnBridge</h2>
+            <a href="?new=1">
+                <button class="new-chat">+ New Chat</button>
+            </a>
+
+
+            <div class="chat-history">
+
+                {% for chat in all_chats %}
+                <div class="chat-item">
+                    {{ chat.0.text|truncatechars:25 }}
+                </div>
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        <!-- RIGHT -->
+        <div class="chat-area">
+            <div class="chat-header">AI Tutor</div>
+
+            <div class="chat-box" id="chatBox">
+                {% for chat in chat_history %}
+                <div class="message {{ chat.sender }}">{{ chat.text }}</div>
+                {% endfor %}
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" class="chat-input">
+                {% csrf_token %}
+
+                <!-- Plus -->
+                <span class="plus" id="plusBtn">+</span>
+
+                <!-- Media Options -->
+                <div class="media-menu" id="mediaMenu">
+                    <label class="media-icon">📷
+                        <input type="file" name="image" hidden accept="image/*">
+                    </label>
+                    <label class="media-icon">🎥
+                        <input type="file" name="video" hidden accept="video/*">
+                    </label>
+                    <label class="media-icon">📄
+                        <input type="file" name="document" hidden accept=".pdf,.doc,.docx">
+                    </label>
+                    <label class="media-icon">🎧
+                        <input type="file" name="audio" hidden accept="audio/*">
+                    </label>
+                </div>
+
+                <textarea name="message" placeholder="Ask a question based on the file..."></textarea>
+                <button type="submit">Send</button>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        const plusBtn = document.getElementById("plusBtn");
+        const mediaMenu = document.getElementById("mediaMenu");
+
+        plusBtn.onclick = () => {
+            mediaMenu.style.display =
+                mediaMenu.style.display === "flex" ? "none" : "flex";
+        };
+
+        document.querySelectorAll("input[type=file]").forEach(input => {
+            input.onchange = () => {
+                alert("Selected: " + input.files[0].name);
+                mediaMenu.style.display = "none";
+            };
+        });
+    </script>
+
+</body>
+
+</html>

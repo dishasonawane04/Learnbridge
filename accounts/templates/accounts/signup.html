@@ -1,0 +1,192 @@
+{% extends 'letter_of_recommendation_generator/base.html' %}
+{% load static %}
+
+{% block title %}Sign Up | LearnBridge{% endblock %}
+
+{% block content %}
+<style>
+    /* Animated Background */
+    body {
+        background: url("{% static 'accounts/login_bg.png' %}") no-repeat center center fixed;
+        background-size: cover;
+        min-height: 100vh;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Overlay for readability */
+    body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.75);
+        /* Dark blue overlay */
+        z-index: -2;
+    }
+
+    /* Animation Canvas */
+    #canvas-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        /* Above overlay, below card */
+        pointer-events: none;
+    }
+
+    /* Card Styling */
+    .auth-card {
+        background-color: #111827;
+        border: 1px solid #374151;
+        border-radius: 1rem;
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 500px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Typography */
+    .auth-title {
+        color: #f3f4f6;
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+    }
+
+    .auth-subtitle {
+        color: #9ca3af;
+        margin-bottom: 2rem;
+    }
+
+    /* Form Controls */
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #d1d5db;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+
+    .form-control,
+    .form-select {
+        background-color: #1f2937 !important;
+        border: 1px solid #374151 !important;
+        color: #f3f4f6 !important;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 1rem;
+        transition: all 0.2s;
+        display: block;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        outline: none;
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Button */
+    .btn-auth {
+        background-color: #6366f1;
+        color: white;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        width: 100%;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .btn-auth:hover {
+        background-color: #4f46e5;
+    }
+
+    /* Override Base Styles */
+    nav,
+    footer {
+        display: none !important;
+    }
+
+    /* Ensure container centers the card */
+    .container {
+        display: flex !important;
+        flex-direction: column !important;
+        /* Stack columns to fix side-by-side issue */
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: 100vh !important;
+        padding: 1rem !important;
+        max-width: 100% !important;
+        /* Allow full width centering */
+    }
+
+    /* Hide base alerts to prevent layout shifting, we verify logic via verify_auth.py anyway or can render inside card */
+    .container>.alert {
+        display: none !important;
+    }
+</style>
+
+<div class="auth-card" style="text-align: center;">
+    <i class="ph ph-user-plus" style="font-size: 2.5rem; color: #6366f1; margin-bottom: 0.5rem;"></i>
+    <h2 class="auth-title" style="font-size: 1.5rem;">Create Account</h2>
+    <p class="auth-subtitle" style="margin-bottom: 1rem;">Join LearnBridge as a Student or Teacher.</p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <!-- Render Non-field errors if any -->
+        {% if form.non_field_errors %}
+        <div
+            style="color: #f87171; font-size: 0.85rem; margin-bottom: 1rem; background: rgba(239,68,68,0.1); padding: 0.5rem; border-radius: 4px;">
+            {{ form.non_field_errors|striptags }}
+        </div>
+        {% endif %}
+
+        {% for field in form %}
+        <div class="form-group" style="text-align: left; margin-bottom: 0.75rem; position: relative;">
+            <label style="font-size: 0.8rem; margin-bottom: 0.25rem;">{{ field.label }}</label>
+            {{ field }}
+
+            {% if 'password' in field.name %}
+            <button type="button" class="password-toggle" data-target="{{ field.id_for_label }}"
+                style="position: absolute; right: 10px; top: 32px; background: none; border: none; color: #9ca3af; cursor: pointer;">
+                <i class="ph ph-eye-slash" style="font-size: 1.2rem;"></i>
+            </button>
+            {% endif %}
+
+            {% if field.errors %}
+            <small style="color: #ef4444; display: block; font-size: 0.75rem;">{{ field.errors|striptags }}</small>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="btn-auth" style="margin-top: 0.5rem; padding: 0.6rem;">
+            Sign Up
+        </button>
+    </form>
+
+    <p style="margin-top: 1rem; color: #9ca3af; font-size: 0.8rem;">
+        Already have an account? <a href="{% url 'accounts:login' %}"
+            style="color: #6366f1; text-decoration: none; font-weight: 500;">Login</a>
+    </p>
+</div>
+
+<!-- Background Animation Canvas -->
+<canvas id="canvas-overlay"></canvas>
+<script src="{% static 'accounts/constellation.js' %}"></script>
+<script src="{% static 'accounts/auth.js' %}"></script>
+{% endblock %}

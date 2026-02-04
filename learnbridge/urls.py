@@ -20,9 +20,22 @@ from django.urls import path, include
 from core import views as core_views
 from django.conf import settings
 from django.conf.urls.static import static
+from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+<<<<<<< HEAD
+    path('ai/', include('ai_tutor.urls')),
+    path('support/', include('learning_support.urls')),
+    path('flashcards/', include('flashcard_generator.urls')),
+    path('quiz/', include('quiz.urls')),
+    path('assessment/', include('assessment.urls')),
+    path('lor/', include('letter_of_recommendation_generator.urls', namespace='letter_of_recommendation_generator')),
+    path('analytics/', include('analytics.urls')),
+    path('check-readiness/', include('prerequisite_checker.urls', namespace='prerequisite_checker')),
+    path('accounts/', include('accounts.urls')),
+    path('', views.dashboard, name='dashboard'),
+=======
     path('core/', include('core.urls')),
     path('plan/', include('generator.urls')),
     path('assessment/', include('assessment.urls')),
@@ -32,6 +45,7 @@ urlpatterns = [
     path('quiz/', include('quiz.urls')),
     path('course/', include('course.urls')),
     path('', core_views.home, name='home'),
+>>>>>>> a308bc6ddc579d8c8c7d185a879f27e44969e3b4
 ]
 
 if settings.DEBUG:

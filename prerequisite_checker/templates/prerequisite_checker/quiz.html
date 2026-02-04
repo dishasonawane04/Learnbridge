@@ -1,0 +1,169 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Diagnostic Quiz - LearnBridge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #6366f1;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #334155;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .question-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #334155;
+        }
+
+        .concept-tag {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--accent);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .question-text {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            color: white;
+            padding: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        textarea:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        .btn-submit {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            float: right;
+            transition: background 0.2s;
+        }
+
+        .btn-submit:hover {
+            background: #4f46e5;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 1.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h2>Diagnostic for: <span style="color:var(--accent)">{{ session.target_topic }}</span></h2>
+            <div class="subtitle">Answer these questions to check your foundational readiness.</div>
+        </div>
+
+        <form method="POST" onsubmit="showLoading()">
+            {% csrf_token %}
+
+            {% for concept in concepts %}
+            <div class="question-card">
+                <div class="concept-tag">{{ concept.concept_name }}</div>
+                <div class="question-text">{{ concept.diagnostic_question }}</div>
+                <textarea name="answer_{{ concept.id }}" placeholder="Type your answer or explanation here..."
+                    required></textarea>
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btn-submit">Submit Assessment</button>
+            <div style="clear:both"></div>
+        </form>
+    </div>
+
+    <div class="loading-overlay" id="loading">
+        <i class="ph ph-spinner ph-spin" style="font-size: 3rem; color: var(--accent);"></i>
+        <div class="loading-text">Analyzing your understanding...</div>
+    </div>
+
+    <script>
+        function showLoading() {
+            document.getElementById('loading').style.display = 'flex';
+        }
+    </script>
+
+</body>
+
+</html>
