@@ -1,55 +1,5 @@
-# Byte-compiled / optimized
 __pycache__/
 *.pyc
 db.sqlite3
-.env
-*.pid
-
-# Virtual environments
-env/
-venv/
-.venv/
-*/venv/
-
-# Django-specific
-*.log
-*.sqlite3
-db.sqlite3
-staticfiles/
-.env
-*.env
-**/.env
-
-# Migrations (optional – keep only if you regenerate often)
-*/migrations/.py
-**/migrations/_pycache_/
-
-# IDEs and editors
-.vscode/
-.idea/
-*.suo
-.ntvs
-*.njsproj
-*.sln
-
-# OS
-.DS_Store
-Thumbs.db
-# Backup JSON files (containing secrets)
-sqlite_backup.json
-clean_backup.json
-full_data.json
-# Data files
-*.json
-emt.txt
-# Allow Node package manifests
-!package.json
-!package-lock.json
-# Include AI field configuration
-!suite/field_config/*.json
-!docs/*.json
-
-media/
-
-# Visual test snapshots
-visual-tests/**-snapshots
+runserver.pid
+*.exe
