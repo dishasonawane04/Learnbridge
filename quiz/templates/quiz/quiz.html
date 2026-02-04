@@ -1,20 +1,32 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="glass-card fade-in" style="max-width: 900px; margin: 0 auto;">
+<div class="glass-card fade-in"
+    style="max-width: 900px; margin: 0 auto; padding: 2.5rem; border: 1px solid rgba(99, 102, 241, 0.2);">
 
-    <!-- Header -->
-    <div
-        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-        <div>
-            <h2
-                style="font-size: 2rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
-                {{ subject }} Quiz
-            </h2>
-            <p style="color: var(--text-light);">Answer all questions and submit when ready</p>
+    <!-- Header & Progress -->
+    <div style="margin-bottom: 3rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+                <span
+                    style="font-size: 0.85rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 2px;">{{ subject }} Assessment</span>
+                <h2
+                    style="font-size: 2.2rem; font-weight: 800; margin-top: 0.5rem; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+                    AI Challenge
+                </h2>
+            </div>
+            <div id="questionCounter"
+                style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); padding: 0.5rem 1.25rem; border-radius: 12px; color: var(--text-main); font-weight: 600;">
+                <span id="answeredCount">0</span> / {{ questions|length }} Completed
+            </div>
         </div>
-        <div class="badge badge-primary" style="padding: 0.75rem 1.5rem; font-size: 1rem;">
-            {{ questions|length }} Questions
+
+        <!-- Progress Bar -->
+        <div
+            style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; position: relative;">
+            <div id="progressBar"
+                style="position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);">
+            </div>
         </div>
     </div>
 
@@ -24,20 +36,26 @@
 
         {% for q in questions %}
         <div class="question-card"
-            style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
+            style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 2.5rem; margin-bottom: 2.5rem; transition: border-color 0.3s ease;">
 
-            <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1.5rem; color: var(--text-main);">
-                <span style="color: var(--primary); margin-right: 0.75rem;">{{ forloop.counter }}.</span>
-                {{ q.question }}
-            </h3>
+            <div style="display: flex; gap: 1.5rem; margin-bottom: 2rem;">
+                <div
+                    style="flex-shrink: 0; width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 800; border: 1px solid rgba(99, 102, 241, 0.2);">
+                    {{ forloop.counter }}
+                </div>
+                <h3
+                    style="font-size: 1.25rem; font-weight: 600; line-height: 1.5; color: var(--text-main); margin: 0; padding-top: 0.25rem;">
+                    {{ q.question }}
+                </h3>
+            </div>
 
-            <div class="options-group">
+            <div class="options-group" style="display: grid; gap: 1rem;">
                 {% for opt in q.options %}
                 <label class="option-label"
-                    style="display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; margin-bottom: 0.75rem; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                    style="display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem 1.75rem; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; cursor: pointer; transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); position: relative;">
                     <input type="radio" name="q{{ forloop.parentloop.counter0 }}" value="{{ opt }}"
-                        style="width: 1.2rem; height: 1.2rem; cursor: pointer; accent-color: var(--primary);">
-                    <span style="font-size: 1rem; color: var(--text-main);">{{ opt }}</span>
+                        style="width: 1.4rem; height: 1.4rem; cursor: pointer; accent-color: var(--primary);">
+                    <span style="font-size: 1.1rem; color: var(--text-light);">{{ opt }}</span>
                 </label>
                 {% endfor %}
             </div>
@@ -45,15 +63,11 @@
         {% endfor %}
 
         <!-- Submit Button -->
-        <div style="text-align: center; margin-top: 3rem;">
+        <div style="text-align: center; margin-top: 4rem;">
             <button type="submit" class="btn btn-primary"
-                style="font-size: 1.1rem; padding: 1rem 3rem; background: linear-gradient(135deg, var(--success), #16a34a);">
-                Submit Quiz
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    style="margin-left: 0.5rem; vertical-align: middle;">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
+                style="font-size: 1.2rem; padding: 1.25rem 4rem; background: linear-gradient(135deg, var(--success), #16a34a); box-shadow: 0 0 30px rgba(34, 197, 94, 0.3); border: none;">
+                Finish Assessment
+                <i class="fas fa-check-circle" style="margin-left: 0.75rem;"></i>
             </button>
         </div>
     </form>
@@ -62,12 +76,52 @@
 <style>
     .option-label:hover {
         background: rgba(255, 255, 255, 0.05) !important;
-        border-color: var(--primary) !important;
+        border-color: rgba(99, 102, 241, 0.4) !important;
+        transform: translateX(8px);
     }
 
     .option-label:has(input:checked) {
-        background: rgba(99, 102, 241, 0.15) !important;
+        background: rgba(99, 102, 241, 0.1) !important;
         border-color: var(--primary) !important;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+    }
+
+    .option-label:has(input:checked) span {
+        color: var(--text-main) !important;
+        font-weight: 600;
+    }
+
+    .question-card:has(input:checked) {
+        border-color: rgba(99, 102, 241, 0.3) !important;
     }
 </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('quizForm');
+        const radialInputs = form.querySelectorAll('input[type="radio"]');
+        const progressBar = document.getElementById('progressBar');
+        const answeredCountText = document.getElementById('answeredCount');
+        const totalQuestions = {{ questions| length }};
+
+    const updateProgress = () => {
+        const answeredNames = new Set();
+        radialInputs.forEach(input => {
+            if (input.checked) {
+                answeredNames.add(input.name);
+            }
+        });
+
+        const answeredCount = answeredNames.size;
+        const progress = (answeredCount / totalQuestions) * 100;
+
+        progressBar.style.width = `${progress}%`;
+        answeredCountText.textContent = answeredCount;
+    };
+
+    radialInputs.forEach(input => {
+        input.addEventListener('change', updateProgress);
+    });
+    });
+</script>
 {% endblock %}

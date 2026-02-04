@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.conf import settings
 import ollama
+import markdown
 from asgiref.sync import sync_to_async
 from core.utils import log_activity
 
@@ -47,6 +48,13 @@ async def study_plan(request):
         except Exception as e:
             plan = f"Error generating study plan: {str(e)}"
 
+        # Convert plan to HTML if it exists and no error occurred
+        plan_html = ""
+        if plan and not plan.startswith("Error"):
+            plan_html = markdown.markdown(plan, extensions=['fenced_code', 'tables'])
+        else:
+            plan_html = plan
+
         # Log Activity
         await sync_to_async(log_activity)(
             user=request.user,
@@ -59,6 +67,7 @@ async def study_plan(request):
 
     return await sync_to_async(render)(request, "generator/plan.html", {
         "plan": plan,
+        "plan_html": plan_html if 'plan_html' in locals() else "",
         "topic": topic,
         "hours": hours
     })

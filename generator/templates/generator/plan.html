@@ -21,14 +21,54 @@
     }
 
     .plan-content {
-        white-space: pre-line;
         line-height: 1.8;
         color: var(--text-main);
         font-size: 1.05rem;
         background: rgba(255, 255, 255, 0.03);
-        padding: 2rem;
+        padding: 2.5rem;
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .plan-content h1,
+    .plan-content h2,
+    .plan-content h3 {
+        color: white;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .plan-content h2 {
+        font-size: 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 0.5rem;
+    }
+
+    .plan-content ul,
+    .plan-content ol {
+        padding-left: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .plan-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    .plan-content code {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-family: 'Fira Code', monospace;
+        font-size: 0.9em;
+    }
+
+    .plan-content pre {
+        background: rgba(15, 23, 42, 0.8);
+        padding: 1.5rem;
+        border-radius: 12px;
+        overflow-x: auto;
+        margin: 1.5rem 0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .plan-content b,
@@ -131,7 +171,7 @@
         </div>
 
         <div class="plan-content">
-            {{ plan }}
+            {{ plan_html|safe }}
         </div>
 
         <div

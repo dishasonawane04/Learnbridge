@@ -79,7 +79,15 @@ async def generate_notes(request):
             outcome="completed"
         )
     
+    # Render response as HTML if it exists
+    response_html = ""
+    if response and not response.startswith("Error"):
+        response_html = markdown.markdown(response, extensions=['fenced_code', 'tables'])
+    else:
+        response_html = response
+
     return await sync_to_async(render)(request, "notes/generate.html", {
         "response": response,
+        "response_html": response_html,
         "topic": topic
     })
