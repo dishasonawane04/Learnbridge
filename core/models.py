@@ -1,16 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-class UserProfile(models.Model):
-    ROLES = (
-        ('student', 'Student'),
-        ('teacher', 'Teacher'),
-    )
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='core_profile')
-    role = models.CharField(max_length=10, choices=ROLES, default='student')
-    
-    def __str__(self):
-        return f"{self.user.username} ({self.role})"
+# UserProfile moved to accounts app
 
 class UserActivity(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

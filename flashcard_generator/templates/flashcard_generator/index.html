@@ -276,7 +276,7 @@
 <body>
 
     <aside class="sidebar">
-        <a href="{% url 'dashboard' %}" class="logo">
+        <a href="{% url 'core:dashboard' %}" class="logo">
             <i class="ph ph-cards"></i> Flashcards AI
         </a>
 
@@ -289,7 +289,7 @@
                 <i class="ph ph-squares-four"></i> Your Decks
             </div>
             <!-- Linked to Progress page -->
-            <a href="{% url 'flashcard_progress' %}" class="menu-item">
+            <a href="{% url 'flashcard_generator:flashcard_progress' %}" class="menu-item">
                 <i class="ph ph-chart-bar"></i> Progress
             </a>
         </nav>
@@ -342,7 +342,8 @@
                 </div>
 
                 <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                    <a href="{% url 'study_deck' deck.id %}" class="study-btn" style="flex: 1; margin-top: 0;">Study
+                    <a href="{% url 'flashcard_generator:study_deck' deck.id %}" class="study-btn"
+                        style="flex: 1; margin-top: 0;">Study
                         Now</a>
                     <button class="study-btn"
                         style="background: rgba(239, 68, 68, 0.1); color: var(--danger); width: auto; border: 1px solid var(--danger); cursor: pointer;"
@@ -420,7 +421,7 @@
             const formData = new FormData(form);
 
             try {
-                const res = await fetch("{% url 'generate_deck' %}", {
+                const res = await fetch("{% url 'flashcard_generator:generate_deck' %}", {
                     method: 'POST',
                     body: formData
                 });

@@ -25,6 +25,9 @@ class ActivityLog(models.Model):
     # Common metrics extracted for easier aggregation
     score = models.IntegerField(null=True, blank=True)
     completed = models.BooleanField(default=False)
+    input_type = models.CharField(max_length=20, default='text')
+    outcome = models.CharField(max_length=20, default='completed')
+    time_spent = models.IntegerField(default=0)
 
     class Meta:
         ordering = ['-timestamp']

@@ -1,5 +1,4 @@
 from django.contrib import admin
-from .models import UserProfile, UserActivity
+from .models import UserActivity
 
-admin.site.register(UserProfile)
 admin.site.register(UserActivity)

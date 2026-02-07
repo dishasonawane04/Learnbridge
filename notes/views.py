@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from .models import Note
@@ -48,12 +49,29 @@ async def generate_notes(request):
                 )
                 return redirect('notes_list')
 
-        from course.services.ai_context import get_course_context
-        course_id = request.GET.get('course_id')
-        context = ""
-        if course_id:
-            context = get_course_context(course_id=course_id)
-            context = f"\nUse the following CONTEXT for these notes:\n{context}\n"
+        # --- STRICT CONTEXT INJECTION ---
+        from course.models import Course, CourseUnit
+        from course.services.ai_context import get_system_prompt
+        
+        course_id = request.GET.get('course_id') or request.POST.get('course_id')
+        unit_id = request.GET.get('unit_id') or request.POST.get('unit_id')
+        
+        system_prompt = "SYSTEM:\nYou are an academic AI assistant."
+        
+        if unit_id:
+             unit = get_object_or_404(CourseUnit, id=unit_id)
+             system_prompt = get_system_prompt(unit.course, unit)
+        elif course_id:
+             course = get_object_or_404(Course, id=course_id)
+             # Fallback if only course provided (though strictly should represent unit)
+             system_prompt = f"SYSTEM:\nYou are an academic AI assistant for the course {course.title}."
+
+        final_prompt = f"""{system_prompt}
+        
+        TASK:
+        Generate comprehensive, exam-oriented notes for the topic: '{topic}'.
+        {structure_hint}
+        """
 
         client = ollama.AsyncClient()
 
@@ -62,7 +80,7 @@ async def generate_notes(request):
                 model=settings.OLLAMA_MODEL_TEXT,
                 messages=[{
                     'role': 'user',
-                    'content': f"Generate comprehensive, exam-oriented notes for the topic: '{topic}'. {context}{structure_hint}"
+                    'content': final_prompt
                 }]
             )
             response = res['message']['content']
@@ -91,3 +109,10 @@ async def generate_notes(request):
         "response_html": response_html,
         "topic": topic
     })
+
+def generate_unit_notes(request, unit_id):
+    """Initializes note generation from a Course Unit."""
+    from course.models import CourseUnit
+    from django.shortcuts import get_object_or_404
+    unit = get_object_or_404(CourseUnit, id=unit_id)
+    return redirect(f"{reverse('notes:notes')}?unit_id={unit.id}&topic={unit.title}")

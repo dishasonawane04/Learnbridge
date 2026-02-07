@@ -115,13 +115,21 @@ def chat_api(request):
             if not user_message and (image_path or doc_path):
                 prompt_for_ai = "Analyze this content."
             
-            # --- CONTEXT INJECTION FROM COURSE UNIT ---
-            if chat.unit and chat.unit.content:
-                context_prompt = f"Context: You are helping the student with the course unit '{chat.unit.title}'.\n"
-                context_prompt += f"Unit Content:\n{chat.unit.content}\n\n"
-                context_prompt += f"User Question: {prompt_for_ai}"
-                prompt_for_ai = context_prompt
-            # ------------------------------------------
+            # --- STICT CONTEXT INJECTION FROM MANDATORY CONTRACT ---
+            from course.services.ai_context import get_system_prompt
+            
+            system_instruction = ""
+            if chat.unit:
+                # Use the centralized, mandatory prompt
+                system_instruction = get_system_prompt(chat.unit.course, chat.unit)
+            else:
+                # Fallback if no unit (though user said no tool without unit, we handle graceful degradation)
+                system_instruction = "SYSTEM: You are an academic AI assistant. Please ask the user to select a course unit."
+
+            # Prepend system instruction to the prompt context for the AI service
+            # (Assuming chat_with_ai supports system prompt or we prepend it)
+            prompt_for_ai = f"{system_instruction}\n\nUSER QUESTION: {prompt_for_ai}"
+            # -------------------------------------------------------
 
             mode = 'voice' if msg_type == 'voice' else 'text'
 
@@ -294,16 +302,32 @@ def get_share_link(request, chat_id):
 
 @login_required
 def start_unit_chat(request, unit_id):
-    """Creates a new chat linked to a Course Unit."""
+    """Start a new chat session for a specific unit"""
     unit = get_object_or_404(CourseUnit, id=unit_id)
     
-    # Create Chat linked to Unit
-    chat = Chat.objects.create(
+    # Check if user already has a chat for this unit
+    existing_chat = Chat.objects.filter(user=request.user, unit=unit).first()
+    
+    if existing_chat:
+        # Redirect to existing chat
+        return render(request, "ai_tutor/tutor.html", {
+            "all_chats": Chat.objects.filter(user=request.user, is_archived=False),
+            "active_chat": existing_chat,
+            "chat_history": existing_chat.messages.all(),
+            "unit": unit
+        })
+    
+    # Create new chat for this unit
+    chat = Chat(
         user=request.user,
         unit=unit,
         title=f"Study: {unit.title}"
     )
+    chat.save()
     
-    # Redirect to Tutor with chat_id
-    # Assuming /ai/ loads the tutorial interface. We might need to pass chat_id as get param.
-    return redirect(f'/ai/?chat_id={chat.id}')
+    return render(request, "ai_tutor/tutor.html", {
+        "all_chats": Chat.objects.filter(user=request.user, is_archived=False),
+        "active_chat": chat,
+        "chat_history": [],
+        "unit": unit
+    })

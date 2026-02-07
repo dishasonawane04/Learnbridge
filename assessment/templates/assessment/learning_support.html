@@ -1,4 +1,4 @@
-{% extends "quiz/base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
 <div style="padding: 2rem 0; max-width: 900px; margin: 0 auto;">
@@ -47,8 +47,8 @@
         </div>
 
         <div style="margin-top: 3rem; display: flex; gap: 1rem; justify-content: center;">
-            <a href="{% url 'quiz_subjects' %}" class="btn btn-secondary">Back to Quiz</a>
-            <a href="{% url 'notes' %}?topic={{ topic }}" class="btn btn-primary">Generate Notes</a>
+            <a href="{% url 'quiz:quiz_subjects' %}" class="btn btn-secondary">Back to Quiz</a>
+            <a href="{% url 'notes:notes' %}?topic={{ topic }}" class="btn btn-primary">Generate Notes</a>
         </div>
     </div>
     {% endif %}

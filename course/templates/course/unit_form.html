@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit{% else %}Create{% endif %} Unit - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 4rem 0;">
+    <div style="max-width: 800px; margin: 0 auto;">
+        <!-- Breadcrumb -->
+        <div class="mb-4 fade-in">
+            <a href="{% url 'course:list' %}" class="text-decoration-none text-muted hover-text-primary">
+                <i class="fas fa-arrow-left"></i> Back to Courses
+            </a>
+            <span class="text-muted mx-2">/</span>
+            <a href="{% url 'course:detail' course.id %}" class="text-decoration-none text-muted hover-text-primary">
+                {{ course.title }}
+            </a>
+        </div>
+
+        <div class="glass-card fade-in" style="padding: 3rem;">
+            <h2 class="gradient-text mb-2">
+                {% if is_edit %}
+                <i class="fas fa-edit"></i> Edit Unit
+                {% else %}
+                <i class="fas fa-plus-circle"></i> Create New Unit
+                {% endif %}
+            </h2>
+            <p class="text-muted mb-4">
+                {% if is_edit %}
+                Update the unit details below.
+                {% else %}
+                Add a new learning unit to your course syllabus.
+                {% endif %}
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <!-- Title -->
+                <div class="form-group mb-4">
+                    <label class="form-label text-white mb-2">
+                        <i class="fas fa-heading text-primary"></i> Unit Title
+                    </label>
+                    <input type="text" name="title" class="form-control glass-input"
+                        value="{% if unit %}{{ unit.title }}{% endif %}"
+                        placeholder="e.g. Introduction to Neural Networks" required
+                        style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                </div>
+
+                <!-- Order -->
+                <div class="form-group mb-4">
+                    <label class="form-label text-white mb-2">
+                        <i class="fas fa-sort-numeric-down text-primary"></i> Order
+                    </label>
+                    <input type="number" name="order" class="form-control glass-input"
+                        value="{% if unit %}{{ unit.order }}{% else %}{{ next_order }}{% endif %}" min="0"
+                        style="width: 150px; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    <small class="text-muted mt-1 d-block">
+                        <i class="fas fa-info-circle"></i> Determines the sequence in the syllabus
+                    </small>
+                </div>
+
+                <!-- Overview (Syllabus) -->
+                <div class="form-group mb-4">
+                    <label class="form-label text-white mb-2">
+                        <i class="fas fa-list-ul text-primary"></i> Overview / Learning Objectives
+                    </label>
+                    <textarea name="overview" class="form-control glass-input" rows="4"
+                        placeholder="What will students learn in this unit? List key topics and objectives..."
+                        style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white; line-height: 1.6;">{% if unit %}{{ unit.overview }}{% endif %}</textarea>
+                    <small class="text-muted mt-1 d-block">
+                        <i class="fas fa-robot"></i> This helps AI tools understand the unit's scope
+                    </small>
+                </div>
+
+                <!-- Content (Notes) -->
+                <div class="form-group mb-4">
+                    <label class="form-label text-white mb-2">
+                        <i class="fas fa-file-alt text-primary"></i> Content / Notes (Optional)
+                    </label>
+                    <textarea name="content" class="form-control glass-input" rows="8"
+                        placeholder="Add detailed notes, explanations, or study materials for this unit..."
+                        style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white; line-height: 1.6;">{% if unit %}{{ unit.content }}{% endif %}</textarea>
+                    <small class="text-muted mt-1 d-block">
+                        <i class="fas fa-info-circle"></i> Additional content for students to reference
+                    </small>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex gap-3 mt-5">
+                    <button type="submit" class="btn btn-primary flex-grow-1" style="padding: 1rem;">
+                        <i class="fas fa-save"></i>
+                        {% if is_edit %}Update Unit{% else %}Create Unit{% endif %}
+                    </button>
+                    <a href="{% url 'course:detail' course.id %}" class="btn btn-secondary" style="padding: 1rem 2rem;">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-text-primary:hover {
+        color: var(--primary) !important;
+    }
+
+    .glass-input:focus {
+        outline: none;
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+</style>
+{% endblock %}

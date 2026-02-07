@@ -20,6 +20,178 @@
     <!-- Custom Design System -->
     <link rel="stylesheet" href="{% static 'core/css/main.css' %}">
 
+    <style>
+        /* Dropdown Styles */
+        .nav-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(16px);
+            min-width: 220px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            z-index: 1000;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .nav-dropdown:hover .dropdown-content {
+            display: block;
+            animation: fadeInScale 0.2s ease-out;
+        }
+
+        .dropdown-item {
+            color: var(--text-muted);
+            padding: 0.75rem 1rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: white;
+        }
+
+        .dropdown-item i {
+            width: 20px;
+            text-align: center;
+            color: var(--primary);
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-10px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0) scale(1);
+            }
+        }
+
+        /* Command Palette */
+        .command-palette-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 15, 30, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: none;
+            padding-top: 15vh;
+        }
+
+        .command-palette {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(23, 31, 51, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            animation: slideUpPalette 0.2s ease-out;
+        }
+
+        @keyframes slideUpPalette {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .palette-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .palette-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            flex-grow: 1;
+            outline: none;
+        }
+
+        .palette-results {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .palette-item {
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .palette-item:hover,
+        .palette-item.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: white;
+        }
+
+        .palette-item i {
+            color: var(--primary);
+            width: 20px;
+            text-align: center;
+        }
+
+        .palette-item .item-meta {
+            font-size: 0.8rem;
+            opacity: 0.5;
+            margin-left: auto;
+        }
+
+        .palette-footer {
+            padding: 0.75rem 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid var(--glass-border);
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .palette-footer kbd {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+    </style>
+
     {% block extra_css %}{% endblock %}
 </head>
 
@@ -32,23 +204,56 @@
             </a>
 
             <div class="nav-links">
-                <a href="{% url 'dashboard' %}"
+                <a href="{% url 'core:dashboard' %}"
                     class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
                 <a href="{% url 'course:list' %}"
                     class="nav-link {% if request.resolver_match.app_name == 'course' %}active{% endif %}">Courses</a>
 
-                <a href="{% url 'quiz_subjects' %}"
-                    class="nav-link {% if request.resolver_match.url_name == 'quiz_subjects' %}active{% endif %}">Take
-                    Quiz</a>
-                <a href="{% url 'study_plan' %}"
-                    class="nav-link {% if request.resolver_match.url_name == 'study_plan' %}active{% endif %}">Study
-                    Plan</a>
-                <a href="{% url 'sentence_explain' %}"
-                    class="nav-link {% if request.resolver_match.url_name == 'sentence_explain' %}active{% endif %}">AI
-                    Explain</a>
-                <a href="{% url 'notes' %}"
-                    class="nav-link {% if request.resolver_match.url_name == 'notes' %}active{% endif %}">Smart
-                    Notes</a>
+                <!-- AI Tools Dropdown -->
+                <div class="nav-dropdown">
+                    <a href="#" class="nav-link">AI Tools <i class="fas fa-chevron-down"
+                            style="font-size: 0.7rem;"></i></a>
+                    <div class="dropdown-content">
+                        <a href="{% url 'ai_tutor:tutor_home' %}" class="dropdown-item">
+                            <i class="fas fa-robot"></i> AI Tutor
+                        </a>
+                        <a href="{% url 'quiz:quiz_subjects' %}" class="dropdown-item">
+                            <i class="fas fa-vial"></i> Take Quiz
+                        </a>
+                        <a href="{% url 'generator:study_plan' %}" class="dropdown-item">
+                            <i class="fas fa-calendar-alt"></i> Study Plan
+                        </a>
+                        <a href="{% url 'sentence_explain:sentence_explain' %}" class="dropdown-item">
+                            <i class="fas fa-wand-magic-sparkles"></i> AI Explain
+                        </a>
+                        <a href="{% url 'notes:notes_list' %}" class="dropdown-item">
+                            <i class="fas fa-note-sticky"></i> Smart Notes
+                        </a>
+                        <a href="{% url 'learning_support:support_home' %}" class="dropdown-item">
+                            <i class="fas fa-life-ring"></i> Support
+                        </a>
+                        <a href="{% url 'flashcard_generator:flashcard_home' %}" class="dropdown-item">
+                            <i class="fas fa-layer-group"></i> Flashcards
+                        </a>
+                        <a href="{% url 'prerequisite_checker:home' %}" class="dropdown-item">
+                            <i class="fas fa-tasks"></i> Readiness
+                        </a>
+                        <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}" class="dropdown-item">
+                            <i class="fas fa-file-signature"></i> LOR Gen
+                        </a>
+                        {% if user.is_authenticated %}
+                        {% if user.account_profile.role|lower == 'teacher' %}
+                        <a href="{% url 'analytics:teacher_dashboard' %}" class="dropdown-item">
+                            <i class="fas fa-chart-line"></i> Analytics
+                        </a>
+                        {% else %}
+                        <a href="{% url 'analytics:student_dashboard' %}" class="dropdown-item">
+                            <i class="fas fa-chart-pie"></i> Analytics
+                        </a>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
 
                 <div style="height: 24px; width: 1px; background: var(--glass-border); margin: 0 0.5rem;"></div>
 
@@ -108,31 +313,38 @@
                     </p>
                     <div style="display: flex; gap: 1rem;">
                         <a href="#" class="btn btn-secondary" style="padding: 0.75rem;"><i
-                                class="fab fa-twitter"></i></a>
+                                class="fa-brands fa-twitter"></i></a>
                         <a href="#" class="btn btn-secondary" style="padding: 0.75rem;"><i
-                                class="fab fa-linkedin"></i></a>
+                                class="fa-brands fa-linkedin"></i></a>
                         <a href="#" class="btn btn-secondary" style="padding: 0.75rem;"><i
-                                class="fab fa-github"></i></a>
+                                class="fa-brands fa-github"></i></a>
                     </div>
                 </div>
                 <div>
                     <h4 style="font-size: 1.1rem; margin-bottom: 1.5rem;">Quick Links</h4>
                     <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        <a href="{% url 'dashboard' %}" class="nav-link" style="font-size: 0.9rem;">Dashboard</a>
+                        <a href="{% url 'core:dashboard' %}" class="nav-link" style="font-size: 0.9rem;">Dashboard</a>
 
-                        <a href="{% url 'quiz_subjects' %}" class="nav-link" style="font-size: 0.9rem;">Practice
+                        <a href="{% url 'quiz:quiz_subjects' %}" class="nav-link" style="font-size: 0.9rem;">Practice
                             Quizzes</a>
-                        <a href="{% url 'study_plan' %}" class="nav-link" style="font-size: 0.9rem;">Study Planner</a>
+                        <a href="{% url 'generator:study_plan' %}" class="nav-link" style="font-size: 0.9rem;">Study
+                            Planner</a>
                     </div>
                 </div>
                 <div>
                     <h4 style="font-size: 1.1rem; margin-bottom: 1.5rem;">AI Tools</h4>
                     <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        <a href="{% url 'sentence_explain' %}" class="nav-link" style="font-size: 0.9rem;">AI
+                        <a href="{% url 'sentence_explain:sentence_explain' %}" class="nav-link"
+                            style="font-size: 0.9rem;">AI
                             Explanation</a>
-                        <a href="{% url 'notes' %}" class="nav-link" style="font-size: 0.9rem;">Smart Notes</a>
-                        <a href="#" class="nav-link" style="font-size: 0.9rem;">Revision Mode</a>
-                        <a href="#" class="nav-link" style="font-size: 0.9rem;">Exam Predictor</a>
+                        <a href="{% url 'notes:notes_list' %}" class="nav-link" style="font-size: 0.9rem;">Smart
+                            Notes</a>
+                        <span class="nav-link text-muted"
+                            style="font-size: 0.9rem; cursor: not-allowed; opacity: 0.6;">Revision Mode (Coming
+                            Soon)</span>
+                        <span class="nav-link text-muted"
+                            style="font-size: 0.9rem; cursor: not-allowed; opacity: 0.6;">Exam Predictor (Coming
+                            Soon)</span>
                     </div>
                 </div>
             </div>
@@ -143,8 +355,89 @@
         </div>
     </footer>
 
+    <!-- Command Palette Modal -->
+    <div class="command-palette-overlay" id="palette-overlay">
+        <div class="command-palette">
+            <div class="palette-header">
+                <i class="fas fa-search text-muted"></i>
+                <input type="text" class="palette-input" id="palette-search" placeholder="Jump to module or course..."
+                    autocomplete="off">
+            </div>
+            <div class="palette-results" id="palette-results">
+                <div class="p-4 text-center text-muted small">Type to start searching...</div>
+            </div>
+            <div class="palette-footer">
+                <span><kbd>↑↓</kbd> Navigate</span>
+                <span><kbd>↵</kbd> Select</span>
+                <span><kbd>ESC</kbd> Close</span>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                showPalette();
+            }
+            if (e.key === 'Escape') hidePalette();
+        });
+
+        const overlay = document.getElementById('palette-overlay');
+        const input = document.getElementById('palette-search');
+        const results = document.getElementById('palette-results');
+
+        function showPalette() {
+            overlay.style.display = 'block';
+            input.focus();
+        }
+
+        function hidePalette() {
+            overlay.style.display = 'none';
+            input.value = '';
+        }
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) hidePalette();
+        });
+
+        let searchTimeout;
+        input.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const query = e.target.value;
+            if (query.length < 2) return;
+
+            searchTimeout = setTimeout(async () => {
+                results.innerHTML = '<div class="p-4 text-center"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+                try {
+                    const response = await fetch(`/course/api/search/?q=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+                    renderResults(data.results);
+                } catch (err) {
+                    results.innerHTML = '<div class="p-4 text-center text-danger">Failed to fetch results</div>';
+                }
+            }, 300);
+        });
+
+        function renderResults(items) {
+            if (!items.length) {
+                results.innerHTML = '<div class="p-4 text-center text-muted">No modules found.</div>';
+                return;
+            }
+            results.innerHTML = items.map(item => `
+                <a href="${item.url}" class="palette-item">
+                    <i class="fas fa-file-alt"></i>
+                    <div>
+                        <div class="fw-bold">${item.title}</div>
+                        <div class="small opacity-50 text-truncate" style="max-width: 300px;">${item.course}</div>
+                    </div>
+                    <span class="item-meta">Jump to</span>
+                </a>
+            `).join('');
+        }
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 

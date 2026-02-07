@@ -124,12 +124,12 @@
 <body>
 
     <aside class="sidebar">
-        <a href="{% url 'dashboard' %}" class="logo">
+        <a href="{% url 'core:dashboard' %}" class="logo">
             <i class="ph ph-cards"></i> Flashcards AI
         </a>
 
         <nav>
-            <a href="{% url 'flashcard_home' %}" class="menu-item">
+            <a href="{% url 'flashcard_generator:flashcard_home' %}" class="menu-item">
                 <i class="ph ph-squares-four"></i> Your Decks
             </a>
             <div class="menu-item active">

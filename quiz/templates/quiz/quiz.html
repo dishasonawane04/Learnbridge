@@ -9,7 +9,8 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <div>
                 <span
-                    style="font-size: 0.85rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 2px;">{{ subject }} Assessment</span>
+                    style="font-size: 0.85rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 2px;">{{
+                    subject }} Assessment</span>
                 <h2
                     style="font-size: 2.2rem; font-weight: 800; margin-top: 0.5rem; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
                     AI Challenge
@@ -102,7 +103,8 @@
         const radialInputs = form.querySelectorAll('input[type="radio"]');
         const progressBar = document.getElementById('progressBar');
         const answeredCountText = document.getElementById('answeredCount');
-        const totalQuestions = {{ questions| length }};
+        const totalQuestions = {{ questions| length |default: 0
+    }};
 
     const updateProgress = () => {
         const answeredNames = new Set();

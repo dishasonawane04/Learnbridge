@@ -138,7 +138,8 @@
 <body>
 
     <div class="container">
-        <a href="/" style="color:var(--text-muted); text-decoration:none; display:inline-block; margin-bottom:1rem;">
+        <a href="{% url 'core:dashboard' %}"
+            style="color:var(--text-muted); text-decoration:none; display:inline-block; margin-bottom:1rem;">
             <i class="ph ph-arrow-left"></i> Back to Hub
         </a>
 
@@ -178,7 +179,7 @@
 
         <div class="actions">
             <a href="{% url 'prerequisite_checker:home' %}" class="btn btn-outline">Check Another Topic</a>
-            <a href="/" class="btn btn-primary">Go to Dashboard</a>
+            <a href="{% url 'core:dashboard' %}" class="btn btn-primary">Go to Dashboard</a>
         </div>
     </div>
 

@@ -10,7 +10,7 @@ def teacher_required(view_func):
             return redirect('accounts:login')
         
         try:
-            if request.user.account_profile.role == 'Teacher':
+            if request.user.account_profile.role.lower() == 'teacher':
                 return view_func(request, *args, **kwargs)
             else:
                 messages.error(request, "Access restricted to Teachers only.")

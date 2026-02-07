@@ -1,155 +1,571 @@
-{% extends 'letter_of_recommendation_generator/base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}{{ unit.title }} | {{ unit.course.title }}{% endblock %}
 
 {% block content %}
+<div class="container-fluid py-5 px-lg-5">
+    <style>
+        .sidebar {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(16px);
+            border-right: 1px solid var(--glass-border);
+            height: calc(100vh - 100px);
+            overflow-y: auto;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-link:hover {
+            color: var(--primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .sidebar-link.active {
+            color: white;
+            background: rgba(99, 102, 241, 0.1);
+            border-left-color: var(--primary);
+        }
+
+        .sidebar-link.completed i {
+            color: var(--success);
+        }
+
+        .hub-card {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .hub-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary) !important;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.15);
+            background: rgba(15, 23, 42, 0.6);
+        }
+
+        .content-area {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 4rem;
+            min-height: 500px;
+            line-height: 1.8;
+            font-size: 1.15rem;
+            color: #cbd5e1;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .content-area h2,
+        .content-area h3 {
+            color: white;
+            font-weight: 700;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .content-area p {
+            margin-bottom: 1.5rem;
+        }
+
+        .sticky-top-dash {
+            position: sticky;
+            top: 2rem;
+            z-index: 100;
+        }
+    </style>
+
+    <div class="row g-4">
+        <!-- Sidebar Navigation -->
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="sticky-top-dash">
+                <div class="sidebar">
+                    <h5 class="text-white mb-4 px-3" style="font-weight: 600;">
+                        <i class="fas fa-list-ul text-primary me-2"></i> Course Content
+                    </h5>
+                    {% for u in all_units %}
+                    <a href="{% url 'course:unit_detail' u.id %}"
+                        class="sidebar-link {% if u.id == unit.id %}active{% endif %} {% if u.id in completed_unit_ids %}completed{% endif %}">
+                        <i class="fas {% if u.id in completed_unit_ids %}fa-check-circle{% else %}fa-circle{% endif %}"
+                            style="font-size: 0.8rem;"></i>
+                        <span class="text-truncate">{{ u.title }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <!-- Advanced Controls Bar -->
+            <div class="mb-4 d-flex justify-content-between align-items-center fade-in">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'course:list' %}"
+                                class="text-muted text-decoration-none">Courses</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'course:detail' unit.course.id %}"
+                                class="text-muted text-decoration-none">{{ unit.course.title|truncatechars:20 }}</a>
+                        </li>
+                        <li class="breadcrumb-item active text-primary" aria-current="page">
+                            {{ unit.title|truncatechars:15 }}
+                        </li>
+                    </ol>
+                </nav>
+
+                <div
+                    class="d-flex gap-2 align-items-center bg-dark bg-opacity-50 p-1 rounded-pill border border-white border-opacity-10">
+                    <!-- Typography Settings -->
+                    <div class="dropdown">
+                        <button class="btn btn-link text-muted p-2" type="button" data-bs-toggle="dropdown"
+                            aria-expanded="false" title="Typography Settings">
+                            <i class="fas fa-font"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark p-3"
+                            style="min-width: 200px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--glass-border);">
+                            <li class="mb-3">
+                                <label class="small text-muted mb-2">Font Family</label>
+                                <div class="btn-group btn-group-sm w-100">
+                                    <button class="btn btn-outline-secondary active" id="font-sans">Sans</button>
+                                    <button class="btn btn-outline-secondary" id="font-serif">Serif</button>
+                                </div>
+                            </li>
+                            <li>
+                                <label class="small text-muted mb-2">Text Size</label>
+                                <input type="range" class="form-range" min="14" max="24" step="1" id="font-size-slider"
+                                    value="18">
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="vr bg-secondary opacity-25" style="height: 20px;"></div>
+
+                    <!-- Zen Mode Toggle -->
+                    <button class="btn btn-link text-muted p-2" id="zen-mode-toggle"
+                        title="Zen Mode (Distraction-Free)">
+                        <i class="fas fa-leaf"></i>
+                    </button>
+
+                    <div class="vr bg-secondary opacity-25" style="height: 20px;"></div>
+
+                    <div class="d-flex gap-1 px-1">
+                        {% if previous_unit %}
+                        <a href="{% url 'course:unit_detail' previous_unit.id %}" class="btn btn-link text-muted p-2"
+                            title="Previous Module">
+                            <i class="fas fa-arrow-left"></i>
+                        </a>
+                        {% endif %}
+                        {% if next_unit %}
+                        <a href="{% url 'course:unit_detail' next_unit.id %}" class="btn btn-link text-muted p-2"
+                            title="Next Module">
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reading Progress Bar -->
+            <div class="scroll-progress-container">
+                <div class="scroll-progress-bar" id="reading-progress"></div>
+            </div>
+
+            <!-- Selection Tooltip Placeholder -->
+            <div id="selection-tooltip" class="selection-tooltip d-none">
+                <button class="btn btn-primary btn-sm rounded-pill" id="deep-dive-btn">
+                    <i class="fas fa-brain me-1"></i> Deep Dive
+                </button>
+            </div>
+
+            <!-- Unit Header -->
+            <div class="row mb-5 fade-in">
+                <div class="col-12">
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <span
+                            class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 border border-primary border-opacity-25">
+                            UNIT {{ unit.order }}
+                        </span>
+                        <div class="vr opacity-25" style="height: 20px;"></div>
+                        <span class="text-muted small"><i class="fas fa-clock me-1"></i> Estimated: 45m</span>
+                    </div>
+                    <h1 class="display-4 fw-bold text-white mb-3">{{ unit.title }}</h1>
+                    {% if unit.overview %}
+                    <p class="lead text-muted" style="max-width: 800px;">{{ unit.overview }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Integration Hub -->
+            <div class="row mb-5 g-4 fade-in" style="animation-delay: 0.1s;">
+                <div class="col-12 d-flex justify-content-between align-items-center">
+                    <h5 class="text-white mb-0" style="font-weight: 600;">
+                        <i class="fas fa-bolt text-warning me-2"></i> AI Learning Suite
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <!-- Completion Toggle (Moved Here) -->
+                        <form action="{% url 'course:toggle_unit_completion' unit.id %}" method="POST"
+                            id="completion-form">
+                            {% csrf_token %}
+                            <button type="submit"
+                                class="btn {% if is_completed %}btn-success{% else %}btn-outline-success{% endif %} btn-sm rounded-pill px-4">
+                                {% if is_completed %}
+                                <i class="fas fa-check-circle me-1"></i> Completed
+                                {% else %}
+                                <i class="far fa-circle me-1"></i> Mark Lesson Done
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-md-3 col-6">
+                    <a href="{% url 'ai_tutor:start_unit_chat' unit.id %}" class="text-decoration-none">
+                        <div class="card h-100 hub-card text-center py-4 px-3">
+                            <div class="mb-3 hub-icon-container"
+                                style="background: rgba(99, 102, 241, 0.1); color: var(--primary);">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <h6 class="text-white mb-1 fw-bold">AI Tutor</h6>
+                            <p class="text-muted small mb-0">Personalized 1-on-1 support and explanations.</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-md-3 col-6">
+                    <a href="{% url 'learning_support:start_unit_support' unit.id %}" class="text-decoration-none">
+                        <div class="card h-100 hub-card text-center py-4 px-3">
+                            <div class="mb-3 hub-icon-container"
+                                style="background: rgba(245, 158, 11, 0.1); color: var(--warning);">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <h6 class="text-white mb-1 fw-bold">Simplify</h6>
+                            <p class="text-muted small mb-0">Break down complex concepts instantly.</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-md-3 col-6">
+                    <a href="{% url 'quiz:start_unit_quiz' unit.id %}" class="text-decoration-none">
+                        <div class="card h-100 hub-card text-center py-4 px-3">
+                            <div class="mb-3 hub-icon-container"
+                                style="background: rgba(16, 185, 129, 0.1); color: var(--success);">
+                                <i class="fas fa-terminal"></i>
+                            </div>
+                            <h6 class="text-white mb-1 fw-bold">Assesment</h6>
+                            <p class="text-muted small mb-0">Customized tests based on lesson content.</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-md-3 col-6">
+                    <a href="{% url 'notes:generate_unit_notes' unit.id %}" class="text-decoration-none">
+                        <div class="card h-100 hub-card text-center py-4 px-3">
+                            <div class="mb-3 hub-icon-container"
+                                style="background: rgba(6, 182, 212, 0.1); color: var(--info);">
+                                <i class="fas fa-highlighter"></i>
+                            </div>
+                            <h6 class="text-white mb-1 fw-bold">Summary</h6>
+                            <p class="text-muted small mb-0">AI-distilled essential notes and key points.</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Concept Mastery & Knowledge Layer -->
+            <div class="row mb-5 g-4 fade-in" style="animation-delay: 0.15s;">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="text-white mb-0" style="font-weight: 600;">
+                            <i class="fas fa-network-wired text-primary me-2"></i> Concept Mastery Graph
+                        </h5>
+                        <span class="badge bg-dark border border-white border-opacity-10 text-muted small">
+                            {{ concepts.count }} ATOMIC NODES
+                        </span>
+                    </div>
+
+                    <div class="row g-3">
+                        {% for mastery in mastery_data %}
+                        <div class="col-md-4">
+                            <div class="glass-card p-3 border-0 h-100" style="background: rgba(255, 255, 255, 0.02);">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="text-white small fw-bold mb-0">{{ mastery.concept.title }}</h6>
+                                    <span
+                                        class="x-small text-uppercase tracking-wider px-2 py-1 rounded bg-secondary bg-opacity-25 text-dim">
+                                        {{ mastery.concept.get_taxonomy_level_display }}
+                                    </span>
+                                </div>
+
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <small class="x-small text-muted">MASTERY</small>
+                                        <small class="x-small text-primary fw-bold">{{ mastery.score|floatformat:0
+                                            }}%</small>
+                                    </div>
+                                    <div class="progress" style="height: 4px; background: rgba(255,255,255,0.05);">
+                                        <div class="progress-bar bg-primary" role="progressbar"
+                                            style="width: {{ mastery.score }}%;" aria-valuenow="{{ mastery.score }}"
+                                            aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 d-flex justify-content-between align-items-center">
+                                    <div class="d-flex gap-1">
+                                        {% if mastery.score >= 80 %}
+                                        <i class="fas fa-check-circle text-success x-small" title="Mastered"></i>
+                                        {% elif mastery.score > 0 %}
+                                        <i class="fas fa-clock text-warning x-small" title="In Progress"></i>
+                                        {% else %}
+                                        <i class="far fa-circle text-muted x-small" title="Locked"></i>
+                                        {% endif %}
+                                    </div>
+                                    <button class="btn btn-link p-0 x-small text-muted text-decoration-none"
+                                        title="Practice this Concept">
+                                        Practice <i class="fas fa-chevron-right ms-1"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="p-4 text-center glass-card border-dashed">
+                                <p class="text-muted small mb-0">AI is still decomposing this unit. Concepts will appear
+                                    once processing is complete.</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="row fade-in" style="animation-delay: 0.2s;">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="text-white mb-0"><i class="fas fa-book-open text-primary me-2"></i> Study Material
+                        </h3>
+
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'flashcard_generator:generate_from_unit' unit.id %}"
+                                class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-layer-group me-1"></i> Flashcards
+                            </a>
+                            <a href="{% url 'generator:generate_unit_plan' unit.id %}"
+                                class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-calendar-alt me-1"></i> Plan
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="content-area text-white shadow-lg">
+                        {% if unit.content %}
+                        {{ unit.content|linebreaks }}
+                        {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-file-alt fs-1 mb-3 opacity-50"></i>
+                            <p>No content has been added to this unit.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
-    .hub-card {
-        background: rgba(15, 23, 42, 0.4);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid var(--glass-border);
-        transition: transform 0.3s ease, border-color 0.3s ease;
-        cursor: pointer;
-    }
-
-    .hub-card:hover {
-        transform: translateY(-5px);
-        border-color: var(--primary) !important;
-        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.15);
-        background: rgba(15, 23, 42, 0.6);
-    }
-
-    .content-area {
-        background: rgba(15, 23, 42, 0.3);
-        backdrop-filter: blur(16px);
-        border: 1px solid var(--glass-border);
+    .hub-icon-container {
+        width: 60px;
+        height: 60px;
         border-radius: 12px;
-        padding: 3rem;
-        min-height: 400px;
-        line-height: 1.8;
-        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        font-size: 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .hub-card:hover .hub-icon-container {
+        transform: scale(1.1);
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+
+    /* Zen Mode */
+    body.zen-mode {
+        background: #0a0f1e !important;
+    }
+
+    body.zen-mode .navbar,
+    body.zen-mode footer,
+    body.zen-mode .sidebar,
+    body.zen-mode .integration-hub-section,
+    body.zen-mode .breadcrumb-nav {
+        display: none !important;
+    }
+
+    body.zen-mode .col-lg-9 {
+        width: 100% !important;
+        max-width: 800px !important;
+        margin: 0 auto !important;
+        padding-top: 5rem;
+    }
+
+    body.zen-mode .content-area {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+
+    /* Typography Variants */
+    .font-serif {
+        font-family: 'Crimson Pro', Georgia, serif !important;
+    }
+
+    .font-sans {
+        font-family: 'Inter', system-ui, sans-serif !important;
+    }
+
+    /* Scroll Progress */
+    .scroll-progress-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        z-index: 9999;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .scroll-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), #a855f7);
+        width: 0%;
+        transition: width 0.1s ease;
+        box-shadow: 0 0 10px var(--primary);
+    }
+
+    /* Selection Tooltip */
+    .selection-tooltip {
+        position: absolute;
+        z-index: 1000;
+        background: #1e293b;
+        padding: 5px;
+        border-radius: 30px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--glass-border);
+        transform: translateY(-100%) translateY(-10px);
     }
 </style>
 
-<div class="mb-4 d-flex justify-content-between align-items-center fade-in">
-    <a href="{% url 'course:detail' unit.course.id %}" class="text-decoration-none text-muted hover-text-primary">
-        <i class="fas fa-arrow-left"></i> Back to {{ unit.course.title }}
-    </a>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const contentArea = document.querySelector('.content-area');
 
-    <div>
-        {% if previous_unit %}
-        <a href="{% url 'course:unit_detail' previous_unit.id %}" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-chevron-left"></i> Previous
-        </a>
-        {% endif %}
-        {% if next_unit %}
-        <a href="{% url 'course:unit_detail' next_unit.id %}" class="btn btn-outline-secondary btn-sm">
-            Next <i class="fas fa-chevron-right"></i>
-        </a>
-        {% endif %}
-    </div>
-</div>
+        // Zen Mode Toggle
+        const zenToggle = document.getElementById('zen-mode-toggle');
+        if (zenToggle) {
+            zenToggle.addEventListener('click', () => {
+                document.body.classList.toggle('zen-mode');
+                const i = zenToggle.querySelector('i');
+                i.classList.toggle('fa-leaf');
+                i.classList.toggle('fa-times');
+                zenToggle.classList.toggle('text-primary');
+            });
+        }
 
-<div class="row mb-5 fade-in">
-    <div class="col-12 text-center">
-        <h6 class="text-uppercase text-primary fw-bold tracking-wide mb-2">Unit {{ unit.order }}</h6>
-        <h1 class="display-4 fw-bold text-white mb-3">{{ unit.title }}</h1>
-    </div>
-</div>
+        // Typography Controls
+        const sizeSlider = document.getElementById('font-size-slider');
+        if (sizeSlider) {
+            sizeSlider.addEventListener('input', (e) => {
+                contentArea.style.fontSize = `${e.target.value}px`;
+            });
+        }
 
-<!-- Integration Hub -->
-<div class="row mb-5 g-4 justify-content-center fade-in" style="animation-delay: 0.1s;">
-    <!-- AI Tutor -->
-    <div class="col-md-3">
-        <a href="{% url 'ai_tutor:start_unit_chat' unit.id %}" class="text-decoration-none">
-            <div class="card h-100 hub-card text-center py-4 px-3">
-                <div class="card-body p-0">
-                    <div class="mb-3" style="font-size: 2.5rem; color: var(--primary);">
-                        <i class="fas fa-robot"></i>
-                    </div>
-                    <h5 class="card-title text-white mb-2">AI Tutor</h5>
-                    <p class="card-text text-muted small">Ask questions about this unit</p>
-                </div>
-            </div>
-        </a>
-    </div>
+        const fontSerif = document.getElementById('font-serif');
+        const fontSans = document.getElementById('font-sans');
+        if (fontSerif && fontSans) {
+            fontSerif.addEventListener('click', (e) => {
+                contentArea.classList.add('font-serif');
+                contentArea.classList.remove('font-sans');
+                fontSerif.classList.add('active');
+                fontSans.classList.remove('active');
+            });
 
-    <!-- Learning Support -->
-    <div class="col-md-3">
-        <a href="{% url 'learning_support:start_unit_support' unit.id %}" class="text-decoration-none">
-            <div class="card h-100 hub-card text-center py-4 px-3">
-                <div class="card-body p-0">
-                    <div class="mb-3" style="font-size: 2.5rem; color: var(--warning);">
-                        <i class="fas fa-life-ring"></i>
-                    </div>
-                    <h5 class="card-title text-white mb-2">Help Me Understand</h5>
-                    <p class="card-text text-muted small">Get simplified explanations & hints</p>
-                </div>
-            </div>
-        </a>
-    </div>
+            fontSans.addEventListener('click', (e) => {
+                contentArea.classList.add('font-sans');
+                contentArea.classList.remove('font-serif');
+                fontSans.classList.add('active');
+                fontSerif.classList.remove('active');
+            });
+        }
 
-    <!-- Flashcards -->
-    <div class="col-md-3">
-        <a href="{% url 'flashcard_generator:generate_from_unit' unit.id %}" class="text-decoration-none">
-            <div class="card h-100 hub-card text-center py-4 px-3">
-                <div class="card-body p-0">
-                    <div class="mb-3" style="font-size: 2.5rem; color: var(--success);">
-                        <i class="fas fa-layer-group"></i>
-                    </div>
-                    <h5 class="card-title text-white mb-2">Flashcards</h5>
-                    <p class="card-text text-muted small">Generate cards from these notes</p>
-                </div>
-            </div>
-        </a>
-    </div>
+        // Scroll Progress
+        window.addEventListener('scroll', () => {
+            const h = document.documentElement,
+                b = document.body,
+                st = 'scrollTop',
+                sh = 'scrollHeight';
+            const percent = (h[st] || b[st]) / ((h[sh] || b[sh]) - h.clientHeight) * 100;
+            const progress = document.getElementById('reading-progress');
+            if (progress) progress.style.width = percent + '%';
+        });
 
-    <!-- Prerequisite Check -->
-    <div class="col-md-3">
-        <a href="{% url 'prerequisite_checker:check_unit_readiness' unit.id %}" class="text-decoration-none">
-            <div class="card h-100 hub-card text-center py-4 px-3">
-                <div class="card-body p-0">
-                    <div class="mb-3" style="font-size: 2.5rem; color: var(--danger);">
-                        <i class="fas fa-tasks"></i>
-                    </div>
-                    <h5 class="card-title text-white mb-2">Am I Ready?</h5>
-                    <p class="card-text text-muted small">Check prerequisites for this unit</p>
-                </div>
-            </div>
-        </a>
-    </div>
-</div>
+        // Deep Dive Tooltip
+        const tooltip = document.getElementById('selection-tooltip');
+        if (tooltip) {
+            document.addEventListener('mouseup', (e) => {
+                const selection = window.getSelection();
+                const selectedText = selection.toString().trim();
 
-<!-- Content/Notes Section -->
-<div class="row fade-in" style="animation-delay: 0.2s;">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="text-white"><i class="fas fa-book-open text-primary"></i> Study Notes</h3>
-            {% if request.user.userprofile.role == 'Teacher' %}
-            <button class="btn btn-sm btn-outline-primary">
-                <i class="fas fa-pen"></i> Edit Content
-            </button>
-            {% endif %}
-        </div>
+                if (selectedText.length > 5) {
+                    try {
+                        const range = selection.getRangeAt(0);
+                        const rect = range.getBoundingClientRect();
 
-        <div class="content-area text-white shadow-lg">
-            {% if unit.content %}
-            {{ unit.content|linebreaks }}
-            {% else %}
-            <div class="text-center text-muted py-5">
-                <i class="fas fa-file-alt fs-1 mb-3 opacity-50"></i>
-                <p>No notes have been added for this unit yet.</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
+                        tooltip.style.left = `${rect.left + rect.width / 2}px`;
+                        tooltip.style.top = `${rect.top + window.scrollY}px`;
+                        tooltip.classList.remove('d-none');
+                    } catch (err) { }
+                } else {
+                    tooltip.classList.add('d-none');
+                }
+            });
 
-<style>
-    .hover-text-primary:hover {
-        color: var(--primary) !important;
-    }
-</style>
+            const deepDiveBtn = document.getElementById('deep-dive-btn');
+            if (deepDiveBtn) {
+                deepDiveBtn.addEventListener('click', () => {
+                    const text = window.getSelection().toString().trim();
+                    // Communicate with AI Assistant if available
+                    if (window.AI_WIDGET) {
+                        window.AI_WIDGET.ask(`Explain this concept in detail: "${text}"`);
+                    } else {
+                        alert(`Requesting AI Deep Dive for: ${text}`);
+                    }
+                });
+            }
+        }
+    });
+</script>
+
+<!-- AI Assistant Widget -->
+{% include 'course/components/ai_chat.html' %}
+
 {% endblock %}

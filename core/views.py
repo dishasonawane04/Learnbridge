@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .models import UserProfile, UserActivity
+from .models import UserActivity
+from accounts.models import UserProfile
 from django.db import models
 from django.db.models import Avg, Sum, Count, Q
 from django.utils import timezone
 from datetime import timedelta
-from course.models import Course, CourseUnit, CourseMaterial
+from course.models import Course, CourseUnit, CourseMaterial, UserUnitCompletion
 
 def home(request):
     return render(request, 'core/home.html')
@@ -15,12 +16,12 @@ def dashboard(request):
     profile = None
     if hasattr(request.user, 'account_profile'):
         profile = request.user.account_profile
-    elif hasattr(request.user, 'core_profile'):
-        profile = request.user.core_profile
+    elif hasattr(request.user, 'account_profile'):
+        profile = request.user.account_profile
     else:
-        # Fallback: create core profile if none exists
+        # Fallback: create account profile if none exists
         UserProfile.objects.create(user=request.user, role='student')
-        profile = request.user.core_profile
+        profile = request.user.account_profile
 
     # 1. Course Stats
     user_courses = Course.objects.filter(user=request.user).order_by('-created_at')
@@ -52,17 +53,18 @@ def dashboard(request):
                     break
 
     # 4. Course Progress / Mastery
-    # For each course, calculate progress (simple heuristic for now: units with activity)
+    from course.models import UserUnitCompletion
     course_data = []
     for course in user_courses:
         units = course.units.all()
-        completed_units = 0
-        for unit in units:
-            # Check if there's any activity for topics in this unit
-            if activities.filter(topic__icontains=unit.title, outcome='completed').exists():
-                completed_units += 1
+        completed_unit_ids = UserUnitCompletion.objects.filter(
+            user=request.user, 
+            unit__course=course
+        ).values_list('unit_id', flat=True)
         
-        progress = int((completed_units / units.count() * 100)) if units.exists() else 0
+        completed_units_count = len(completed_unit_ids)
+        progress = int((completed_units_count / units.count() * 100)) if units.exists() else 0
+        
         course_data.append({
             'id': course.id,
             'title': course.title,
@@ -106,7 +108,7 @@ def dashboard(request):
         'recent_activity': recent_activity,
     }
     
-    if profile.role == 'teacher':
+    if profile and profile.role.lower() == 'teacher':
         return render(request, 'core/teacher_dashboard.html', context)
     return render(request, 'core/student_dashboard.html', context)
 
@@ -116,5 +118,5 @@ def role_selection(request):
         role = request.POST.get('role')
         if role in ['student', 'teacher']:
             UserProfile.objects.get_or_create(user=request.user, defaults={'role': role})
-            return redirect('dashboard')
+            return redirect('core:dashboard')
     return render(request, 'core/role_selection.html')

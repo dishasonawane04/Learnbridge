@@ -1,4 +1,5 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.conf import settings
 from .models import QuizAttempt
 from core.models import UserActivity
@@ -17,12 +18,19 @@ SUBJECTS = [
     {"key": "Cloud Computing", "name": "Cloud Computing", "icon": "fas fa-cloud"},
 ]
 
-async def generate_quiz_questions(subject, num_questions=5, context=None):
-    """Generate quiz questions using Ollama, optionally with course context"""
-    context_str = f"\nUse the following CONTEXT for these questions:\n{context}\n" if context else ""
+async def generate_quiz_questions(subject, num_questions=5, course=None, unit=None):
+    """Generate quiz questions using Ollama with strict system prompt."""
     
-    prompt = f"""Generate {num_questions} multiple choice quiz questions about {subject}.
-{context_str}
+    from course.services.ai_context import get_system_prompt
+
+    system_prompt = ""
+    if course and unit:
+        system_prompt = get_system_prompt(course, unit)
+    else:
+        system_prompt = "SYSTEM:\nYou are an academic AI assistant."
+
+    task_prompt = f"""TASK:
+Generate {num_questions} multiple choice quiz questions about {subject} based strictly on the provided context/syllabus.
 
 Format each question EXACTLY like this:
 Q: [Question text]
@@ -34,11 +42,13 @@ ANSWER: [A, B, C, or D]
 
 Make questions practical and relevant based on the context provided. Ensure each question has exactly 4 options and a clear correct answer."""
 
+    final_prompt = f"{system_prompt}\n\n{task_prompt}"
+
     try:
         client = ollama.AsyncClient()
         response = await client.chat(
             model=settings.OLLAMA_MODEL_TEXT,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[{"role": "user", "content": final_prompt}],
             options={"temperature": 0.7}
         )
         
@@ -46,7 +56,6 @@ Make questions practical and relevant based on the context provided. Ensure each
         questions = parse_questions(text)
         
         if len(questions) < num_questions:
-            # Fallback questions
             return get_fallback_questions(subject, num_questions)
         
         return questions[:num_questions]
@@ -211,13 +220,24 @@ def quiz_view(request):
         })
     
     # Generate new questions
-    from course.services.ai_context import get_course_context
+    from course.models import Course, CourseUnit
     course_id = request.GET.get('course_id')
-    context = None
+    unit_id = request.GET.get('unit_id')
+    
+    course_obj = None
+    unit_obj = None
+    
     if course_id:
-        context = get_course_context(course_id=course_id)
-        
-    questions = async_to_sync(generate_quiz_questions)(subject, 5, context=context)
+        from django.shortcuts import get_object_or_404
+        course_obj = get_object_or_404(Course, id=course_id)
+    
+    if unit_id:
+        from django.shortcuts import get_object_or_404
+        unit_obj = get_object_or_404(CourseUnit, id=unit_id)
+        if not course_obj:
+            course_obj = unit_obj.course
+
+    questions = async_to_sync(generate_quiz_questions)(subject, 5, course=course_obj, unit=unit_obj)
     request.session['questions'] = questions
     
     return render(request, 'quiz/quiz.html', {
@@ -225,3 +245,16 @@ def quiz_view(request):
         'questions': questions,
         'course_id': course_id
     })
+
+def start_unit_quiz(request, unit_id):
+    """Initializes a quiz from a Course Unit."""
+    from course.models import CourseUnit
+    from django.shortcuts import get_object_or_404
+    unit = get_object_or_404(CourseUnit, id=unit_id)
+    
+    # We default to 'Machine Learning' or 'Python' based on content or just pick one
+    # For now, let's use the unit title as the 'subject' or just a generic placeholder
+    # that the generator will use to influence the prompt.
+    subject = unit.title
+    
+    return redirect(f"{reverse('quiz:quiz_start')}?unit_id={unit.id}&subject={subject}")

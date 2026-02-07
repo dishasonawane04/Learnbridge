@@ -104,7 +104,7 @@ def signup_view(request):
             
             login(request, user)
             messages.success(request, f"Welcome, {user.username}! You signed up as a {role}.")
-            return redirect('dashboard')
+            return redirect('core:dashboard')
     else:
         form = SignupForm()
     
@@ -126,11 +126,11 @@ def login_view(request):
             except UserProfile.DoesNotExist:
                 # Handle fallback if no profile exists (e.g., admin users created via CLI)
                 messages.warning(request, "User profile missing. Please update your profile.")
-                return redirect('dashboard')
+                return redirect('core:dashboard')
 
             # Role-based redirection can be refined here if needed
             # For now, both roles go to the main dashboard
-            return redirect('dashboard')
+            return redirect('core:dashboard')
     else:
         form = LoginForm()
             

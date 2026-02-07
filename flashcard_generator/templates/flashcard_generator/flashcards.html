@@ -263,7 +263,7 @@
 <body>
 
     <header>
-        <a href="{% url 'flashcard_home' %}" class="back-link">
+        <a href="{% url 'flashcard_generator:flashcard_home' %}" class="back-link">
             <i class="ph ph-arrow-left"></i> Exit
         </a>
         <div class="progress-container">
@@ -365,9 +365,9 @@
                         <p class="text-muted">You've reviewed all cards for now.</p>
                         
                         <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
-                            <a href="{% url 'flashcard_home' %}" class="btn-control btn-easy" style="text-decoration: none; width: auto; padding: 1rem 2rem;">Back to Home</a>
+                            <a href="{% url 'flashcard_generator:flashcard_home' %}" class="btn-control btn-easy" style="text-decoration: none; width: auto; padding: 1rem 2rem;">Back to Home</a>
                             
-                            <form action="{% url 'generate_quiz' deck.id %}" method="POST" style="margin:0;" onsubmit="this.querySelector('button').innerHTML = '<i class=\'ph ph-spinner ph-spin\'></i> Generating...'; this.querySelector('button').disabled = true;">
+                            <form action="{% url 'flashcard_generator:generate_quiz_view' deck.id %}" method="POST" style="margin:0;" onsubmit="this.querySelector('button').innerHTML = '<i class=\'ph ph-spinner ph-spin\'></i> Generating...'; this.querySelector('button').disabled = true;">
                                 {% csrf_token %}
                                 <button type="submit" class="btn-control btn-hard" style="width: auto; padding: 1rem 2rem; background: var(--accent);">
                                     <i class="ph ph-lightning"></i> Take a Quiz

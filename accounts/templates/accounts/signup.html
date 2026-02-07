@@ -121,20 +121,21 @@
         display: none !important;
     }
 
-    /* Ensure container centers the card */
+    /* Ensure container centers the card without extra boxes */
     .container {
         display: flex !important;
         flex-direction: column !important;
-        /* Stack columns to fix side-by-side issue */
         align-items: center !important;
         justify-content: center !important;
         min-height: 100vh !important;
         padding: 1rem !important;
         max-width: 100% !important;
-        /* Allow full width centering */
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
     }
 
-    /* Hide base alerts to prevent layout shifting, we verify logic via verify_auth.py anyway or can render inside card */
+    /* Hide base alerts */
     .container>.alert {
         display: none !important;
     }

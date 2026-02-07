@@ -82,3 +82,5 @@ check_log.txt
 check_results.txt
 error_output.txt
 migration_error.txt
+__pycache__/
+*.pyc
