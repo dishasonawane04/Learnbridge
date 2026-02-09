@@ -110,6 +110,24 @@
                         <span class="text-truncate">{{ u.title }}</span>
                     </a>
                     {% endfor %}
+
+                    <hr class="border-secondary opacity-25 my-3">
+
+                    <!-- Quick Upload -->
+                    <div class="px-3">
+                        <button class="btn btn-outline-light btn-sm w-100" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#uploadCollapse">
+                            <i class="fas fa-cloud-upload-alt me-2"></i> Add Material
+                        </button>
+                        <div class="collapse mt-2" id="uploadCollapse">
+                            <form action="{% url 'course:material_upload' unit.id %}" method="post"
+                                enctype="multipart/form-data" class="p-2 glass-card border-0">
+                                {% csrf_token %}
+                                <input type="file" name="file" class="form-control form-control-sm mb-2" required>
+                                <button type="submit" class="btn btn-primary btn-sm w-100">Upload & AI Extract</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

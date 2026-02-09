@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher Analytics - LearnBridge</title>
+    <title>Faculty Analytics - LearnBridge</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
@@ -15,7 +15,7 @@
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --accent: #10b981;
-            /* Green for teacher */
+            /* Green for faculty */
         }
 
         body {
@@ -133,7 +133,7 @@
     <nav class="navbar">
         <a href="/" class="logo">
             <i class="ph ph-chalkboard-teacher"></i>
-            LearnBridge<span>.Teacher</span>
+            LearnBridge<span>.Faculty</span>
         </a>
         <a href="/" class="btn-home">Back to Hub</a>
     </nav>
@@ -150,6 +150,7 @@
                         <th>AI Interactions</th>
                         <th>Flashcards Generated</th>
                         <th>Avg Quiz Score</th>
+                        <th>Status</th>
                         <th>Last Active</th>
                         <th>Action</th>
                     </tr>
@@ -158,16 +159,30 @@
                     {% for student in students %}
                     <tr>
                         <td>
-                            <a href="{% url 'analytics:teacher_student_detail' student.user.id %}" class="student-link">
+                            <a href="{% url 'analytics:faculty_student_detail' student.user.id %}" class="student-link">
                                 <i class="ph ph-user-circle"></i> {{ student.full_name }}
                             </a>
                         </td>
                         <td>{{ student.ai_interactions }}</td>
                         <td>{{ student.flashcards_generated }}</td>
                         <td>{{ student.quiz_avg|floatformat:1 }}%</td>
+                        <td>
+                            {% if student.status == 'Needs Help' %}
+                            <span
+                                style="background: rgba(239, 68, 68, 0.2); color: #ef4444; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.85rem;">Needs
+                                Help</span>
+                            {% elif student.status == 'Inactive' %}
+                            <span
+                                style="background: rgba(148, 163, 184, 0.2); color: #94a3b8; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.85rem;">Inactive</span>
+                            {% else %}
+                            <span
+                                style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.85rem;">On
+                                Track</span>
+                            {% endif %}
+                        </td>
                         <td>{{ student.last_active|timesince|default:"Never" }} ago</td>
                         <td>
-                            <a href="{% url 'analytics:teacher_student_detail' student.user.id %}" class="btn-view">View
+                            <a href="{% url 'analytics:faculty_student_detail' student.user.id %}" class="btn-view">View
                                 Detail</a>
                         </td>
                     </tr>

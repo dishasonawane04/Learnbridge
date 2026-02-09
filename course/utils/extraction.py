@@ -41,26 +41,32 @@ def extract_text_from_image(file_path):
     except Exception as e:
         return f"Image OCR Failed: {str(e)}"
 
-def extract_content(material):
-    """Main entry point to extract text based on material type"""
-    file_path = material.file.path
+def extract_text_from_path(file_path):
+    """Generic extraction based on file extension"""
     ext = os.path.splitext(file_path)[1].lower()
     
     if ext == '.pdf':
-        material.file_type = 'pdf'
-        text = extract_text_from_pdf(file_path)
+        return extract_text_from_pdf(file_path)
     elif ext in ['.pptx', '.ppt']:
-        material.file_type = 'ppt'
-        text = extract_text_from_ppt(file_path)
+        return extract_text_from_ppt(file_path)
     elif ext in ['.png', '.jpg', '.jpeg']:
-        material.file_type = 'image'
-        text = extract_text_from_image(file_path)
+        return extract_text_from_image(file_path)
     elif ext in ['.txt', '.md']:
-        material.file_type = 'text'
-        with open(file_path, 'r') as f:
-            text = f.read()
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            return f.read()
     else:
-        text = "Unsupported file type"
+        return ""
+
+def extract_content(material):
+    """Main entry point to extract text based on material type"""
+    text = extract_text_from_path(material.file.path)
+    
+    # Set file type based on extension (legacy logic)
+    ext = os.path.splitext(material.file.path)[1].lower()
+    if ext == '.pdf': material.file_type = 'pdf'
+    elif ext in ['.pptx', '.ppt']: material.file_type = 'ppt'
+    elif ext in ['.png', '.jpg', '.jpeg']: material.file_type = 'image'
+    elif ext in ['.txt', '.md']: material.file_type = 'text'
         
     material.extracted_text = text
     material.save()

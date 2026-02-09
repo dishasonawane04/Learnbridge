@@ -1,0 +1,2 @@
+FAIL: Teacher access returned 302
+Response content prefix: b''

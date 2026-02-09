@@ -242,8 +242,8 @@
                             <i class="fas fa-file-signature"></i> LOR Gen
                         </a>
                         {% if user.is_authenticated %}
-                        {% if user.account_profile.role|lower == 'teacher' %}
-                        <a href="{% url 'analytics:teacher_dashboard' %}" class="dropdown-item">
+                        {% if user.account_profile.role|lower == 'faculty' %}
+                        <a href="{% url 'analytics:faculty_dashboard' %}" class="dropdown-item">
                             <i class="fas fa-chart-line"></i> Analytics
                         </a>
                         {% else %}

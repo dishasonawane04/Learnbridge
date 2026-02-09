@@ -4,6 +4,7 @@ import uuid
 
 class Chat(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    course = models.ForeignKey('course.Course', on_delete=models.SET_NULL, null=True, blank=True, related_name='chats')
     unit = models.ForeignKey('course.CourseUnit', on_delete=models.SET_NULL, null=True, blank=True, related_name='chats')
     session_key = models.CharField(max_length=40, null=True, blank=True)
     title = models.CharField(max_length=255, default="New Chat")

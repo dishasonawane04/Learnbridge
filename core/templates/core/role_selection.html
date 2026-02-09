@@ -28,10 +28,10 @@
                 </button>
             </form>
 
-            <!-- Teacher Card -->
+            <!-- Faculty Card -->
             <form method="post" style="display: contents;">
                 {% csrf_token %}
-                <input type="hidden" name="role" value="teacher">
+                <input type="hidden" name="role" value="faculty">
                 <button type="submit" class="glass-card role-card"
                     style="padding: 3rem; text-align: center; cursor: pointer; width: 100%;">
                     <div
@@ -42,7 +42,7 @@
                                 d="M12 11c0 3.517-1.009 6.799-2.753 9.571m0 0A9.994 9.994 0 014 12c0-5.523 4.477-10 10-10s10 4.477 10 10a9.994 9.994 0 01-5.247 8.771m-4.753 0L12 11" />
                         </svg>
                     </div>
-                    <h2 style="font-size: 1.5rem; color: white; margin-bottom: 1rem;">I'm a Teacher</h2>
+                    <h2 style="font-size: 1.5rem; color: white; margin-bottom: 1rem;">I'm a Faculty</h2>
                     <p style="color: var(--text-light); line-height: 1.5;">Create educational content, monitor student
                         performance, and manage classes.</p>
                 </button>

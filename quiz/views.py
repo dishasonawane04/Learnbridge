@@ -210,13 +210,18 @@ def quiz_view(request):
             percentage=percentage
         )
         
+        course_id = request.POST.get('course_id') or request.GET.get('course_id')
+        unit_id = request.POST.get('unit_id') or request.GET.get('unit_id')
+
         return render(request, 'quiz/result.html', {
             'subject': subject,
             'score': score,
             'total': total,
             'percentage': percentage,
             'results': results,
-            'passed': percentage >= 70
+            'passed': percentage >= 70,
+            'course_id': course_id,
+            'unit_id': unit_id
         })
     
     # Generate new questions

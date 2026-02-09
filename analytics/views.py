@@ -1,12 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, Avg
 from django.utils import timezone
 from datetime import timedelta
 from .models import ActivityLog
 from accounts.models import UserProfile
 from django.contrib.auth.models import User
-from accounts.decorators import teacher_required
+from accounts.decorators import faculty_required
 from prerequisite_checker.models import PrerequisiteSession
 
 @login_required
@@ -76,8 +76,8 @@ def student_dashboard(request):
     
     return render(request, 'analytics/student_dashboard.html', context)
 
-@teacher_required
-def teacher_dashboard(request):
+@faculty_required
+def faculty_dashboard(request):
     """
     Overview of all students' activity.
     """
@@ -90,20 +90,29 @@ def teacher_dashboard(request):
         
         # Gather summary stats
         last_active = logs.first().timestamp if logs.exists() else None
+        quiz_avg = logs.filter(app_name='flashcard', activity_type='quiz_completed').aggregate(score__avg=Avg('score'))['score__avg'] or 0
+        
+        # Determine status
+        status = 'On Track'
+        if quiz_avg < 60 and logs.filter(app_name='flashcard', activity_type='quiz_completed').exists():
+             status = 'Needs Help'
+        elif not last_active or (timezone.now() - last_active).days > 7:
+             status = 'Inactive'
         
         student_data.append({
             'user': user,
             'full_name': profile.full_name,
             'ai_interactions': logs.filter(app_name='ai_tutor').count(),
             'flashcards_generated': logs.filter(app_name='flashcard', activity_type='deck_generated').count(),
-            'quiz_avg': logs.filter(app_name='flashcard', activity_type='quiz_completed').aggregate(score__avg='score')['score__avg'] or 0,
-            'last_active': last_active
+            'quiz_avg': quiz_avg,
+            'last_active': last_active,
+            'status': status
         })
         
-    return render(request, 'analytics/teacher_dashboard.html', {'students': student_data})
+    return render(request, 'analytics/faculty_dashboard.html', {'students': student_data})
 
-@teacher_required
-def teacher_student_detail(request, user_id):
+@faculty_required
+def faculty_student_detail(request, user_id):
     """
     Detailed view of a single student for the teacher.
     """

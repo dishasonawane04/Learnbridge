@@ -115,16 +115,27 @@ def chat_api(request):
             if not user_message and (image_path or doc_path):
                 prompt_for_ai = "Analyze this content."
             
-            # --- STICT CONTEXT INJECTION FROM MANDATORY CONTRACT ---
+            # --- STRICT CONTEXT INJECTION FROM MANDATORY CONTRACT ---
             from course.services.ai_context import get_system_prompt
+            from core.ai.services import CourseContextEngine
             
             system_instruction = ""
+            
             if chat.unit:
-                # Use the centralized, mandatory prompt
+                # Use unitary context (legacy + specific unit focus)
                 system_instruction = get_system_prompt(chat.unit.course, chat.unit)
+            elif chat.course:
+                # Use FULL COURSE context
+                context_text = CourseContextEngine.get_course_context(chat.course.id)
+                system_instruction = (
+                    "You are a helpful teaching assistant for this specific course. "
+                    "Use ONLY the following course notes to answer the student's question. "
+                    "If the answer is not in the notes, say 'I cannot find this in the course material.'\n\n"
+                    f"--- COURSE NOTES ---\n{context_text}\n--------------------\n"
+                )
             else:
-                # Fallback if no unit (though user said no tool without unit, we handle graceful degradation)
-                system_instruction = "SYSTEM: You are an academic AI assistant. Please ask the user to select a course unit."
+                # Fallback
+                system_instruction = "SYSTEM: You are an academic AI assistant. Please ask the user to select a course."
 
             # Prepend system instruction to the prompt context for the AI service
             # (Assuming chat_with_ai supports system prompt or we prepend it)
@@ -321,6 +332,7 @@ def start_unit_chat(request, unit_id):
     chat = Chat(
         user=request.user,
         unit=unit,
+        course=unit.course,
         title=f"Study: {unit.title}"
     )
     chat.save()
@@ -330,4 +342,30 @@ def start_unit_chat(request, unit_id):
         "active_chat": chat,
         "chat_history": [],
         "unit": unit
+    })
+
+@login_required
+def start_course_chat(request, course_id):
+    """Start a new global chat session for a specific course"""
+    from course.models import Course
+    course = get_object_or_404(Course, id=course_id)
+    
+    # Check if user has access (owner or logged in? Student enrolled?)
+    # For now, if they can view the course, they can chat.
+    # We should probably check enrollment if we had it, but here we assume open access or check course user?
+    # Spec says: "Tutor must now work course-wise."
+    
+    # Create new chat for this course
+    chat = Chat(
+        user=request.user,
+        course=course,
+        title=f"Course Help: {course.title}"
+    )
+    chat.save()
+    
+    return render(request, "ai_tutor/tutor.html", {
+        "all_chats": Chat.objects.filter(user=request.user, is_archived=False),
+        "active_chat": chat,
+        "chat_history": [],
+        "course": course
     })

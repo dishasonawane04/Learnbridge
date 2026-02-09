@@ -1,0 +1,15 @@
+﻿Setting up Django...
+Django setup complete.
+Verifying Teacher Access...
+DEBUG: User=test_teacher, Authenticated=True
+DEBUG: Profile found. Role=Teacher
+DEBUG: Exception in teacher_required: QuerySet.aggregate() received non-expression(s): score.
+FAIL: Teacher access returned 302
+
+Verifying Student Redirect...
+DEBUG: User=test_student, Authenticated=True
+DEBUG: Profile found. Role=Student
+Redirect chain: [('/analytics/dashboard/', 302)]
+PASS: Student was redirected (Chain: [('/analytics/dashboard/', 302)])
+
+SOME CHECKS FAILED

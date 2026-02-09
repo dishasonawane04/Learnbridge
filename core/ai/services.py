@@ -86,3 +86,89 @@ class ContentIntelligenceEngine:
                 target=concepts[i+1],
                 relation_type='prereq'
             )
+
+import requests
+from django.conf import settings
+
+class CourseContextEngine:
+    """
+    Central engine for retrieving course context and querying AI.
+    """
+    
+    @staticmethod
+    def get_course_context(course_id: int) -> str:
+        """
+        Retrieves all text content from a course (units + materials).
+        """
+        try:
+            from course.models import Course
+            course = Course.objects.get(id=course_id)
+            units = course.units.all().prefetch_related('materials')
+            
+            context_parts = []
+            context_parts.append(f"COURSE TITLE: {course.title}")
+            context_parts.append(f"DESCRIPTION: {course.description}\n")
+            
+            for unit in units:
+                context_parts.append(f"--- LESSON: {unit.title} ---")
+                if unit.content:
+                    context_parts.append(unit.content)
+                
+                # If there's an uploaded file on the unit (our new field)
+                # We assume content extraction happened or we just note it.
+                # Ideally, content extraction updates unit.content.
+                
+                # Check legacy materials
+                for mat in unit.materials.all():
+                    if mat.extracted_text:
+                        context_parts.append(f"[Material: {mat.file_type}]")
+                        context_parts.append(mat.extracted_text)
+                        
+                context_parts.append("\n")
+                
+            return "\n".join(context_parts)
+        except Exception as e:
+            logger.error(f"Error getting course context: {e}")
+            return ""
+
+    @staticmethod
+    def ask_course_ai(course_id: int, question: str) -> str:
+        """
+        Asks the AI a question based strictly on the course context.
+        """
+        context = CourseContextEngine.get_course_context(course_id)
+        
+        if not context.strip():
+            return "I cannot find any content in this course to answer your question."
+            
+        system_prompt = (
+            "You are a helpful teaching assistant for this specific course. "
+            "Use ONLY the following course notes to answer the student's question. "
+            "If the answer is not in the notes, say 'I cannot find this in the course material.' "
+            "Do not halluncinate or use outside knowledge.\n\n"
+            f"--- COURSE NOTES ---\n{context}\n--------------------\n"
+        )
+        
+        return CourseContextEngine._query_ollama(system_prompt, question)
+
+    @staticmethod
+    def _query_ollama(system: str, user_msg: str) -> str:
+        try:
+            model = "llama3" # Enforce llama3
+            response = requests.post(
+                "http://localhost:11434/api/generate",
+                json={
+                    "model": model,
+                    "prompt": f"{system}\n\nStudent: {user_msg}\nAI:",
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.3 # Low temperature for factual recall
+                    }
+                },
+                timeout=30
+            )
+            response.raise_for_status()
+            return response.json().get('response', "Error: Empty response from AI.")
+        except Exception as e:
+            logger.error(f"Ollama Error: {e}")
+            return f"Error contacting AI service: {e}"

@@ -332,3 +332,51 @@ def generate_from_unit(request, unit_id):
         )
 
     return redirect('flashcard_generator:study_deck', deck_id=deck.id)
+
+@csrf_exempt
+def generate_from_course(request, course_id):
+    """Generates a flashcard deck from the entire Course context."""
+    from course.models import Course
+    from core.ai.services import CourseContextEngine
+    
+    course = get_object_or_404(Course, id=course_id)
+    
+    # Get Full Context
+    context_text = CourseContextEngine.get_course_context(course.id)
+    
+    if not context_text or len(context_text) < 50:
+        return redirect('course:detail', course_id=course.id)
+
+    # Call AI Service
+    cards_data = generate_flashcards(input_text=context_text, difficulty="Medium")
+    
+    if not cards_data:
+        return redirect('course:detail', course_id=course.id)
+        
+    # Create Deck linked to Course
+    deck = FlashcardDeck.objects.create(
+        title=f"Mastery: {course.title}",
+        course=course,
+        difficulty="Medium"
+    )
+    
+    for card in cards_data:
+        if 'front' in card and 'back' in card:
+            Flashcard.objects.create(
+                deck=deck,
+                front=card['front'],
+                back=card['back'],
+                exam_tip=card.get('exam_tip', "")
+            )
+            
+    # Log Activity
+    if request.user.is_authenticated:
+        ActivityLog.objects.create(
+            user=request.user,
+            app_name='flashcard',
+            activity_type='deck_generated',
+            topic=deck.title,
+            metadata={'deck_id': str(deck.id), 'source': 'course_full'}
+        )
+
+    return redirect('flashcard_generator:study_deck', deck_id=deck.id)

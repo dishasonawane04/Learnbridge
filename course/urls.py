@@ -9,6 +9,7 @@ urlpatterns = [
     path('<int:course_id>/', views.course_detail, name='detail'),
     path('unit/<int:unit_id>/', views.unit_detail, name='unit_detail'),
     path('<int:course_id>/unit/create/', views.unit_create, name='unit_create'),
+    path('<int:course_id>/add-lesson/', views.unit_create, name='add_lesson'), # Alias for UX
     path('unit/<int:unit_id>/edit/', views.unit_edit, name='unit_edit'),
     path('<int:course_id>/unit/add/', views.unit_add, name='unit_add'),  # Legacy
     path('unit/<int:unit_id>/upload/', views.material_upload, name='material_upload'),

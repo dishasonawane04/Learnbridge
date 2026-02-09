@@ -4,7 +4,7 @@ from django.db import models
 from django.http import JsonResponse
 import json
 from .models import Course, CourseUnit, CourseMaterial, UserUnitCompletion, ConceptNode, UserConceptMastery, AIStudyInsight, StudyActivity
-from .utils.extraction import extract_content
+from .utils.extraction import extract_content, extract_text_from_path
 from core.ai.services import ContentIntelligenceEngine
 from .services.ai_context import get_system_prompt, query_ai_service
 from .services.intelligence import AIInsightService
@@ -42,6 +42,32 @@ def course_create(request):
             description=description, 
             level=level
         )
+        
+        # Check for initial file upload
+        if request.FILES.get('course_file'):
+            try:
+                uploaded_file = request.FILES['course_file']
+                # Create initial unit
+                unit = CourseUnit.objects.create(
+                    course=course,
+                    title="Course Introduction & Materials",
+                    overview="Initial materials uploaded during course creation.",
+                    uploaded_file=uploaded_file,
+                    order=1
+                )
+                
+                # Extract text
+                extracted = extract_text_from_path(unit.uploaded_file.path)
+                if extracted:
+                    unit.content = extracted
+                    unit.save()
+                    
+                    # Intelligence Analysis
+                    ContentIntelligenceEngine.parse_unit_into_concepts(unit)
+                    ContentIntelligenceEngine.create_knowledge_graph(unit)
+            except Exception as e:
+                print(f"Initial course file processing failed: {e}")
+
         return redirect('course:detail', course_id=course.id)
     return render(request, 'course/course_form.html')
 
@@ -101,6 +127,7 @@ def unit_create(request, course_id):
         title = request.POST.get('title')
         overview = request.POST.get('overview', '')
         content = request.POST.get('content', '')
+        uploaded_file = request.FILES.get('uploaded_file')
         order = request.POST.get('order', 0)
         
         unit = CourseUnit.objects.create(
@@ -108,8 +135,23 @@ def unit_create(request, course_id):
             title=title,
             overview=overview,
             content=content,
+            uploaded_file=uploaded_file,
             order=order
         )
+        
+        # Auto-extract content from file if uploaded
+        if unit.uploaded_file:
+            try:
+                extracted = extract_text_from_path(unit.uploaded_file.path)
+                if extracted:
+                    if unit.content:
+                        unit.content += "\n\n" + extracted
+                    else:
+                        unit.content = extracted
+                    unit.save()
+            except Exception as e:
+                print(f"Extraction failed: {e}")
+
         # Trigger Content Intelligence Engine
         ContentIntelligenceEngine.parse_unit_into_concepts(unit)
         ContentIntelligenceEngine.create_knowledge_graph(unit)
@@ -139,6 +181,20 @@ def unit_edit(request, unit_id):
         unit.title = request.POST.get('title', unit.title)
         unit.overview = request.POST.get('overview', unit.overview)
         unit.content = request.POST.get('content', unit.content)
+        if request.FILES.get('uploaded_file'):
+            unit.uploaded_file = request.FILES['uploaded_file']
+            # Save first to get path
+            unit.save()
+            try:
+                extracted = extract_text_from_path(unit.uploaded_file.path)
+                if extracted:
+                     # For edit, maybe we shouldn't overwrite, but append? 
+                     # Let's append if content exists
+                    unit.content = (unit.content or "") + "\n\n" + extracted
+                    unit.save()
+            except Exception as e:
+                print(f"Extraction failed: {e}")
+                
         unit.order = request.POST.get('order', unit.order)
         unit.save()
         

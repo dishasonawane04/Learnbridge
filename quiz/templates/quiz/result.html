@@ -55,10 +55,22 @@
             style="padding: 1.25rem 2.5rem; font-size: 1.1rem;">
             <i class="fas fa-redo" style="margin-right: 0.75rem;"></i> Try Another
         </a>
+        {% if unit_id %}
+        <a href="{% url 'course:unit_detail' unit_id %}" class="btn btn-primary"
+            style="padding: 1.25rem 3rem; font-size: 1.1rem; background: linear-gradient(135deg, var(--primary), var(--accent));">
+            <i class="fas fa-arrow-left" style="margin-right: 0.75rem;"></i> Back to Unit
+        </a>
+        {% elif course_id %}
+        <a href="{% url 'course:detail' course_id %}" class="btn btn-primary"
+            style="padding: 1.25rem 3rem; font-size: 1.1rem; background: linear-gradient(135deg, var(--primary), var(--accent));">
+            <i class="fas fa-arrow-left" style="margin-right: 0.75rem;"></i> Back to Course
+        </a>
+        {% else %}
         <a href="{% url 'home' %}" class="btn btn-primary"
             style="padding: 1.25rem 3rem; font-size: 1.1rem; background: linear-gradient(135deg, var(--primary), var(--accent));">
             Back to Dashboard <i class="fas fa-home" style="margin-left: 0.75rem;"></i>
         </a>
+        {% endif %}
     </div>
 
     <!-- Review Section -->

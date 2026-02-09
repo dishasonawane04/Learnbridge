@@ -107,12 +107,18 @@ async def generate_notes(request):
     return await sync_to_async(render)(request, "notes/generate.html", {
         "response": response,
         "response_html": response_html,
-        "topic": topic
+        "topic": topic,
+        "course_id": course_id,
+        "unit_id": unit_id
     })
 
 def generate_unit_notes(request, unit_id):
     """Initializes note generation from a Course Unit."""
     from course.models import CourseUnit
     from django.shortcuts import get_object_or_404
+    from urllib.parse import urlencode
+    
     unit = get_object_or_404(CourseUnit, id=unit_id)
-    return redirect(f"{reverse('notes:notes')}?unit_id={unit.id}&topic={unit.title}")
+    base_url = reverse('notes:notes')
+    query_string = urlencode({'unit_id': unit.id, 'topic': unit.title})
+    return redirect(f"{base_url}?{query_string}")

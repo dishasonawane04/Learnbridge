@@ -32,7 +32,7 @@
                 {% endif %}
             </p>
 
-            <form method="post">
+            <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
 
                 <!-- Title -->
@@ -69,6 +69,19 @@
                         style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white; line-height: 1.6;">{% if unit %}{{ unit.overview }}{% endif %}</textarea>
                     <small class="text-muted mt-1 d-block">
                         <i class="fas fa-robot"></i> This helps AI tools understand the unit's scope
+                    </small>
+                </div>
+
+                <!-- Upload File -->
+                <div class="form-group mb-4">
+                    <label class="form-label text-white mb-2">
+                        <i class="fas fa-cloud-upload-alt text-primary"></i> Upload Materials (PDF, PPT, Images)
+                    </label>
+                    <input type="file" name="uploaded_file" class="form-control glass-input"
+                        style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    <small class="text-muted mt-1 d-block">
+                        <i class="fas fa-magic"></i> AI will automatically extract text from this file to populate the
+                        notes below.
                     </small>
                 </div>
 

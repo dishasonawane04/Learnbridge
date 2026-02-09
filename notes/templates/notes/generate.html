@@ -12,6 +12,8 @@
         <form method="post">
             {% csrf_token %}
             <input type="hidden" name="action" value="generate">
+            {% if course_id %}<input type="hidden" name="course_id" value="{{ course_id }}">{% endif %}
+            {% if unit_id %}<input type="hidden" name="unit_id" value="{{ unit_id }}">{% endif %}
             <div style="display: flex; gap: 1rem; align-items: flex-end;">
                 <div style="flex-grow: 1;">
                     <label

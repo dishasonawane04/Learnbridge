@@ -1,0 +1,11 @@
+﻿Setting up Django...
+Django setup complete.
+Verifying Teacher Access...
+PASS: Teacher can access dashboard (Status 200)
+PASS: 'Status' column found in response
+
+Verifying Student Redirect...
+Redirect chain: [('/analytics/dashboard/', 302)]
+PASS: Student was redirected (Chain: [('/analytics/dashboard/', 302)])
+
+ALL CHECKS PASSED

@@ -128,12 +128,21 @@ def support_chat_api(request):
                 if new_chat_created:
                     yield json.dumps({"type": "meta", "chat_id": str(session.id)}) + "\n"
 
+                # Prepare Context
+                context_data = None
+                if session.unit:
+                    context_data = f"Unit: {session.unit.title}\nNotes: {session.unit.content}"
+                elif session.course:
+                    from core.ai.services import CourseContextEngine
+                    context_data = CourseContextEngine.get_course_context(session.course.id)
+
                 generator = get_support_response(
                     user_message, 
                     mode=mode, 
                     stream=True,
-                    context=f"Unit: {session.unit.title}\nNotes: {session.unit.content}" if session.unit else None
+                    context=context_data
                 )
+                
                 for chunk in generator:
                     full_response.append(chunk)
                     yield chunk
@@ -163,5 +172,21 @@ def start_unit_support(request, unit_id):
     else:
         # Require login for course features generally, but handle anonymous safe
         return redirect('course:list') # Or login
+
+    return redirect(f'/support/?chat_id={session.id}')
+
+def start_course_support(request, course_id):
+    """Creates a new support session linked to a Course."""
+    from course.models import Course
+    course = get_object_or_404(Course, id=course_id)
+    
+    if request.user.is_authenticated:
+        session = SupportSession.objects.create(
+            user=request.user,
+            course=course,
+            title=f"Help: {course.title}"
+        )
+    else:
+        return redirect('course:list')
 
     return redirect(f'/support/?chat_id={session.id}')

@@ -15,5 +15,6 @@ urlpatterns = [
     path('archived/', views.archived_chats, name='archived_chats'),
     path('share/<str:token>/', views.shared_chat, name='shared_chat'),
     path('share/link/<int:chat_id>/', views.get_share_link, name='get_share_link'),
-    path('start-unit/<int:unit_id>/', views.start_unit_chat, name='start_unit_chat'),
+    path('unit/<int:unit_id>/', views.start_unit_chat, name='start_unit_chat'),
+    path('course/<int:course_id>/', views.start_course_chat, name='start_course_chat'),
 ]

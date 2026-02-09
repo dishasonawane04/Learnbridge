@@ -108,15 +108,15 @@ def dashboard(request):
         'recent_activity': recent_activity,
     }
     
-    if profile and profile.role.lower() == 'teacher':
-        return render(request, 'core/teacher_dashboard.html', context)
+    if profile and profile.role.lower() == 'faculty':
+        return render(request, 'core/faculty_dashboard.html', context)
     return render(request, 'core/student_dashboard.html', context)
 
 @login_required
 def role_selection(request):
     if request.method == 'POST':
         role = request.POST.get('role')
-        if role in ['student', 'teacher']:
+        if role in ['student', 'faculty']:
             UserProfile.objects.get_or_create(user=request.user, defaults={'role': role})
             return redirect('core:dashboard')
     return render(request, 'core/role_selection.html')

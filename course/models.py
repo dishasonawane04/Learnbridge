@@ -23,6 +23,7 @@ class CourseUnit(models.Model):
     title = models.CharField(max_length=255)
     overview = models.TextField(blank=True, help_text="Syllabus/learning objectives for this unit")
     content = models.TextField(blank=True, help_text="Main content/notes for this unit")
+    uploaded_file = models.FileField(upload_to='course_materials/', blank=True, null=True, help_text="Optional file upload for the lesson")
     order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -31,6 +32,11 @@ class CourseUnit(models.Model):
 
     def __str__(self):
         return f"{self.course.title} - {self.title}"
+
+    # Alias for clarity in other parts of the system if needed
+    @property
+    def is_lesson(self):
+        return True
 
 class CourseMaterial(models.Model):
     FILE_TYPES = (

@@ -34,6 +34,8 @@
     <!-- Quiz Form -->
     <form method="post" id="quizForm">
         {% csrf_token %}
+        {% if course_id %}<input type="hidden" name="course_id" value="{{ course_id }}">{% endif %}
+        {% if unit_id %}<input type="hidden" name="unit_id" value="{{ unit_id }}">{% endif %}
 
         {% for q in questions %}
         <div class="question-card"
