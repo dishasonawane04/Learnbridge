@@ -8,4 +8,5 @@ urlpatterns = [
     # Original views
     path('dashboard/', views.dashboard, name='dashboard'),
     path('role-select/', views.role_selection, name='role_selection'),
+    path('set-active-course/', views.set_active_course, name='set_active_course'),
 ]

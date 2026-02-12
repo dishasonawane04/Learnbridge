@@ -1,5 +1,65 @@
 {% extends 'base.html' %}
 
+{% block extra_css %}
+<style>
+    .subject-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        padding: 2.5rem;
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .subject-card:hover {
+        transform: translateY(-8px);
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: rgba(99, 102, 241, 0.5) !important;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 20px rgba(99, 102, 241, 0.1);
+    }
+
+    .subject-icon-container {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+        color: var(--primary);
+        transition: transform 0.3s ease;
+    }
+
+    .subject-card:hover .subject-icon-container {
+        transform: scale(1.1);
+        color: var(--accent) !important;
+    }
+
+    .subject-title {
+        font-size: 1.4rem;
+        margin-bottom: 0.75rem;
+        color: var(--text-main);
+        font-weight: 700;
+    }
+
+    .subject-stats {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        color: var(--text-dim);
+        font-size: 0.9rem;
+    }
+
+    .inner-glow {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.2), transparent);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="fade-in" style="max-width: 1000px; margin: 0 auto; padding: 2rem 1rem;">
     <!-- Quiz Header/Logo -->
@@ -16,24 +76,51 @@
             to test your understanding with AI-generated questions.</p>
     </div>
 
+    {% if active_course %}
+    <!-- Recommended Course Quiz -->
+    <div style="margin-bottom: 4rem;">
+        <h2
+            style="font-size: 1.25rem; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 2rem; text-align: center;">
+            Recommended For You</h2>
+        <a href="{% url 'quiz:quiz_start' %}?subject={{ active_course.title|urlencode }}"
+            style="text-decoration: none;">
+            <div class="subject-card"
+                style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); border: 2px solid var(--primary);">
+                <div class="inner-glow"></div>
+                <div style="position: absolute; top: 1rem; right: 1rem;">
+                    <span class="badge"
+                        style="background: var(--primary); color: white; padding: 0.5rem 1rem; border-radius: 12px; font-size: 0.75rem;">ON
+                        YOUR SYLLABUS</span>
+                </div>
+                <div class="subject-icon-container">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h3 class="subject-title">{{ active_course.title }}</h3>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">AI will generate
+                    questions strictly from your uploaded course materials.</p>
+                <div class="subject-stats">
+                    <i class="fas fa-list-ol"></i>
+                    <span>Adaptive Depth</span>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <p style="color: var(--text-dim); font-size: 0.9rem; margin: 0;">— OR BROWSE GENERIC TOPICS —</p>
+    </div>
+    {% endif %}
+
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;">
         {% for subject in subjects %}
         <a href="{% url 'quiz:quiz_start' %}?subject={{ subject.key }}" style="text-decoration: none;">
-            <div class="subject-card"
-                style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; padding: 2.5rem; text-align: center; transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); cursor: pointer; position: relative; overflow: hidden;">
-                <!-- Subtle Inner Glow -->
-                <div
-                    style="position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.2), transparent);">
-                </div>
-
-                <div class="subject-icon-container"
-                    style="font-size: 3rem; margin-bottom: 1.5rem; color: var(--primary); transition: transform 0.3s ease;">
+            <div class="subject-card">
+                <div class="inner-glow"></div>
+                <div class="subject-icon-container">
                     <i class="{{ subject.icon }}"></i>
                 </div>
-                <h3 style="font-size: 1.4rem; margin-bottom: 0.75rem; color: var(--text-main); font-weight: 700;">{{
-                    subject.name }}</h3>
-                <div
-                    style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: var(--text-dim); font-size: 0.9rem;">
+                <h3 class="subject-title">{{ subject.name }}</h3>
+                <div class="subject-stats">
                     <i class="fas fa-list-ol"></i>
                     <span>5 Questions</span>
                 </div>
@@ -42,18 +129,4 @@
         {% endfor %}
     </div>
 </div>
-
-<style>
-    .subject-card:hover {
-        transform: translateY(-8px);
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-color: rgba(99, 102, 241, 0.5) !important;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 20px rgba(99, 102, 241, 0.1);
-    }
-
-    .subject-card:hover .subject-icon-container {
-        transform: scale(1.1);
-        color: var(--accent) !important;
-    }
-</style>
 {% endblock %}

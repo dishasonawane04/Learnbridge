@@ -17,12 +17,12 @@ async def learning_support(request):
         
         client = ollama.AsyncClient()
 
-        from course.services.ai_context import get_course_context
-        course_id = request.GET.get('course_id')
+        from course.services.context_provider import get_course_context
+        course_id = request.session.get("active_course_id") or request.GET.get('course_id')
         context = ""
         if course_id:
-            context = get_course_context(course_id=course_id)
-            context = f"\nUse the following COURSE CONTEXT for reference:\n{context}\n"
+            context_text = get_course_context(request.user, course_id=course_id)
+            context = f"\nUse the following COURSE CONTEXT for reference:\n{context_text}\n"
 
         if image:
             def save_file(img):

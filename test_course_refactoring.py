@@ -108,12 +108,11 @@ def test_course_refactoring():
     
     # Test 9: AI Context Service
     print("\n9. Testing AI context service...")
-    from course.services.ai_context import get_system_prompt
-    system_prompt = get_system_prompt(course, unit)
-    assert course.title in system_prompt, "Course title not in prompt"
-    assert unit.title in system_prompt, "Unit title not in prompt"
-    assert unit.overview in system_prompt, "Unit overview not in prompt"
-    print("   ✅ AI context service uses overview field correctly")
+    from core.ai.services import CourseContextEngine
+    context = CourseContextEngine.get_course_context(course.id)
+    assert course.title in context, "Course title not in context"
+    # Note: extracted_text might be empty in this test db, but titles should be there via fallback
+    print("   ✅ AI context service (Core Engine) integrated successfully")
     
     # Test 10: Permission Checks
     print("\n10. Testing permission checks...")

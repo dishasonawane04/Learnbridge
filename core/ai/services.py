@@ -1,7 +1,9 @@
 import json
 import logging
+import requests
 from typing import List, Dict, Any
-from course.models import CourseUnit, ConceptNode, KnowledgeRelationship
+from django.conf import settings
+from course.models import Course, CourseUnit, CourseMaterial, ConceptNode, KnowledgeRelationship, CourseContext
 
 logger = logging.getLogger(__name__)
 
@@ -87,8 +89,67 @@ class ContentIntelligenceEngine:
                 relation_type='prereq'
             )
 
-import requests
-from django.conf import settings
+class ProcessingPipeline:
+    """Automated pipeline: Extraction → Chunking → Concept Mining → Embeddings"""
+
+    @staticmethod
+    def process_course_material(material: CourseMaterial):
+        """Full pipeline for a newly uploaded material"""
+        # 1. Extraction (Assumed already done by material.save() or trigger)
+        text = material.extracted_text
+        if not text:
+            return
+
+        # 2. Chunking
+        chunks = ProcessingPipeline._chunk_text(text)
+        
+        # 3. Concept Mining
+        concepts = ProcessingPipeline._mine_concepts(text)
+        material.key_topics = concepts
+        
+        # 4. Update Summary
+        material.summary = ProcessingPipeline._generate_summary(text[:2000])
+        material.save()
+
+        # 5. Sync to CourseContext
+        ProcessingPipeline.sync_to_course_context(material.course)
+
+    @staticmethod
+    def sync_to_course_context(course: Course):
+        """Aggregate all material data into the central CourseContext"""
+        context_obj, _ = CourseContext.objects.get_or_create(course=course)
+        
+        all_materials = course.course_materials.all()
+        aggregated_concepts = set()
+        glossary = {}
+
+        for mat in all_materials:
+            if mat.key_topics:
+                aggregated_concepts.update(mat.key_topics)
+            
+        context_obj.important_concepts = list(aggregated_concepts)
+        # In a real app, glossary would be extracted via LLM
+        context_obj.save()
+
+    @staticmethod
+    def _chunk_text(text: str, size: int = 1000) -> List[str]:
+        """Simple character-based chunking with overlap"""
+        return [text[i:i+size] for i in range(0, len(text), size - 100)]
+
+    @staticmethod
+    def _mine_concepts(text: str) -> List[str]:
+        """Extract key topics using simple frequency or LLM"""
+        # Placeholder: Return top keywords for now
+        # In Phase 2, this will be an Ollama call
+        words = text.split()
+        if len(words) < 10: return []
+        return list(set([w.strip(',.()').title() for w in words if len(w) > 5]))[:10]
+
+    @staticmethod
+    def _generate_summary(text: str) -> str:
+        """Generate a brief summary of the text chunk"""
+        system = "Summarize the following educational content in 2-3 sentences."
+        return CourseContextEngine._query_ollama(system, text[:1500])
 
 class CourseContextEngine:
     """
@@ -98,58 +159,46 @@ class CourseContextEngine:
     @staticmethod
     def get_course_context(course_id: int) -> str:
         """
-        Retrieves all text content from a course (units + materials).
+        Retrieves consolidated text content from CourseNotes.
         """
         try:
-            from course.models import Course
-            course = Course.objects.get(id=course_id)
-            units = course.units.all().prefetch_related('materials')
+            from course.models import CourseNotes
+            notes = CourseNotes.objects.filter(course_id=course_id).first()
+            if notes:
+                return notes.extracted_text
             
-            context_parts = []
-            context_parts.append(f"COURSE TITLE: {course.title}")
-            context_parts.append(f"DESCRIPTION: {course.description}\n")
-            
-            for unit in units:
-                context_parts.append(f"--- LESSON: {unit.title} ---")
-                if unit.content:
-                    context_parts.append(unit.content)
-                
-                # If there's an uploaded file on the unit (our new field)
-                # We assume content extraction happened or we just note it.
-                # Ideally, content extraction updates unit.content.
-                
-                # Check legacy materials
-                for mat in unit.materials.all():
-                    if mat.extracted_text:
-                        context_parts.append(f"[Material: {mat.file_type}]")
-                        context_parts.append(mat.extracted_text)
-                        
-                context_parts.append("\n")
-                
-            return "\n".join(context_parts)
+            # Fallback to dynamic consolidation if notes don't exist yet
+            return CourseContextEngine.consolidate_course_notes(course_id)
         except Exception as e:
             logger.error(f"Error getting course context: {e}")
             return ""
 
     @staticmethod
-    def ask_course_ai(course_id: int, question: str) -> str:
+    def consolidate_course_notes(course_id: int):
         """
-        Asks the AI a question based strictly on the course context.
+        Gathers all extracted text from course materials and consolidates 
+        into the CourseNotes model for the course.
         """
-        context = CourseContextEngine.get_course_context(course_id)
-        
-        if not context.strip():
-            return "I cannot find any content in this course to answer your question."
+        try:
+            course = Course.objects.get(id=course_id)
+            materials = course.course_materials.all().order_by('created_at')
             
-        system_prompt = (
-            "You are a helpful teaching assistant for this specific course. "
-            "Use ONLY the following course notes to answer the student's question. "
-            "If the answer is not in the notes, say 'I cannot find this in the course material.' "
-            "Do not halluncinate or use outside knowledge.\n\n"
-            f"--- COURSE NOTES ---\n{context}\n--------------------\n"
-        )
-        
-        return CourseContextEngine._query_ollama(system_prompt, question)
+            consolidated_text = []
+            for mat in materials:
+                if mat.extracted_text:
+                    consolidated_text.append(f"--- Document: {mat.file.name} ---")
+                    consolidated_text.append(mat.extracted_text)
+                    consolidated_text.append("\n")
+            
+            from course.models import CourseNotes
+            notes, _ = CourseNotes.objects.get_or_create(course=course)
+            notes.extracted_text = "\n".join(consolidated_text)
+            notes.save()
+            
+            return notes.extracted_text
+        except Exception as e:
+            logger.error(f"Error consolidating course notes: {e}")
+            return ""
 
     @staticmethod
     def _query_ollama(system: str, user_msg: str) -> str:

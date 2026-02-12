@@ -49,22 +49,19 @@ async def generate_notes(request):
                 )
                 return redirect('notes_list')
 
-        # --- STRICT CONTEXT INJECTION ---
-        from course.models import Course, CourseUnit
-        from course.services.ai_context import get_system_prompt
+        # --- CENTRALIZED CONTEXT INJECTION ---
+        from core.ai.services import CourseContextEngine
         
-        course_id = request.GET.get('course_id') or request.POST.get('course_id')
-        unit_id = request.GET.get('unit_id') or request.POST.get('unit_id')
+        course_id = request.session.get("active_course_id") or request.GET.get('course_id') or request.POST.get('course_id')
         
-        system_prompt = "SYSTEM:\nYou are an academic AI assistant."
+        context_text = CourseContextEngine.get_course_context(course_id)
         
-        if unit_id:
-             unit = get_object_or_404(CourseUnit, id=unit_id)
-             system_prompt = get_system_prompt(unit.course, unit)
-        elif course_id:
-             course = get_object_or_404(Course, id=course_id)
-             # Fallback if only course provided (though strictly should represent unit)
-             system_prompt = f"SYSTEM:\nYou are an academic AI assistant for the course {course.title}."
+        system_prompt = (
+            "You are an academic AI assistant. "
+            "Use ONLY the following study material to generate notes. "
+            "If the information is not in the material, say you cannot find it."
+            f"\n--- COURSE NOTES ---\n{context_text}\n---------------------\n"
+        )
 
         final_prompt = f"""{system_prompt}
         
@@ -108,8 +105,7 @@ async def generate_notes(request):
         "response": response,
         "response_html": response_html,
         "topic": topic,
-        "course_id": course_id,
-        "unit_id": unit_id
+        "course_id": course_id
     })
 
 def generate_unit_notes(request, unit_id):

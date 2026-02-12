@@ -1,82 +1,83 @@
 {% extends 'base.html' %}
 
-{% block content %}
-<div class="glass-card fade-in"
-    style="max-width: 900px; margin: 0 auto; padding: 2.5rem; border: 1px solid rgba(99, 102, 241, 0.2);">
-
-    <!-- Header & Progress -->
-    <div style="margin-bottom: 3rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <div>
-                <span
-                    style="font-size: 0.85rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 2px;">{{
-                    subject }} Assessment</span>
-                <h2
-                    style="font-size: 2.2rem; font-weight: 800; margin-top: 0.5rem; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
-                    AI Challenge
-                </h2>
-            </div>
-            <div id="questionCounter"
-                style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); padding: 0.5rem 1.25rem; border-radius: 12px; color: var(--text-main); font-weight: 600;">
-                <span id="answeredCount">0</span> / {{ questions|length }} Completed
-            </div>
-        </div>
-
-        <!-- Progress Bar -->
-        <div
-            style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; position: relative;">
-            <div id="progressBar"
-                style="position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);">
-            </div>
-        </div>
-    </div>
-
-    <!-- Quiz Form -->
-    <form method="post" id="quizForm">
-        {% csrf_token %}
-        {% if course_id %}<input type="hidden" name="course_id" value="{{ course_id }}">{% endif %}
-        {% if unit_id %}<input type="hidden" name="unit_id" value="{{ unit_id }}">{% endif %}
-
-        {% for q in questions %}
-        <div class="question-card"
-            style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 2.5rem; margin-bottom: 2.5rem; transition: border-color 0.3s ease;">
-
-            <div style="display: flex; gap: 1.5rem; margin-bottom: 2rem;">
-                <div
-                    style="flex-shrink: 0; width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 800; border: 1px solid rgba(99, 102, 241, 0.2);">
-                    {{ forloop.counter }}
-                </div>
-                <h3
-                    style="font-size: 1.25rem; font-weight: 600; line-height: 1.5; color: var(--text-main); margin: 0; padding-top: 0.25rem;">
-                    {{ q.question }}
-                </h3>
-            </div>
-
-            <div class="options-group" style="display: grid; gap: 1rem;">
-                {% for opt in q.options %}
-                <label class="option-label"
-                    style="display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem 1.75rem; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; cursor: pointer; transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); position: relative;">
-                    <input type="radio" name="q{{ forloop.parentloop.counter0 }}" value="{{ opt }}"
-                        style="width: 1.4rem; height: 1.4rem; cursor: pointer; accent-color: var(--primary);">
-                    <span style="font-size: 1.1rem; color: var(--text-light);">{{ opt }}</span>
-                </label>
-                {% endfor %}
-            </div>
-        </div>
-        {% endfor %}
-
-        <!-- Submit Button -->
-        <div style="text-align: center; margin-top: 4rem;">
-            <button type="submit" class="btn btn-primary"
-                style="font-size: 1.2rem; padding: 1.25rem 4rem; background: linear-gradient(135deg, var(--success), #16a34a); box-shadow: 0 0 30px rgba(34, 197, 94, 0.3); border: none;">
-                Finish Assessment
-                <i class="fas fa-check-circle" style="margin-left: 0.75rem;"></i>
-            </button>
-        </div>
-    </form>
-</div>
-
+{% block extra_css %}
 <style>
+    .quiz-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2.5rem;
+        border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    .quiz-header-label {
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: var(--primary);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .quiz-title {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-top: 0.5rem;
+        background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .counter-badge {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        padding: 0.5rem 1.25rem;
+        border-radius: 12px;
+        color: var(--text-main);
+        font-weight: 600;
+    }
+
+    .progress-track {
+        width: 100%;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .progress-fill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+        transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+    }
+
+    .question-box {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 2.5rem;
+        margin-bottom: 2.5rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .option-label {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 1.25rem 1.75rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        position: relative;
+    }
+
     .option-label:hover {
         background: rgba(255, 255, 255, 0.05) !important;
         border-color: rgba(99, 102, 241, 0.4) !important;
@@ -94,15 +95,107 @@
         font-weight: 600;
     }
 
-    .question-card:has(input:checked) {
+    .question-box:has(input:checked),
+    .question-box:has(input:not(:placeholder-shown)) {
         border-color: rgba(99, 102, 241, 0.3) !important;
     }
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="glass-card quiz-container fade-in">
+    <!-- Header & Progress -->
+    <div style="margin-bottom: 3rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+                <span class="quiz-header-label">{{ subject }} Assessment</span>
+                <h2 class="quiz-title">AI Challenge</h2>
+            </div>
+            <div id="questionCounter" class="counter-badge">
+                <span id="answeredCount">0</span> / {{ questions|length }} Completed
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-track">
+            <div id="progressBar" class="progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- Quiz Form -->
+    <form method="post" id="quizForm">
+        {% csrf_token %}
+        {% if course %}<input type="hidden" name="course_id" value="{{ course.id }}">{% endif %}
+
+        {% if questions %}
+        {% for q in questions %}
+        <div class="question-box" data-q-type="{{ q.type }}">
+            <div style="display: flex; gap: 1.5rem; margin-bottom: 2rem;">
+                <div
+                    style="flex-shrink: 0; width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 800; border: 1px solid rgba(99, 102, 241, 0.2);">
+                    {{ forloop.counter }}
+                </div>
+                <div style="flex-grow: 1;">
+                    <span
+                        class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-2"
+                        style="font-size: 0.75rem; text-transform: uppercase;">{{ q.type }}</span>
+                    <h3
+                        style="font-size: 1.25rem; font-weight: 600; line-height: 1.5; color: var(--text-main); margin: 0; padding-top: 0.25rem;">
+                        {{ q.question }}
+                    </h3>
+                </div>
+            </div>
+
+            <div class="options-group" style="display: grid; gap: 1rem;">
+                {% if q.type == 'MCQ' or q.type == 'TF' %}
+                {% for opt in q.options %}
+                <label class="option-label">
+                    <input type="radio" name="q{{ forloop.parentloop.counter0 }}" value="{{ opt }}"
+                        style="width: 1.4rem; height: 1.4rem; cursor: pointer; accent-color: var(--primary);">
+                    <span style="font-size: 1.1rem; color: var(--text-light);">{{ opt }}</span>
+                </label>
+                {% endfor %}
+                {% elif q.type == 'SHORT' %}
+                <div class="form-group">
+                    <input type="text" name="q{{ forloop.counter0 }}" class="form-control quiz-text-input"
+                        placeholder="Type your answer here..."
+                        style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; padding: 1.25rem; border-radius: 12px; font-size: 1.1rem;">
+                    <small class="text-muted mt-2 d-block"><i class="fas fa-keyboard me-1"></i> Exact phrasing doesn't
+                        matter as much as the core concept.</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Submit Button -->
+        <div style="text-align: center; margin-top: 4rem;">
+            <button type="submit" class="btn btn-primary"
+                style="font-size: 1.2rem; padding: 1.25rem 4rem; background: linear-gradient(135deg, var(--success), #16a34a); box-shadow: 0 0 30px rgba(34, 197, 94, 0.3); border: none;">
+                Finish Assessment <i class="fas fa-check-circle" style="margin-left: 0.75rem;"></i>
+            </button>
+            {% if course %}
+            <p class="text-muted mt-3"><i class="fas fa-lock me-1"></i> Results will be linked to <strong>{{
+                    course.title }}</strong></p>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-file-invoice mb-4" style="font-size: 4rem; color: var(--primary); opacity: 0.3;"></i>
+            <h3>No Questions Available</h3>
+            <p class="text-muted">I couldn't generate a quiz because there isn't enough material in this course yet.
+                <br>Please upload more notes to the Materials tab.
+            </p>
+            <a href="{% if course %}{% url 'course:course_dashboard' course.id %}{% else %}#{% endif %}"
+                class="btn btn-outline-primary mt-3">Return to Workspace</a>
+        </div>
+        {% endif %}
+    </form>
+</div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById('quizForm');
-        const radialInputs = form.querySelectorAll('input[type="radio"]');
         const progressBar = document.getElementById('progressBar');
         const answeredCountText = document.getElementById('answeredCount');
         const totalQuestions = {{ questions| length |default: 0
@@ -110,22 +203,28 @@
 
     const updateProgress = () => {
         const answeredNames = new Set();
-        radialInputs.forEach(input => {
-            if (input.checked) {
+
+        // Check Radios
+        form.querySelectorAll('input[type="radio"]:checked').forEach(input => {
+            answeredNames.add(input.name);
+        });
+
+        // Check Text Inputs
+        form.querySelectorAll('.quiz-text-input').forEach(input => {
+            if (input.value.trim().length > 0) {
                 answeredNames.add(input.name);
             }
         });
 
         const answeredCount = answeredNames.size;
         const progress = (answeredCount / totalQuestions) * 100;
-
         progressBar.style.width = `${progress}%`;
         answeredCountText.textContent = answeredCount;
     };
 
-    radialInputs.forEach(input => {
-        input.addEventListener('change', updateProgress);
-    });
+    // Listen for both clicks and typing
+    form.addEventListener('change', updateProgress);
+    form.addEventListener('input', updateProgress);
     });
 </script>
 {% endblock %}

@@ -99,8 +99,14 @@ def signup_view(request):
             user = form.save()
             role = form.cleaned_data.get('role')
             
-            # Create UserProfile
-            UserProfile.objects.create(user=user, role=role, full_name=form.cleaned_data.get('full_name'))
+            # Create or update UserProfile (signal might have already created a default one)
+            UserProfile.objects.update_or_create(
+                user=user, 
+                defaults={
+                    'role': role, 
+                    'full_name': form.cleaned_data.get('full_name')
+                }
+            )
             
             login(request, user)
             messages.success(request, f"Welcome, {user.username}! You signed up as a {role}.")

@@ -9,7 +9,9 @@ import os
 from .models import FlashcardDeck, Flashcard
 from .services.flashcard_ai import generate_flashcards, explain_card_content, generate_quiz_from_cards
 from analytics.models import ActivityLog
-from course.models import CourseUnit
+from course.models import CourseUnit, Course
+from course.services.state import ActiveCourseManager
+from core.ai.services import CourseContextEngine
 
 def flashcard_home(request):
     # Get decks ordered by creation
@@ -293,14 +295,15 @@ def generate_from_unit(request, unit_id):
     """Generates a flashcard deck directly from a Course Unit."""
     unit = get_object_or_404(CourseUnit, id=unit_id)
     
-    # Check if a deck already exists for this unit?
-    existing_deck = FlashcardDeck.objects.filter(unit=unit).last()
-         
-    if not unit.content or len(unit.content) < 50:
+    # --- CENTRALIZED CONTEXT INJECTION ---
+    from course.services.context_provider import get_course_context
+    context_text = get_course_context(request.user, unit.course.id)
+    
+    if not context_text or len(context_text) < 50:
         return redirect('course:unit_detail', unit_id=unit.id)
 
     # Call AI Service
-    cards_data = generate_flashcards(input_text=unit.content, difficulty="Medium")
+    cards_data = generate_flashcards(input_text=context_text, difficulty="Medium")
     
     if not cards_data:
         return redirect('course:unit_detail', unit_id=unit.id)
@@ -336,22 +339,19 @@ def generate_from_unit(request, unit_id):
 @csrf_exempt
 def generate_from_course(request, course_id):
     """Generates a flashcard deck from the entire Course context."""
-    from course.models import Course
-    from core.ai.services import CourseContextEngine
-    
     course = get_object_or_404(Course, id=course_id)
     
-    # Get Full Context
+    # Use centralized context engine
     context_text = CourseContextEngine.get_course_context(course.id)
     
     if not context_text or len(context_text) < 50:
-        return redirect('course:detail', course_id=course.id)
+        return redirect('course:course_dashboard', course_id=course.id)
 
     # Call AI Service
     cards_data = generate_flashcards(input_text=context_text, difficulty="Medium")
     
     if not cards_data:
-        return redirect('course:detail', course_id=course.id)
+        return redirect('course:course_dashboard', course_id=course.id)
         
     # Create Deck linked to Course
     deck = FlashcardDeck.objects.create(
@@ -369,7 +369,8 @@ def generate_from_course(request, course_id):
                 exam_tip=card.get('exam_tip', "")
             )
             
-    # Log Activity
+    # Log Activity & Session
+    from course.models import StudySession
     if request.user.is_authenticated:
         ActivityLog.objects.create(
             user=request.user,
@@ -377,6 +378,12 @@ def generate_from_course(request, course_id):
             activity_type='deck_generated',
             topic=deck.title,
             metadata={'deck_id': str(deck.id), 'source': 'course_full'}
+        )
+        StudySession.objects.create(
+            user=request.user,
+            course=course,
+            activity_type='flashcards',
+            time_spent=5 # Initial credits
         )
 
     return redirect('flashcard_generator:study_deck', deck_id=deck.id)

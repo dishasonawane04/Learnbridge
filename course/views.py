@@ -5,8 +5,7 @@ from django.http import JsonResponse
 import json
 from .models import Course, CourseUnit, CourseMaterial, UserUnitCompletion, ConceptNode, UserConceptMastery, AIStudyInsight, StudyActivity
 from .utils.extraction import extract_content, extract_text_from_path
-from core.ai.services import ContentIntelligenceEngine
-from .services.ai_context import get_system_prompt, query_ai_service
+from core.ai.services import ContentIntelligenceEngine, CourseContextEngine
 from .services.intelligence import AIInsightService
 
 @login_required
@@ -39,81 +38,58 @@ def course_create(request):
         course = Course.objects.create(
             user=request.user, 
             title=title, 
-            description=description, 
-            level=level
+            description=description
         )
         
-        # Check for initial file upload
-        if request.FILES.get('course_file'):
-            try:
-                uploaded_file = request.FILES['course_file']
-                # Create initial unit
-                unit = CourseUnit.objects.create(
-                    course=course,
-                    title="Course Introduction & Materials",
-                    overview="Initial materials uploaded during course creation.",
-                    uploaded_file=uploaded_file,
-                    order=1
-                )
-                
-                # Extract text
-                extracted = extract_text_from_path(unit.uploaded_file.path)
-                if extracted:
-                    unit.content = extracted
-                    unit.save()
-                    
-                    # Intelligence Analysis
-                    ContentIntelligenceEngine.parse_unit_into_concepts(unit)
-                    ContentIntelligenceEngine.create_knowledge_graph(unit)
-            except Exception as e:
-                print(f"Initial course file processing failed: {e}")
-
-        return redirect('course:detail', course_id=course.id)
+        return redirect('course:course_dashboard', course_id=course.id)
     return render(request, 'course/course_form.html')
 
 @login_required
-def course_detail(request, course_id):
+def course_dashboard(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     # Allow staff to view all courses, regular users only their own
     if not (request.user.is_staff or request.user.is_superuser or course.user == request.user):
         return redirect('course:list')
     
-    # Progress calculation
-    units = course.units.all()
-    total_units = units.count()
-    completed_unit_ids = UserUnitCompletion.objects.filter(
-        user=request.user, 
-        unit__course=course
-    ).values_list('unit_id', flat=True)
-    
-    if total_units > 0:
-        progress_percentage = int((len(completed_unit_ids) / total_units) * 100)
-    else:
-        progress_percentage = 0
+    request.session['active_course_id'] = str(course.id)
+    materials = course.course_materials.all().order_by('-created_at')
 
-    # AI Intelligence Layer
-    AIInsightService.track_activity(request.user, course, 'course_view', points=5)
-    readiness = AIInsightService.calculate_course_readiness(request.user, course)
-    estimated_time = AIInsightService.estimate_completion_time(course)
-    heatmap_data = AIInsightService.get_heatmap_data(request.user, course)
-    daily_insight = AIInsightService.generate_daily_insight(request.user, course)
-    
-    # Enrich units with AI mastery data for roadmap
-    for unit in units:
-        insights = AIInsightService.get_unit_insights(request.user, unit)
-        unit.ai_mastery = insights['mastery']
-        unit.is_weak = len(insights['weak_concepts']) > 0
-
-    return render(request, 'course/course_detail.html', {
+    return render(request, 'course/course_dashboard.html', {
         'course': course,
-        'units': units,
-        'completed_unit_ids': completed_unit_ids,
-        'progress_percentage': progress_percentage,
-        'readiness': readiness,
-        'estimated_time': estimated_time,
-        'heatmap_data': heatmap_data,
-        'daily_insight': daily_insight
+        'materials': materials,
     })
+
+@login_required
+def upload_notes(request, course_id):
+    course = get_object_or_404(Course, id=course_id, user=request.user)
+    if request.method == "POST":
+        file = request.FILES.get("file")
+        if file:
+            ext = file.name.split('.')[-1].lower()
+            file_type = 'text'
+            if ext in ['pdf']: file_type = 'pdf'
+            elif ext in ['ppt', 'pptx']: file_type = 'ppt'
+            elif ext in ['jpg', 'jpeg', 'png', 'webp']: file_type = 'image'
+            
+            material = CourseMaterial.objects.create(
+                course=course,
+                file=file,
+                file_type=file_type
+            )
+            
+            # Extract text
+            try:
+                from .utils.extraction import extract_text_from_path
+                extracted = extract_text_from_path(material.file.path)
+                if extracted:
+                    material.extracted_text = extracted
+                    material.save()
+                    # Consolidate into CourseNotes
+                    CourseContextEngine.consolidate_course_notes(course.id)
+            except Exception as e:
+                print(f"Extraction failed: {e}")
+                
+    return redirect('course:course_dashboard', course_id=course.id)
 
 @login_required
 def unit_create(request, course_id):
@@ -121,7 +97,7 @@ def unit_create(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     # Only course owner or staff can create units
     if course.user != request.user and not (request.user.is_staff or request.user.is_superuser):
-        return redirect('course:detail', course_id=course.id)
+        return redirect('course:course_dashboard', course_id=course.id)
     
     if request.method == 'POST':
         title = request.POST.get('title')
@@ -156,7 +132,7 @@ def unit_create(request, course_id):
         ContentIntelligenceEngine.parse_unit_into_concepts(unit)
         ContentIntelligenceEngine.create_knowledge_graph(unit)
         
-        return redirect('course:detail', course_id=course.id)
+        return redirect('course:course_dashboard', course_id=course.id)
     
     # Calculate next order number
     max_order = course.units.aggregate(models.Max('order'))['order__max'] or 0
@@ -217,22 +193,54 @@ def unit_add(request, course_id):
     return unit_create(request, course_id)
 
 @login_required
-def material_upload(request, unit_id):
-    unit = get_object_or_404(CourseUnit, id=unit_id, course__user=request.user)
+def material_upload_direct(request, course_id):
+    """Direct upload to course (New Workflow)"""
+    course = get_object_or_404(Course, id=course_id, user=request.user)
     if request.method == 'POST' and request.FILES.get('file'):
-        material = CourseMaterial.objects.create(
-            unit=unit,
-            file=request.FILES['file']
-        )
-        # Process file automatically for general text
-        extract_content(material)
+        file_obj = request.FILES['file']
+        ext = file_obj.name.split('.')[-1].lower()
         
-        # Trigger structural analysis from extracted text
-        ContentIntelligenceEngine.parse_unit_into_concepts(unit, content_text=material.extracted_text)
-        ContentIntelligenceEngine.create_knowledge_graph(unit)
+        file_type = 'text'
+        if ext in ['pdf']: file_type = 'pdf'
+        elif ext in ['ppt', 'pptx']: file_type = 'ppt'
+        elif ext in ['jpg', 'jpeg', 'png', 'webp']: file_type = 'image'
         
-        return redirect('course:detail', course_id=unit.course.id)
-    return redirect('course:detail', course_id=unit.course.id)
+        if file_obj:
+            material = CourseMaterial.objects.create(
+                course=course,
+                file=file_obj,
+                file_type=file_type
+            )
+            
+            # Extract text
+            try:
+                from .utils.extraction import extract_text_from_path
+                extracted = extract_text_from_path(material.file.path)
+                if extracted:
+                    material.extracted_text = extracted
+                    material.save()
+                    # Consolidate into CourseNotes
+                    CourseContextEngine.consolidate_course_notes(course.id)
+            except Exception as e:
+                print(f"Extraction failed: {e}")
+            
+        return redirect('course:course_dashboard', course_id=course.id)
+    return redirect('course:course_dashboard', course_id=course.id)
+
+@login_required
+def material_delete(request, material_id):
+    material = get_object_or_404(CourseMaterial, id=material_id, course__user=request.user)
+    course_id = material.course.id
+    material.file.delete(save=False)
+    material.delete()
+    # Re-consolidate after deletion
+    CourseContextEngine.consolidate_course_notes(course_id)
+    return redirect('course:course_dashboard', course_id=course_id)
+
+@login_required
+def material_upload(request, unit_id):
+    """Legacy upload to unit"""
+    unit = get_object_or_404(CourseUnit, id=unit_id, course__user=request.user)
 
 @login_required
 def unit_detail(request, unit_id):
@@ -327,8 +335,8 @@ def unit_ai_chat(request, unit_id):
             if course.user != request.user:
                 return JsonResponse({'error': 'Unauthorized'}, status=403)
                 
-            system_prompt = get_system_prompt(course, unit)
-            ai_response = query_ai_service(user_message, system_prompt)
+            # --- CENTRALIZED AI QUERY ---
+            ai_response = CourseContextEngine.ask_course_ai(course.id, user_message)
             
             return JsonResponse({'response': ai_response})
             
@@ -360,4 +368,81 @@ def unit_search_api(request):
             'url': f"/course/unit/{u.id}/"
         })
         
-    return JsonResponse({'results': results})
+@login_required
+def switch_course(request, course_id):
+    """View to explicitly switch the active course context"""
+    from .services.state import ActiveCourseManager
+    ActiveCourseManager.set_active_course(request, course_id)
+    
+    # Redirect to where the user came from, or the course detail
+    referer = request.META.get('HTTP_REFERER')
+    if referer and 'course/' in referer:
+        return redirect('course:course_dashboard', course_id=course_id)
+    return redirect('course:list')
+
+@login_required
+def course_research(request, course_id):
+    """Generates research topics and project ideas based on course content."""
+    course = get_object_or_404(Course, id=course_id)
+    prompt = (
+        "Based on the course content, suggest 5 high-impact research topics "
+        "and 3 hands-on project ideas that would help a student master this subject. "
+        "Format as clear bullet points with brief explanations."
+    )
+    content = CourseContextEngine.ask_course_ai(course.id, prompt)
+    return render(request, 'course/ai_tool_result.html', {
+        'course': course,
+        'tool_name': 'Research & Projects',
+        'content': content,
+        'icon': 'fa-microscope'
+    })
+
+@login_required
+def course_career(request, course_id):
+    """Generates a career roadmap and skill gap analysis."""
+    course = get_object_or_404(Course, id=course_id)
+    prompt = (
+        "Analyze the skills/knowledge covered in this course material. "
+        "1. List 5 potential job roles this knowledge applies to. "
+        "2. Provide a 3-step 'Next Level' roadmap for a student to enter this industry. "
+        "3. Identify 3 complementary skills to learn next."
+    )
+    content = CourseContextEngine.ask_course_ai(course.id, prompt)
+    return render(request, 'course/ai_tool_result.html', {
+        'course': course,
+        'tool_name': 'Career Roadmap',
+        'content': content,
+        'icon': 'fa-map-signs'
+    })
+
+@login_required
+def course_summary(request, course_id):
+    """Generates a comprehensive executive summary of the entire course material."""
+    course = get_object_or_404(Course, id=course_id)
+    prompt = (
+        "Synthesize all provided course material into a comprehensive Executive Summary. "
+        "Include: 1. Core Objectives 2. Key Frameworks/Theories 3. Critical Takeaways. "
+        "Be professional and structured."
+    )
+    content = CourseContextEngine.ask_course_ai(course.id, prompt)
+    return render(request, 'course/ai_tool_result.html', {
+        'course': course,
+        'tool_name': 'Course Summary Engine',
+        'content': content,
+        'icon': 'fa-file-invoice'
+    })
+@login_required
+def course_delete(request, course_id):
+    """Securely delete a course and all its data"""
+    course = get_object_or_404(Course, id=course_id)
+    
+    # Ownership verification
+    if course.user != request.user and not (request.user.is_staff or request.user.is_superuser):
+        return redirect('course:list')
+    
+    title = course.title
+    course.delete()
+    
+    from django.contrib import messages
+    messages.success(request, f"Course '{title}' has been successfully deleted.")
+    return redirect('course:list')

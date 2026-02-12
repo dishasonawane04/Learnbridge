@@ -126,11 +126,11 @@ def check_unit_readiness(request, unit_id):
         target_topic=unit.title
     )
     
-    # Get Prerequisites with Context
-    prereqs = get_prerequisites(unit.title, context=unit.content)
+    # Get Prerequisites with Central Context
+    from course.services.context_provider import get_course_context
+    context_text = get_course_context(request.user, unit.course.id)
     
-    if not prereqs:
-        prereqs = get_prerequisites(unit.title)
+    prereqs = get_prerequisites(unit.title, context=context_text)
         
     if not prereqs:
          return redirect('course:unit_detail', unit_id=unit.id)

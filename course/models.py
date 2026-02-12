@@ -7,13 +7,54 @@ class Course(models.Model):
         ('PG', 'Postgraduate'),
         ('PROF', 'Professional'),
     )
+    DIFFICULTY_CHOICES = (
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+    )
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    subject = models.CharField(max_length=100, blank=True, help_text="e.g. Machine Learning, Cardiology")
     level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default='UG')
+    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default='beginner')
+    color_theme = models.CharField(max_length=20, default='#6366f1', help_text="Hex code for UI personalization")
+    
+    # New Fields for Central AI Engine
+    uploaded_file = models.FileField(upload_to='courses/', null=True, blank=True)
+    extracted_text = models.TextField(blank=True)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='uploaded_courses')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        # Handle uploaded_by if not set
+        if not self.uploaded_by and self.user:
+            self.uploaded_by = self.user
+            
+        # Check if file has changed
+        is_new_file = False
+        if self.pk:
+            old_instance = Course.objects.get(pk=self.pk)
+            if old_instance.uploaded_file != self.uploaded_file:
+                is_new_file = True
+        else:
+            if self.uploaded_file:
+                is_new_file = True
+
+        super().save(*args, **kwargs)
+
+        # Trigger extraction if file is new or modified
+        if is_new_file and self.uploaded_file:
+            from .services.document_parser import parse_document
+            try:
+                extracted = parse_document(self.uploaded_file.path)
+                if extracted:
+                    Course.objects.filter(pk=self.pk).update(extracted_text=extracted)
+            except Exception as e:
+                print(f"Error extracting text: {e}")
 
     def __str__(self):
         return self.title
@@ -47,14 +88,21 @@ class CourseMaterial(models.Model):
         ('text', 'Text/Markdown'),
     )
     
-    unit = models.ForeignKey(CourseUnit, on_delete=models.CASCADE, related_name='materials')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='course_materials', null=True, blank=True)
+    unit = models.ForeignKey(CourseUnit, on_delete=models.CASCADE, related_name='materials', null=True, blank=True)
     file = models.FileField(upload_to='course_materials/')
     file_type = models.CharField(max_length=10, choices=FILE_TYPES)
     extracted_text = models.TextField(blank=True, help_text="AI-extracted text content for context")
+    summary = models.TextField(blank=True, help_text="AI-generated summary")
+    key_topics = models.JSONField(default=list, blank=True, help_text="List of important topics/concepts")
     created_at = models.DateTimeField(auto_now_add=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.unit.title} Material ({self.file_type})"
+        if self.unit:
+            return f"{self.unit.title} Material ({self.file_type})"
+        return f"{self.course.title} Material ({self.file_type})"
 
 class UserUnitCompletion(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='unit_completions')
@@ -158,3 +206,41 @@ class AIStudyInsight(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+class CourseContext(models.Model):
+    """Aggregate knowledge context for a course"""
+    course = models.OneToOneField(Course, on_delete=models.CASCADE, related_name='context')
+    important_concepts = models.JSONField(default=list, blank=True)
+    glossary_terms = models.JSONField(default=dict, blank=True)
+    embeddings_status = models.BooleanField(default=False)
+    last_processed = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Context for {self.course.title}"
+
+class CourseNotes(models.Model):
+    """Simplified central store for all extracted text in a course"""
+    course = models.OneToOneField(Course, on_delete=models.CASCADE, related_name='notes')
+    extracted_text = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Notes for {self.course.title}"
+
+class StudySession(models.Model):
+    """Tracks engagement and activity per course"""
+    ACTIVITY_CHOICES = (
+        ('quiz', 'Quiz'),
+        ('tutor', 'AI Tutor'),
+        ('reading', 'Reading'),
+        ('flashcards', 'Flashcards'),
+        ('research', 'Research'),
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    activity_type = models.CharField(max_length=20, choices=ACTIVITY_CHOICES)
+    time_spent = models.PositiveIntegerField(help_text="Time spent in minutes")
+    date = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.activity_type} on {self.date}"

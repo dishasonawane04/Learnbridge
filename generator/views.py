@@ -14,18 +14,18 @@ async def study_plan(request):
         topic = request.POST.get("topic", topic)
         hours = request.POST.get("hours", hours)
         
-        from course.models import Course, CourseUnit
-        from course.services.ai_context import get_system_prompt
+        # --- CENTRALIZED CONTEXT INJECTION ---
+        from course.services.context_provider import get_course_context
         
-        course_id = request.GET.get('course_id') or request.POST.get('course_id')
-        unit_id = request.GET.get('unit_id') or request.POST.get('unit_id')
+        course_id = request.session.get("active_course_id") or request.GET.get('course_id') or request.POST.get('course_id')
         
-        system_prompt = "SYSTEM:\nYou are an academic AI assistant."
+        context_text = get_course_context(request.user, course_id)
         
-        if unit_id:
-             from django.shortcuts import get_object_or_404
-             unit = get_object_or_404(CourseUnit, id=unit_id)
-             system_prompt = get_system_prompt(unit.course, unit)
+        system_prompt = (
+            "You are an academic AI assistant. "
+            "Use ONLY the following study material to generate the study plan. "
+            f"\n--- COURSE NOTES ---\n{context_text}\n---------------------\n"
+        )
 
         task_prompt = f"""task:
         Generate a detailed 7-day study plan for the topic: '{topic}'. 

@@ -19,6 +19,7 @@
 
     <!-- Custom Design System -->
     <link rel="stylesheet" href="{% static 'core/css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
     <style>
         /* Dropdown Styles */
@@ -204,22 +205,106 @@
             </a>
 
             <div class="nav-links">
-                <a href="{% url 'core:dashboard' %}"
-                    class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+                <a href="{% if active_course %}{% url 'course:course_dashboard' active_course.id %}{% else %}{% url 'core:dashboard' %}{% endif %}"
+                    class="nav-link {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'course_dashboard' %}active{% endif %}">Dashboard</a>
                 <a href="{% url 'course:list' %}"
                     class="nav-link {% if request.resolver_match.app_name == 'course' %}active{% endif %}">Courses</a>
+
+                {% if user.is_authenticated and all_user_courses %}
+                <!-- Active Course Selector -->
+                <div class="nav-dropdown">
+                    <a href="#" class="nav-link" style="color: var(--primary); font-weight: 600;">
+                        <i class="fas fa-book-open"></i>
+                        {% if active_course %}{{ active_course.title|truncatechars:15 }}{% else %}Select Course{% endif %}
+                        <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <div class="dropdown-content" style="min-width: 280px;">
+                        <div
+                            style="padding: 0.75rem; border-bottom: 1px solid var(--glass-border); margin-bottom: 0.5rem;">
+                            <span
+                                style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">AI
+                                Knowledge Source</span>
+                        </div>
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            {% for c in all_user_courses %}
+                            <form action="{% url 'core:set_active_course' %}" method="post" style="margin: 0;">
+                                {% csrf_token %}
+                                <input type="hidden" name="course_id" value="{{ c.id }}">
+                                <button type="submit"
+                                    class="dropdown-item {% if active_course.id == c.id %}active-item{% endif %}"
+                                    style="width: 100%; border: none; background: none; text-align: left; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
+                                    <span style="color: white; font-weight: 500;">{{ c.title }}</span>
+                                    <span style="font-size: 0.75rem; opacity: 0.6;">{{ c.get_level_display }}</span>
+                                </button>
+                            </form>
+                            {% endfor %}
+                        </div>
+                        <div style="padding: 0.75rem; border-top: 1px solid var(--glass-border); margin-top: 0.5rem;">
+                            <a href="{% url 'course:list' %}"
+                                style="font-size: 0.8rem; color: var(--secondary); text-decoration: none;">
+                                <i class="fas fa-plus-circle"></i> Upload New Course
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <style>
+                    .active-item {
+                        background: rgba(99, 102, 241, 0.2) !important;
+                        color: var(--primary) !important;
+                        border-left: 2px solid var(--primary);
+                    }
+                </style>
+                {% endif %}
 
                 <!-- AI Tools Dropdown -->
                 <div class="nav-dropdown">
                     <a href="#" class="nav-link">AI Tools <i class="fas fa-chevron-down"
                             style="font-size: 0.7rem;"></i></a>
                     <div class="dropdown-content">
+                        {% if active_course %}
+                        <div
+                            style="padding: 0.5rem 1rem; border-bottom: 1px solid var(--glass-border); margin-bottom: 0.5rem;">
+                            <span style="font-size: 0.7rem; color: var(--primary); text-transform: uppercase;">Context:
+                                {{ active_course.title|truncatechars:20 }}</span>
+                        </div>
+                        <a href="{% url 'ai_tutor:start_course_chat' active_course.id %}" class="dropdown-item">
+                            <i class="fas fa-robot"></i> Course AI Tutor
+                        </a>
+                        <a href="{% url 'quiz:quiz_start' %}?subject={{ active_course.title|urlencode }}"
+                            class="dropdown-item">
+                            <i class="fas fa-vial"></i> Course Quiz
+                        </a>
+                        <a href="{% url 'flashcard_generator:generate_from_course' active_course.id %}"
+                            class="dropdown-item">
+                            <i class="fas fa-layer-group"></i> Generate Flashcards
+                        </a>
+                        <a href="{% url 'learning_support:start_course_support' active_course.id %}"
+                            class="dropdown-item">
+                            <i class="fas fa-life-ring"></i> AI Support
+                        </a>
+                        <a href="{% url 'course:summary' active_course.id %}" class="dropdown-item">
+                            <i class="fas fa-file-invoice"></i> Summary Engine
+                        </a>
+                        <a href="{% url 'course:research' active_course.id %}" class="dropdown-item">
+                            <i class="fas fa-microscope"></i> Research Topics
+                        </a>
+                        {% else %}
                         <a href="{% url 'ai_tutor:tutor_home' %}" class="dropdown-item">
-                            <i class="fas fa-robot"></i> AI Tutor
+                            <i class="fas fa-robot"></i> AI Tutor (Generic)
                         </a>
                         <a href="{% url 'quiz:quiz_subjects' %}" class="dropdown-item">
                             <i class="fas fa-vial"></i> Take Quiz
                         </a>
+                        <a href="{% url 'flashcard_generator:flashcard_home' %}" class="dropdown-item">
+                            <i class="fas fa-layer-group"></i> Flashcards
+                        </a>
+                        {% endif %}
+
+                        <div
+                            style="padding: 0.5rem 1rem; border-top: 1px solid var(--glass-border); margin-top: 0.5rem;">
+                            <span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">More
+                                Tools</span>
+                        </div>
                         <a href="{% url 'generator:study_plan' %}" class="dropdown-item">
                             <i class="fas fa-calendar-alt"></i> Study Plan
                         </a>
@@ -228,12 +313,6 @@
                         </a>
                         <a href="{% url 'notes:notes_list' %}" class="dropdown-item">
                             <i class="fas fa-note-sticky"></i> Smart Notes
-                        </a>
-                        <a href="{% url 'learning_support:support_home' %}" class="dropdown-item">
-                            <i class="fas fa-life-ring"></i> Support
-                        </a>
-                        <a href="{% url 'flashcard_generator:flashcard_home' %}" class="dropdown-item">
-                            <i class="fas fa-layer-group"></i> Flashcards
                         </a>
                         <a href="{% url 'prerequisite_checker:home' %}" class="dropdown-item">
                             <i class="fas fa-tasks"></i> Readiness
@@ -289,8 +368,7 @@
                 class="fas {% if message.tags == 'error' %}fa-circle-xmark{% elif message.tags == 'success' %}fa-circle-check{% else %}fa-circle-info{% endif %}"></i>
             <span>{{ message }}</span>
         </div>
-    </div>
-    {% endfor %}
+        {% endfor %}
     </div>
     {% endif %}
 

@@ -7,12 +7,12 @@ class AIInsightService:
     def calculate_course_readiness(user, course):
         """Calculates 0-100 readiness based on mastery and consistency"""
         concepts = ConceptNode.objects.filter(unit__course=course)
-        if not concepts.exists():
-            return 0.0
-            
-        mastery_avg = UserConceptMastery.objects.filter(
-            user=user, concept__in=concepts
-        ).aggregate(Avg('score'))['score__avg'] or 0.0
+        mastery_avg = 0.0
+        
+        if concepts.exists():
+            mastery_avg = UserConceptMastery.objects.filter(
+                user=user, concept__in=concepts
+            ).aggregate(Avg('score'))['score__avg'] or 0.0
         
         # Consistency factor based on study activity in the last 7 days
         last_7_days = date.today() - timedelta(days=7)
@@ -101,9 +101,16 @@ class AIInsightService:
             userconceptmastery__score__lt=60
         )
         
+        # Estimate time: 10 mins per concept + 10 mins baseline
+        total_mins = (concepts.count() * 10) + 10
+        hours = total_mins // 60
+        mins = total_mins % 60
+        time_str = f"{hours}h {mins}m" if hours > 0 else f"{mins}m"
+        
         return {
             'mastery': int(mastery_avg),
-            'weak_concepts': weak_concepts
+            'weak_concepts': weak_concepts,
+            'estimated_time': time_str
         }
 
     @staticmethod

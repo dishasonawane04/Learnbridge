@@ -11,7 +11,8 @@
                 <i class="fas fa-arrow-left"></i> Back to Courses
             </a>
             <span class="text-muted mx-2">/</span>
-            <a href="{% url 'course:detail' course.id %}" class="text-decoration-none text-muted hover-text-primary">
+            <a href="{% url 'course:course_dashboard' course.id %}"
+                class="text-decoration-none text-muted hover-text-primary">
                 {{ course.title }}
             </a>
         </div>
@@ -104,7 +105,8 @@
                         <i class="fas fa-save"></i>
                         {% if is_edit %}Update Unit{% else %}Create Unit{% endif %}
                     </button>
-                    <a href="{% url 'course:detail' course.id %}" class="btn btn-secondary" style="padding: 1rem 2rem;">
+                    <a href="{% url 'course:course_dashboard' course.id %}" class="btn btn-secondary"
+                        style="padding: 1rem 2rem;">
                         <i class="fas fa-times"></i> Cancel
                     </a>
                 </div>

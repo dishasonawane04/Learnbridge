@@ -109,14 +109,94 @@
             </div>
         </div>
 
-        <!-- Abstract background blobs -->
+    </div>
+
+    {% if active_course %}
+    <!-- Contextual Quick-Access Hub -->
+    <div class="glass-card fade-in"
+        style="margin-bottom: 3rem; padding: 2.5rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 24px; position: relative; overflow: hidden;">
         <div
-            style="position: absolute; top: -50px; right: -50px; width: 250px; height: 250px; background: var(--primary); filter: blur(100px); opacity: 0.15; border-radius: 50%;">
+            style="position: absolute; top: -100px; right: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(99, 102, 241, 0.2), transparent); filter: blur(60px); z-index: 0;">
         </div>
-        <div
-            style="position: absolute; bottom: -50px; left: -50px; width: 200px; height: 200px; background: var(--secondary); filter: blur(80px); opacity: 0.15; border-radius: 50%;">
+
+        <div style="position: relative; z-index: 1;">
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                    <span class="badge badge-primary mb-2" style="background: var(--primary);"><i
+                            class="fas fa-bolt"></i> Quick Study Hub</span>
+                    <h2 style="font-size: 2rem; font-weight: 800; margin: 0;">Continue: <span class="gradient-text">{{
+                            active_course.title }}</span></h2>
+                </div>
+                <a href="{% url 'course:course_dashboard' active_course.id %}" class="btn btn-secondary"
+                    style="border-radius: 12px; padding: 0.75rem 1.5rem;">
+                    <i class="fas fa-external-link-alt"></i> Full Dashboard
+                </a>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                <!-- Quick AI Tutor -->
+                <a href="{% url 'ai_tutor:start_course_chat' active_course.id %}"
+                    class="btn btn-glass-ai p-3 text-start d-flex align-items-center gap-3">
+                    <div class="ai-icon bg-primary"><i class="fas fa-robot"></i></div>
+                    <div>
+                        <div class="fw-bold text-white small">AI Tutor</div>
+                        <div class="x-small text-muted">Course-linked chat</div>
+                    </div>
+                </a>
+
+                <!-- Quick Quiz -->
+                <a href="{% url 'quiz:quiz_start' %}?subject={{ active_course.title|urlencode }}"
+                    class="btn btn-glass-ai p-3 text-start d-flex align-items-center gap-3">
+                    <div class="ai-icon bg-success"><i class="fas fa-vial"></i></div>
+                    <div>
+                        <div class="fw-bold text-white small">Take Quiz</div>
+                        <div class="x-small text-muted">Test knowledge</div>
+                    </div>
+                </a>
+
+                <!-- Quick Summary -->
+                <a href="{% url 'course:summary' active_course.id %}"
+                    class="btn btn-glass-ai p-3 text-start d-flex align-items-center gap-3">
+                    <div class="ai-icon bg-secondary"><i class="fas fa-file-invoice"></i></div>
+                    <div>
+                        <div class="fw-bold text-white small">Summarize</div>
+                        <div class="x-small text-muted">Core concepts</div>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
+    <style>
+        .btn-glass-ai {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .btn-glass-ai:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .ai-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .x-small {
+            font-size: 0.75rem;
+        }
+    </style>
+    {% endif %}
 
     <!-- Course Stats Grid -->
     <div
@@ -184,8 +264,9 @@
                     Your personal AI tutor. Chat, ask questions, and get instant explanations.
                 </p>
             </div>
-            <a href="{% url 'ai_tutor:tutor_home' %}" class="btn btn-primary" style="text-align: center;">Open AI
-                Tutor</a>
+            <a href="{% if active_course %}{% url 'ai_tutor:start_course_chat' active_course.id %}{% else %}{% url 'ai_tutor:tutor_home' %}{% endif %}"
+                class="btn btn-primary" style="text-align: center;">{% if active_course %}Chat with Course AI{% else
+                %}Open AI Tutor{% endif %}</a>
         </div>
 
         <!-- App 2: Learning Support -->
@@ -200,8 +281,9 @@
                     Get guided hints and simplified break-downs to help you solve problems.
                 </p>
             </div>
-            <a href="{% url 'learning_support:support_home' %}" class="btn btn-primary" style="text-align: center;">Open
-                Support</a>
+            <a href="{% if active_course %}{% url 'learning_support:start_course_support' active_course.id %}{% else %}{% url 'learning_support:support_home' %}{% endif %}"
+                class="btn btn-primary" style="text-align: center;">{% if active_course %}Start Course Support{% else
+                %}Open Support{% endif %}</a>
         </div>
 
         <!-- App 3: Flashcard Generator -->
@@ -216,9 +298,9 @@
                     Generate active recall flashcards from your study materials.
                 </p>
             </div>
-            <a href="{% url 'flashcard_generator:flashcard_home' %}" class="btn btn-primary"
-                style="text-align: center;">Go to
-                Flashcards</a>
+            <a href="{% if active_course %}{% url 'flashcard_generator:generate_from_course' active_course.id %}{% else %}{% url 'flashcard_generator:flashcard_home' %}{% endif %}"
+                class="btn btn-primary" style="text-align: center;">{% if active_course %}Generate for Course{% else
+                %}Go to Flashcards{% endif %}</a>
         </div>
 
         <!-- App 4: Prerequisite Checker -->
@@ -309,9 +391,9 @@
                             <div class="progress-bar" style="width: {{ course_item.progress }}%;"></div>
                         </div>
                         <div class="view-syllabus-btn">
-                            <a href="{% url 'course:detail' course_item.id %}" class="btn btn-secondary"
+                            <a href="{% url 'course:course_dashboard' course_item.id %}" class="btn btn-primary"
                                 style="padding: 0.6rem 1.5rem; font-size: 0.9rem; border-radius: 8px;">
-                                <i class="fas fa-list-ul" style="margin-right: 0.5rem;"></i> View Syllabus
+                                <i class="fas fa-desktop" style="margin-right: 0.5rem;"></i> Enter Study Hub
                             </a>
                         </div>
                     </div>

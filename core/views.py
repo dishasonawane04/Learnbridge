@@ -8,8 +8,26 @@ from django.utils import timezone
 from datetime import timedelta
 from course.models import Course, CourseUnit, CourseMaterial, UserUnitCompletion
 
+from django.contrib import messages
+
 def home(request):
     return render(request, 'core/home.html')
+
+@login_required
+def set_active_course(request):
+    if request.method == 'POST':
+        course_id = request.POST.get('course_id')
+        if course_id:
+            request.session['active_course_id'] = course_id
+            messages.success(request, f"Active course updated.")
+    
+    next_url = request.POST.get('next')
+    if not next_url:
+        if course_id:
+            return redirect('course:course_dashboard', course_id=course_id)
+        next_url = request.META.get('HTTP_REFERER') or 'core:dashboard'
+    
+    return redirect(next_url)
 
 @login_required
 def dashboard(request):
@@ -29,7 +47,9 @@ def dashboard(request):
     
     # Calculate Total Units and Materials
     total_units = CourseUnit.objects.filter(course__user=request.user).count()
-    total_materials = CourseMaterial.objects.filter(unit__course__user=request.user).count()
+    total_materials = CourseMaterial.objects.filter(
+        Q(unit__course__user=request.user) | Q(course__user=request.user)
+    ).distinct().count()
 
     # 2. Activity / Analytics (Still relevant for overview, but secondary)
     activities = UserActivity.objects.filter(user=request.user).order_by('-timestamp')
@@ -94,6 +114,9 @@ def dashboard(request):
             })
 
     # 6. Recent Activity
+    recent_activity = activities[:10]
+
+    # 7. Recent Activity (Context processor handles active course)
     recent_activity = activities[:10]
 
     context = {

@@ -19,7 +19,8 @@
                             <h5 class="mb-1 text-white">{{ course.title }}</h5>
                             <small class="text-muted">{{ course.units_count }} Units • {{ course.level }}</small>
                         </div>
-                        <a href="{% url 'course:detail' course.id %}" class="btn btn-secondary btn-sm">Manage</a>
+                        <a href="{% url 'course:course_dashboard' course.id %}"
+                            class="btn btn-secondary btn-sm">Manage</a>
                     </div>
                     {% empty %}
                     <div class="text-center py-4">

@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ tool_name }} | {{ course.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .result-view-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 4rem 0;
+    }
+
+    .tool-header {
+        position: relative;
+        padding: 3rem;
+        border-radius: 24px;
+        background: rgba(99, 102, 241, 0.05);
+        border: 1px solid rgba(99, 102, 241, 0.1);
+        overflow: hidden;
+        margin-bottom: 3rem;
+    }
+
+    .tool-icon-bg {
+        position: absolute;
+        right: -20px;
+        bottom: -20px;
+        font-size: 15rem;
+        opacity: 0.05;
+        transform: rotate(-15deg);
+        pointer-events: none;
+    }
+
+    .result-content-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        padding: 4rem;
+        line-height: 1.8;
+        color: var(--text-main);
+        font-size: 1.15rem;
+        backdrop-filter: blur(20px);
+    }
+
+    .result-content-card h1,
+    .result-content-card h2,
+    .result-content-card h3 {
+        color: white;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+
+    .result-content-card ul,
+    .result-content-card ol {
+        margin-bottom: 2rem;
+        padding-left: 1.5rem;
+    }
+
+    .result-content-card li {
+        margin-bottom: 0.75rem;
+    }
+
+    .ai-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 100px;
+        color: var(--primary);
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .btn-action {
+        padding: 1rem 2.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container result-view-container fade-in">
+    <!-- Breadcrumb -->
+    <div class="mb-5">
+        <a href="{% url 'course:course_dashboard' course.id %}"
+            class="text-decoration-none text-muted hover-text-primary d-inline-flex align-items-center gap-2">
+            <i class="fas fa-arrow-left"></i> Back to {{ course.title }}
+        </a>
+    </div>
+
+    <!-- Tool Header -->
+    <div class="tool-header">
+        <div class="tool-icon-bg"><i class="fas {{ icon }}"></i></div>
+        <div class="position-relative z-1">
+            <div class="ai-badge mb-3">
+                <i class="fas fa-sparkles"></i> AI Generated Insight
+            </div>
+            <h1 class="display-5 fw-bold text-white mb-2">{{ tool_name }}</h1>
+            <p class="lead text-muted mb-0">Personalized intelligence synthesized from your active course materials.</p>
+        </div>
+    </div>
+
+    <!-- Result Content -->
+    <div class="result-content-card mb-5 shadow-lg">
+        <div class="markdown-body">
+            {% if "Error" in content %}
+            <div class="text-center py-5">
+                <i class="fas fa-exclamation-triangle text-warning mb-3" style="font-size: 3rem;"></i>
+                <h3 class="text-white">Processing Delay</h3>
+                <p class="text-muted">{{ content }}</p>
+                <button onclick="location.reload()" class="btn btn-outline-primary mt-3">Try Again</button>
+            </div>
+            {% else %}
+            {{ content|linebreaks }}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Final Actions -->
+    <div class="d-flex justify-content-center gap-3">
+        <a href="{% url 'course:course_dashboard' course.id %}" class="btn btn-secondary btn-action">
+            <i class="fas fa-home me-2"></i> Dashboard
+        </a>
+        <button onclick="window.print()" class="btn btn-outline-primary btn-action">
+            <i class="fas fa-download me-2"></i> Export PDF
+        </button>
+        <a href="{% url 'ai_tutor:start_course_chat' course.id %}" class="btn btn-primary btn-action shadow-glow">
+            <i class="fas fa-comment-alt me-2"></i> Discuss with AI
+        </a>
+    </div>
+</div>
+{% endblock %}

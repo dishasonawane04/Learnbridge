@@ -303,6 +303,59 @@
             </div>
         </header>
 
+        {% if active_course %}
+        <div class="glass-card fade-in"
+            style="margin-bottom: 2rem; padding: 2rem; border: 2px solid var(--accent); background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(99, 102, 241, 0.1));">
+            <div class="d-flex justify-content-between align-items-center">
+                <div style="display: flex; align-items: center; gap: 1.5rem;">
+                    <div style="font-size: 2.5rem; color: var(--accent);"><i class="ph ph-stack"></i></div>
+                    <div>
+                        <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Study: {{ active_course.title }}</h2>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Generate expert flashcards
+                            directly from your course materials.</p>
+                    </div>
+                </div>
+                <button class="new-deck-btn" onclick="generateFromCourse({{ active_course.id }})"
+                    style="padding: 1rem 2rem;">
+                    <i class="ph ph-magic-wand"></i> Generate for Syllabus
+                </button>
+            </div>
+        </div>
+        <script>
+            async function generateFromCourse(courseId) {
+                const loading = document.getElementById('loadingIndicator');
+                const modal = document.getElementById('createModal');
+
+                // Show modal to show loading state
+                openModal();
+                loading.style.display = 'block';
+                loading.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Reading syllabus and generating cards...';
+
+                try {
+                    const res = await fetch(`/flashcards/api/generate_from_course/${courseId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        window.location.href = `/flashcards/study/${data.deck_id}/`;
+                    } else {
+                        alert('Error: ' + data.error);
+                        loading.style.display = 'none';
+                        closeModal();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('An error occurred.');
+                    loading.style.display = 'none';
+                    closeModal();
+                }
+            }
+        </script>
+        {% endif %}
+
         <div class="stats-bar">
             <div class="stat-card">
                 <div class="stat-icon"><i class="ph ph-stack"></i></div>

@@ -9,7 +9,9 @@ import os
 from .models import Chat, ChatMessage
 from .ai_logic import chat_with_ai
 from analytics.models import ActivityLog
-from course.models import CourseUnit
+from course.models import CourseUnit, Course
+from course.services.state import ActiveCourseManager
+from core.ai.services import CourseContextEngine
 
 # @login_required # Removed for Anonymous Access
 def tutor_home(request):
@@ -63,12 +65,13 @@ def chat_api(request):
             else:
                 # Auto-title based on first message
                 title = user_message[:30] + "..." if user_message else "New Chat"
+                active_course = ActiveCourseManager.get_active_course(request)
                 
                 if request.user.is_authenticated:
-                    chat = Chat.objects.create(user=request.user, title=title)
+                    chat = Chat.objects.create(user=request.user, title=title, course=active_course)
                 else:
                     if not request.session.session_key: request.session.create()
-                    chat = Chat.objects.create(session_key=request.session.session_key, title=title)
+                    chat = Chat.objects.create(session_key=request.session.session_key, title=title, course=active_course)
 
             # Path Handling for AI
             image_path = None
@@ -115,30 +118,24 @@ def chat_api(request):
             if not user_message and (image_path or doc_path):
                 prompt_for_ai = "Analyze this content."
             
-            # --- STRICT CONTEXT INJECTION FROM MANDATORY CONTRACT ---
-            from course.services.ai_context import get_system_prompt
-            from core.ai.services import CourseContextEngine
+            # --- CENTRALIZED CONTEXT INJECTION ---
+            # Detect course from session or chat object
+            active_course = ActiveCourseManager.get_active_course(request)
+            course_id = active_course.id if active_course else (chat.course.id if chat.course else None)
             
-            system_instruction = ""
+            context_text = ""
+            if course_id:
+                context_text = CourseContextEngine.get_course_context(course_id)
             
-            if chat.unit:
-                # Use unitary context (legacy + specific unit focus)
-                system_instruction = get_system_prompt(chat.unit.course, chat.unit)
-            elif chat.course:
-                # Use FULL COURSE context
-                context_text = CourseContextEngine.get_course_context(chat.course.id)
-                system_instruction = (
-                    "You are a helpful teaching assistant for this specific course. "
-                    "Use ONLY the following course notes to answer the student's question. "
-                    "If the answer is not in the notes, say 'I cannot find this in the course material.'\n\n"
-                    f"--- COURSE NOTES ---\n{context_text}\n--------------------\n"
-                )
-            else:
-                # Fallback
-                system_instruction = "SYSTEM: You are an academic AI assistant. Please ask the user to select a course."
+            system_instruction = (
+                "You are the LearningBridge AI Tutor. Your knowledge is STRICTLY LIMITED to the provided course material. "
+                "1. If the answer is in the notes, explain it clearly with examples.\n"
+                "2. If the answer is NOT in the notes, say: 'I cannot find this in your course material yet. Would you like to upload more notes?'\n"
+                "3. Stop answer immediately if it wanders into outside knowledge.\n"
+                "4. Be encouraging and step-by-step.\n\n"
+                f"--- ACTIVE COURSE CONTEXT ---\n{context_text}\n--------------------\n"
+            )
 
-            # Prepend system instruction to the prompt context for the AI service
-            # (Assuming chat_with_ai supports system prompt or we prepend it)
             prompt_for_ai = f"{system_instruction}\n\nUSER QUESTION: {prompt_for_ai}"
             # -------------------------------------------------------
 

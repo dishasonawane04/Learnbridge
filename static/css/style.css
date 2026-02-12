@@ -1,0 +1,340 @@
+/* Learnbridge Course Workspace - Professional Layout Styles */
+
+.course-workspace {
+    min-height: 100vh;
+    padding: 40px 20px 80px 20px;
+    background: linear-gradient(180deg, #0b0f2a 0%, #020617 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #f8fafc;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* --- WORKSPACE HEADER --- */
+.workspace-header-area {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 40px;
+}
+
+.workspace-title-section {
+    flex: 1;
+}
+
+.course-workspace h1 {
+    color: #ffffff;
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+}
+
+.course-workspace .description {
+    color: #94a3b8;
+    font-size: 16px;
+    margin: 0;
+}
+
+/* Header Action Button */
+.btn-add-notes {
+    background: rgba(99, 102, 241, 0.1);
+    color: #818cf8;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-add-notes:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: #818cf8;
+    transform: translateY(-1px);
+}
+
+/* --- GRID LAYOUT --- */
+.workspace-grid {
+    display: grid;
+    grid-template-columns: 7fr 3fr;
+    gap: 32px;
+    width: 100%;
+    max-width: 1200px;
+}
+
+@media (max-width: 992px) {
+    .workspace-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- SECTION TYPOGRAPHY --- */
+.section-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #6366f1;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: block;
+}
+
+/* --- MATERIALS SECTION (LEFT) --- */
+.materials-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.material-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: 0.2s;
+}
+
+.material-row:hover {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: rgba(99, 102, 241, 0.3);
+    transform: translateX(4px);
+}
+
+.material-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.file-icon {
+    width: 42px;
+    height: 42px;
+    background: rgba(99, 102, 241, 0.1);
+    color: #818cf8;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.file-name {
+    display: block;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 2px;
+}
+
+.upload-date {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.material-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: #94a3b8;
+    transition: 0.2s;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+.action-btn.text-danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+/* --- TOOL CARDS (RIGHT) --- */
+.tools-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.tool-card {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: 0.3s;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: transparent;
+    transition: 0.2s;
+}
+
+.tool-card:hover {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(99, 102, 241, 0.3);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.5);
+}
+
+.tool-card:hover::before {
+    background: #6366f1;
+}
+
+.tool-top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.tool-icon-wrap {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(236, 72, 153, 0.1));
+    color: #818cf8;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.tool-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+}
+
+.tool-desc {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.btn-open-tool-sm {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    padding: 8px 0;
+    width: 100%;
+    border-radius: 8px;
+    font-weight: 600;
+    text-align: center;
+    font-size: 0.85rem;
+    transition: 0.2s;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.tool-card:hover .btn-open-tool-sm {
+    transform: scale(1.02);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+/* --- UPLOAD MODE (EMPTY STATE) --- */
+.onboarding-container {
+    height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.course-upload-card {
+    width: 100%;
+    max-width: 600px;
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 48px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.course-upload-card h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: #ffffff;
+}
+
+.course-upload-card p {
+    color: #94a3b8;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 32px;
+}
+
+.upload-area {
+    background: rgba(255, 255, 255, 0.02);
+    border: 2px dashed rgba(99, 102, 241, 0.3);
+    border-radius: 20px;
+    padding: 40px 20px;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.upload-area:hover,
+.upload-area.drag-over {
+    background: rgba(99, 102, 241, 0.05);
+    border-color: #6366f1;
+}
+
+.upload-btn {
+    background: linear-gradient(135deg, #6366f1, #fb7185);
+    color: white;
+    padding: 14px 32px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+    transition: 0.3s;
+}
+
+.upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.5);
+}
+
+.supported-text {
+    margin-top: 16px;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+#fileInput {
+    display: none !important;
+}

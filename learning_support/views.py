@@ -129,12 +129,15 @@ def support_chat_api(request):
                     yield json.dumps({"type": "meta", "chat_id": str(session.id)}) + "\n"
 
                 # Prepare Context
-                context_data = None
-                if session.unit:
-                    context_data = f"Unit: {session.unit.title}\nNotes: {session.unit.content}"
-                elif session.course:
-                    from core.ai.services import CourseContextEngine
-                    context_data = CourseContextEngine.get_course_context(session.course.id)
+                from course.services.context_provider import get_course_context
+                
+                course_id = request.session.get("active_course_id")
+                if not course_id and session.course:
+                    course_id = session.course.id
+                elif not course_id and session.unit:
+                    course_id = session.unit.course.id
+                
+                context_data = get_course_context(request.user, course_id)
 
                 generator = get_support_response(
                     user_message, 

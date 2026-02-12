@@ -104,7 +104,7 @@
 
             <div class="user-profile">
                 <div class="avatar">
-                    {% if request.user.is_authenticated %}U{% else %}G{% endif %}
+                    {% if request.user.is_authenticated %}{{ request.user.username.0|upper }}{% else %}G{% endif %}
                 </div>
                 <div class="username">
                     {% if request.user.is_authenticated %}
@@ -138,6 +138,28 @@
                         <i class="ph ph-sparkle"></i>
                     </div>
                     <h1>How can I help you learn today?</h1>
+
+                    {% if active_course %}
+                    <div class="course-cta"
+                        style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(99, 102, 241, 0.1); border: 1px solid var(--primary); border-radius: 16px; text-align: left; width: 100%; max-width: 500px; margin-left: auto; margin-right: auto;">
+                        <h3
+                            style="font-size: 1rem; color: var(--primary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="ph ph-brain"></i> Active Context: {{ active_course.title }}
+                        </h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">I'm currently
+                            tuned to your syllabus. Ask me anything about this course!</p>
+                        <div class="suggestions" style="justify-content: flex-start; margin-top: 0;">
+                            <button
+                                onclick="sendSuggestion('From the syllabus of {{ active_course.title }}: Summarize the core objectives.')"
+                                style="font-size: 0.8rem; background: var(--primary); color: white;">Summarize
+                                syllabus</button>
+                            <button
+                                onclick="sendSuggestion('In {{ active_course.title }}: What are the most difficult concepts I should focus on?')"
+                                style="font-size: 0.8rem;">Exam focus areas</button>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <div class="suggestions">
                         <button onclick="sendSuggestion('Explain briefly: What is photosynthesis?')">Explain
                             Photosynthesis</button>
