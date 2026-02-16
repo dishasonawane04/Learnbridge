@@ -128,8 +128,8 @@ def support_chat_api(request):
                 if new_chat_created:
                     yield json.dumps({"type": "meta", "chat_id": str(session.id)}) + "\n"
 
-                # Prepare Context
-                from course.services.context_provider import get_course_context
+                # Prepare Context using Hybrid RAG
+                from ai_core.ai_engine import get_hybrid_response_context
                 
                 course_id = request.session.get("active_course_id")
                 if not course_id and session.course:
@@ -137,13 +137,14 @@ def support_chat_api(request):
                 elif not course_id and session.unit:
                     course_id = session.unit.course.id
                 
-                context_data = get_course_context(request.user, course_id)
+                context_text, system_prompt, is_course_aware = get_hybrid_response_context(user_message, course_id)
 
                 generator = get_support_response(
                     user_message, 
                     mode=mode, 
                     stream=True,
-                    context=context_data
+                    context=context_text,
+                    custom_system_prompt=system_prompt
                 )
                 
                 for chunk in generator:

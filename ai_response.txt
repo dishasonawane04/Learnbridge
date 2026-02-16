@@ -1,0 +1,36 @@
+Based on the provided study notes, here are five academic questions about Neural Networks:
+
+1. What is the primary function of weights in an artificial neural network?
+
+A) To pass input values through functions and output the result
+B) To carry values between neurons
+C) To combine signals from other neurons to perform a particular task
+D) To receive information, process it, and make appropriate decisions
+
+2. Which type of objective function is typically used in backpropagation for hidden layers?
+
+A) Convolutional Objective Function
+B) Cross-Entropy Objective Function
+C) Logistic Regression Objective Function
+D) Mean Squared Error Objective Function
+
+3. What is the name of the activation function commonly used in Perceptron models, which introduces non-linearity into the model?
+
+A) Sigmoid Function
+B) ReLU (Rectified Linear Unit)
+C) Tanh Function
+D) Leaky ReLU Function
+
+4. How does gradient descent optimize weights and biases in an artificial neural network?
+
+A) By minimizing the Mean Squared Error Objective Function
+B) By maximizing the Cross-Entropy Objective Function
+C) By minimizing the Sum of Squares Error Objective Function
+D) By backtracking and adjusting the weights and biases
+
+5. What is a key characteristic of feed-forward Neural Networks, which involves processing information in one direction only?
+
+A) Feedback Loop
+B) Hierarchical Structure
+C) Single-Input Output
+D) Gradient Descent Optimization

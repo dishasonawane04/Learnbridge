@@ -3,228 +3,252 @@
 {% block extra_css %}
 <style>
     .quiz-container {
-        max-width: 900px;
+        max-width: 800px;
         margin: 0 auto;
-        padding: 2.5rem;
-        border: 1px solid rgba(99, 102, 241, 0.2);
+        padding: 2rem;
     }
 
-    .quiz-header-label {
-        font-size: 0.85rem;
-        font-weight: 800;
-        color: var(--primary);
-        text-transform: uppercase;
-        letter-spacing: 2px;
+    .question-card {
+        display: none;
+        animation: slideIn 0.4s ease-out;
     }
 
-    .quiz-title {
-        font-size: 2.2rem;
-        font-weight: 800;
-        margin-top: 0.5rem;
-        background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
+    .question-card.active {
+        display: block;
     }
 
-    .counter-badge {
-        background: rgba(99, 102, 241, 0.1);
-        border: 1px solid rgba(99, 102, 241, 0.2);
-        padding: 0.5rem 1.25rem;
-        border-radius: 12px;
-        color: var(--text-main);
-        font-weight: 600;
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .option-btn {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 1.25rem 1.75rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        margin-bottom: 1rem;
+        color: var(--text-light);
+        font-size: 1.1rem;
+    }
+
+    .option-btn:not(.disabled):hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: var(--primary);
+        transform: translateX(5px);
+    }
+
+    .option-btn.correct {
+        background: rgba(34, 197, 94, 0.1) !important;
+        border-color: #22c55e !important;
+        color: #4ade80 !important;
+    }
+
+    .option-btn.incorrect {
+        background: rgba(239, 68, 68, 0.1) !important;
+        border-color: #ef4444 !important;
+        color: #f87171 !important;
+    }
+
+    .option-btn.disabled {
+        cursor: not-allowed;
+        opacity: 0.8;
+    }
+
+    .explanation-panel {
+        display: none;
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: rgba(99, 102, 241, 0.05);
+        border-left: 4px solid var(--primary);
+        border-radius: 8px;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .nav-buttons {
+        margin-top: 2rem;
+        display: flex;
+        justify-content: flex-end;
     }
 
     .progress-track {
-        width: 100%;
-        height: 8px;
+        height: 6px;
         background: rgba(255, 255, 255, 0.05);
-        border-radius: 4px;
-        overflow: hidden;
-        position: relative;
+        border-radius: 3px;
+        margin-bottom: 2rem;
     }
 
     .progress-fill {
-        position: absolute;
-        top: 0;
-        left: 0;
         height: 100%;
-        width: 0%;
-        background: linear-gradient(90deg, var(--primary), var(--accent));
-        transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-        box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-    }
-
-    .question-box {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 2.5rem;
-        margin-bottom: 2.5rem;
-        transition: border-color 0.3s ease;
-    }
-
-    .option-label {
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
-        padding: 1.25rem 1.75rem;
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-        position: relative;
-    }
-
-    .option-label:hover {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-color: rgba(99, 102, 241, 0.4) !important;
-        transform: translateX(8px);
-    }
-
-    .option-label:has(input:checked) {
-        background: rgba(99, 102, 241, 0.1) !important;
-        border-color: var(--primary) !important;
-        box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
-    }
-
-    .option-label:has(input:checked) span {
-        color: var(--text-main) !important;
-        font-weight: 600;
-    }
-
-    .question-box:has(input:checked),
-    .question-box:has(input:not(:placeholder-shown)) {
-        border-color: rgba(99, 102, 241, 0.3) !important;
+        background: var(--primary);
+        border-radius: 3px;
+        transition: width 0.3s ease;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="glass-card quiz-container fade-in">
-    <!-- Header & Progress -->
-    <div style="margin-bottom: 3rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <div>
-                <span class="quiz-header-label">{{ subject }} Assessment</span>
-                <h2 class="quiz-title">AI Challenge</h2>
-            </div>
-            <div id="questionCounter" class="counter-badge">
-                <span id="answeredCount">0</span> / {{ questions|length }} Completed
-            </div>
+<div class="glass-card quiz-container">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem;">
+        <div>
+            <h5 class="text-primary text-uppercase mb-1" style="letter-spacing: 1px; font-size: 0.8rem;">Learning Quiz
+            </h5>
+            <h2 class="mb-0">{{ subject }}</h2>
         </div>
-
-        <!-- Progress Bar -->
-        <div class="progress-track">
-            <div id="progressBar" class="progress-fill"></div>
+        <div class="text-muted" style="font-size: 0.9rem;">
+            Question <span id="currentNum">1</span> of {{ questions|length }}
         </div>
     </div>
 
-    <!-- Quiz Form -->
-    <form method="post" id="quizForm">
-        {% csrf_token %}
-        {% if course %}<input type="hidden" name="course_id" value="{{ course.id }}">{% endif %}
+    <div class="progress-track">
+        <div id="progressBar" class="progress-fill" style="width: 0%;"></div>
+    </div>
 
+    <div id="quizContent">
         {% if questions %}
         {% for q in questions %}
-        <div class="question-box" data-q-type="{{ q.type }}">
-            <div style="display: flex; gap: 1.5rem; margin-bottom: 2rem;">
-                <div
-                    style="flex-shrink: 0; width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 800; border: 1px solid rgba(99, 102, 241, 0.2);">
-                    {{ forloop.counter }}
-                </div>
-                <div style="flex-grow: 1;">
-                    <span
-                        class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-2"
-                        style="font-size: 0.75rem; text-transform: uppercase;">{{ q.type }}</span>
-                    <h3
-                        style="font-size: 1.25rem; font-weight: 600; line-height: 1.5; color: var(--text-main); margin: 0; padding-top: 0.25rem;">
-                        {{ q.question }}
-                    </h3>
+        <div class="question-card {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}"
+            data-id="{{ q.id }}" data-correct="{{ q.correct_index }}">
+            <h3 class="mb-4" style="line-height: 1.4; color: white;">{{ q.question }}</h3>
+
+            <div class="options-container">
+                {% for opt in q.options %}
+                <button class="option-btn quiz-option" data-index="{{ forloop.counter0 }}"
+                    onclick="selectAnswer(this, {{ forloop.counter0 }}, {{ q.correct_index|default:0 }}, '{{ q.id|default:'' }}', '{{ q.question|escapejs }}', '{{ opt|escapejs }}')">
+                    <span class="option-label" style="font-weight: 700; color: var(--primary); margin-right: 1rem;">
+                        {{ forloop.counter }}.
+                    </span>
+                    <span class="option-text">{{ opt }}</span>
+                </button>
+                {% endfor %}
+            </div>
+
+            <div class="explanation-panel" id="exp-{{ forloop.counter0 }}">
+                <h6 class="text-primary mb-2"><i class="fas fa-lightbulb me-2"></i> Explanation</h6>
+                <div id="explanation-text-{{ forloop.counter0 }}" class="mb-0 text-muted" style="line-height: 1.6;">
+                    {{ q.explanation }}
                 </div>
             </div>
 
-            <div class="options-group" style="display: grid; gap: 1rem;">
-                {% if q.type == 'MCQ' or q.type == 'TF' %}
-                {% for opt in q.options %}
-                <label class="option-label">
-                    <input type="radio" name="q{{ forloop.parentloop.counter0 }}" value="{{ opt }}"
-                        style="width: 1.4rem; height: 1.4rem; cursor: pointer; accent-color: var(--primary);">
-                    <span style="font-size: 1.1rem; color: var(--text-light);">{{ opt }}</span>
-                </label>
-                {% endfor %}
-                {% elif q.type == 'SHORT' %}
-                <div class="form-group">
-                    <input type="text" name="q{{ forloop.counter0 }}" class="form-control quiz-text-input"
-                        placeholder="Type your answer here..."
-                        style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; padding: 1.25rem; border-radius: 12px; font-size: 1.1rem;">
-                    <small class="text-muted mt-2 d-block"><i class="fas fa-keyboard me-1"></i> Exact phrasing doesn't
-                        matter as much as the core concept.</small>
-                </div>
+            <div class="nav-buttons">
+                {% if forloop.last %}
+                <button class="btn btn-primary d-none" id="finishBtn-{{ forloop.counter0 }}" onclick="submitQuiz()">
+                    Finish & See Results <i class="fas fa-chart-line ms-2"></i>
+                </button>
+                {% else %}
+                <button class="btn btn-outline-primary d-none" id="nextBtn-{{ forloop.counter0 }}"
+                    onclick="nextQuestion({{ forloop.counter0 }})">
+                    Next Question <i class="fas fa-arrow-right ms-2"></i>
+                </button>
                 {% endif %}
             </div>
         </div>
         {% endfor %}
-
-        <!-- Submit Button -->
-        <div style="text-align: center; margin-top: 4rem;">
-            <button type="submit" class="btn btn-primary"
-                style="font-size: 1.2rem; padding: 1.25rem 4rem; background: linear-gradient(135deg, var(--success), #16a34a); box-shadow: 0 0 30px rgba(34, 197, 94, 0.3); border: none;">
-                Finish Assessment <i class="fas fa-check-circle" style="margin-left: 0.75rem;"></i>
-            </button>
-            {% if course %}
-            <p class="text-muted mt-3"><i class="fas fa-lock me-1"></i> Results will be linked to <strong>{{
-                    course.title }}</strong></p>
-            {% endif %}
+        {% elif error_message %}
+        <div class="text-center py-5">
+            <div class="alert alert-warning mb-4">
+                <i class="fas fa-exclamation-triangle me-2"></i> {{ error_message }}
+            </div>
+            <a href="{% url 'course:course_dashboard' course.id %}" class="btn btn-primary">Go to Dashboard</a>
         </div>
         {% else %}
         <div class="text-center py-5">
-            <i class="fas fa-file-invoice mb-4" style="font-size: 4rem; color: var(--primary); opacity: 0.3;"></i>
-            <h3>No Questions Available</h3>
-            <p class="text-muted">I couldn't generate a quiz because there isn't enough material in this course yet.
-                <br>Please upload more notes to the Materials tab.
-            </p>
-            <a href="{% if course %}{% url 'course:course_dashboard' course.id %}{% else %}#{% endif %}"
-                class="btn btn-outline-primary mt-3">Return to Workspace</a>
+            <p>No questions generated. Please ensure you have uploaded course material.</p>
+            <a href="{% url 'course:course_dashboard' course.id %}" class="btn btn-primary">Go to Dashboard</a>
         </div>
         {% endif %}
+    </div>
+
+    <!-- Hidden form for final submission -->
+    <form id="submissionForm" method="post" class="d-none">
+        {% csrf_token %}
+        <input type="hidden" name="dummy" value="1">
+        {% for q in questions %}
+        <input type="hidden" name="q{{ forloop.counter0 }}" id="ans-input-{{ forloop.counter0 }}">
+        {% endfor %}
     </form>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('quizForm');
-        const progressBar = document.getElementById('progressBar');
-        const answeredCountText = document.getElementById('answeredCount');
-        const totalQuestions = {{ questions| length |default: 0
-    }};
+    const CURRENT_COURSE_ID = "{{ course.id }}";
+    function getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
 
-    const updateProgress = () => {
-        const answeredNames = new Set();
+    let currentIdx = 0;
+    const total = {{ questions| length }};
+    const userAnswers = {};
 
-        // Check Radios
-        form.querySelectorAll('input[type="radio"]:checked').forEach(input => {
-            answeredNames.add(input.name);
+    async function selectAnswer(btn, selectedIndex, correctIndex, questionId, questionText, selectedOption) {
+        const card = btn.closest('.question-card');
+        const qIdx = parseInt(card.dataset.index);
+        const options = card.querySelectorAll('.quiz-option');
+        const explanationPanel = document.getElementById(`exp-${qIdx}`);
+        const nextBtn = document.getElementById(`nextBtn-${qIdx}`);
+        const finishBtn = document.getElementById(`finishBtn-${qIdx}`);
+
+        if (btn.classList.contains('disabled')) return;
+
+        // Disable all options
+        options.forEach(opt => {
+            opt.classList.add('disabled');
+            opt.style.pointerEvents = 'none';
         });
 
-        // Check Text Inputs
-        form.querySelectorAll('.quiz-text-input').forEach(input => {
-            if (input.value.trim().length > 0) {
-                answeredNames.add(input.name);
-            }
-        });
+        // Record answer for form submission
+        const LETTERS = ['A', 'B', 'C', 'D', 'E'];
+        const selectedChar = LETTERS[selectedIndex];
+        document.getElementById(`ans-input-${qIdx}`).value = selectedChar;
 
-        const answeredCount = answeredNames.size;
-        const progress = (answeredCount / totalQuestions) * 100;
-        progressBar.style.width = `${progress}%`;
-        answeredCountText.textContent = answeredCount;
-    };
+        // Visual Feedback
+        if (selectedIndex === correctIndex) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('incorrect');
+            options[correctIndex].classList.add('correct');
+        }
 
-    // Listen for both clicks and typing
-    form.addEventListener('change', updateProgress);
-    form.addEventListener('input', updateProgress);
-    });
+        // Reveal pre-generated explanation (Step 8)
+        explanationPanel.style.display = 'block';
+
+        // Show navigation buttons
+        if (nextBtn) nextBtn.classList.remove('d-none');
+        if (finishBtn) finishBtn.classList.remove('d-none');
+
+        updateProgress();
+    }
+
+    function nextQuestion(qIdx) {
+        const currentCard = document.querySelector(`.question-card[data-index="${qIdx}"]`);
+        const nextCard = document.querySelector(`.question-card[data-index="${qIdx + 1}"]`);
+
+        currentCard.classList.remove('active');
+        nextCard.classList.add('active');
+        currentIdx++;
+        document.getElementById('currentNum').innerText = currentIdx + 1;
+        updateProgress();
+    }
+
+    function updateProgress() {
+        const progress = ((currentIdx + 0) / total) * 100;
+        document.getElementById('progressBar').style.width = `${progress}%`;
+    }
+
+    function submitQuiz() {
+        document.getElementById('submissionForm').submit();
+    }
 </script>
 {% endblock %}

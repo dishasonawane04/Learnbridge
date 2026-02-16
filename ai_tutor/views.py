@@ -118,37 +118,21 @@ def chat_api(request):
             if not user_message and (image_path or doc_path):
                 prompt_for_ai = "Analyze this content."
             
-            # --- CENTRALIZED CONTEXT INJECTION ---
-            # Detect course from session or chat object
+            # --- RAG Handling is now centralized in ai_core.ai_engine ---
             active_course = ActiveCourseManager.get_active_course(request)
             course_id = active_course.id if active_course else (chat.course.id if chat.course else None)
-            
-            context_text = ""
-            if course_id:
-                context_text = CourseContextEngine.get_course_context(course_id)
-            
-            system_instruction = (
-                "You are the LearningBridge AI Tutor. Your knowledge is STRICTLY LIMITED to the provided course material. "
-                "1. If the answer is in the notes, explain it clearly with examples.\n"
-                "2. If the answer is NOT in the notes, say: 'I cannot find this in your course material yet. Would you like to upload more notes?'\n"
-                "3. Stop answer immediately if it wanders into outside knowledge.\n"
-                "4. Be encouraging and step-by-step.\n\n"
-                f"--- ACTIVE COURSE CONTEXT ---\n{context_text}\n--------------------\n"
-            )
-
-            prompt_for_ai = f"{system_instruction}\n\nUSER QUESTION: {prompt_for_ai}"
-            # -------------------------------------------------------
 
             mode = 'voice' if msg_type == 'voice' else 'text'
 
             # --- UNIVERSAL STREAMING RESPONSE ---
             def event_stream():
                 ai_generator = chat_with_ai(
-                    prompt=prompt_for_ai,
+                    prompt=user_message,
                     image_path=image_path,
                     document_path=doc_path,
                     mode=mode,
-                    stream=True
+                    stream=True,
+                    course_id=course_id
                 )
                 
                 full_response = ""

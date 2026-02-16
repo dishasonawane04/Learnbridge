@@ -1,5 +1,6 @@
 import os
 import fitz  # PyMuPDF
+from docxtpl import DocxTemplate
 from docx import Document
 import logging
 
@@ -8,10 +9,11 @@ logger = logging.getLogger(__name__)
 def parse_document(file_path):
     """
     Extracts text from PDF, DOCX, or TXT files.
+    Returns a list of dicts: [{'page_number': i, 'text': '...'}, ...]
     """
     if not os.path.exists(file_path):
         logger.error(f"File not found: {file_path}")
-        return ""
+        return []
 
     ext = os.path.splitext(file_path)[1].lower()
     
@@ -26,19 +28,24 @@ def parse_document(file_path):
             raise ValueError(f"Unsupported file format: {ext}")
     except Exception as e:
         logger.error(f"Error parsing {file_path}: {e}")
-        return ""
+        return []
 
 def _parse_pdf(file_path):
-    text = ""
+    pages = []
     with fitz.open(file_path) as doc:
-        for page in doc:
-            text += page.get_text()
-    return text
+        for i, page in enumerate(doc):
+            pages.append({
+                'page_number': i + 1,
+                'text': page.get_text()
+            })
+    return pages
 
 def _parse_docx(file_path):
     doc = Document(file_path)
-    return "\n".join([para.text for para in doc.paragraphs])
+    # Docx doesn't have strict pages like PDF, but we can treat it as one page or split by paragraphs
+    text = "\n".join([para.text for para in doc.paragraphs])
+    return [{'page_number': 1, 'text': text}]
 
 def _parse_txt(file_path):
     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-        return f.read()
+        return [{'page_number': 1, 'text': f.read()}]

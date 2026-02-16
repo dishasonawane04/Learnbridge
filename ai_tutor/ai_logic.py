@@ -5,18 +5,31 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-def chat_with_ai(prompt, image_path=None, document_path=None, mode='text', stream=False):
+from ai_core.ai_engine import get_hybrid_response_context
+
+def chat_with_ai(prompt, image_path=None, document_path=None, mode='text', stream=False, course_id=None):
     """
-    Real AI response generator using local Ollama instance.
-    Includes robust error handling for both synchronous and streaming modes.
+    Real AI response generator using local Ollama instance and RAG.
     """
-    url = "http://localhost:11434/api/generate"
-    model = "llava:latest" # Default model (verified installed)
+    # Step 1: Get RAG context and system prompt
+    context_text, system_prompt, is_course_aware = get_hybrid_response_context(prompt, course_id)
+    
+    # Step 2: Construct the final prompt for Ollama
+    if context_text:
+        final_prompt = f"{system_prompt}\n\nCONTEXT:\n{context_text}\n\nQUESTION: {prompt}"
+    else:
+        final_prompt = f"{system_prompt}\n\nQUESTION: {prompt}"
+
+    url = f"{settings.OLLAMA_BASE_URL}/api/generate"
+    # Default to settings model, switch to vision if image is present
+    model = settings.OLLAMA_MODEL_TEXT
+    if image_path:
+        model = settings.OLLAMA_MODEL_VISION
     
     # Prepare Ollama request
     payload = {
         "model": model,
-        "prompt": prompt,
+        "prompt": final_prompt,
         "stream": stream,
         "options": {
             "temperature": 0.5

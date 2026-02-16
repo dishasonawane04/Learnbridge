@@ -12,27 +12,27 @@ except Exception as e:
     SUPPORT_SYSTEM_PROMPT = "You are a helpful Learning Support Assistant."
     print(f"Error loading prompt: {e}")
 
-def get_support_response(user_message, mode='text', stream=False, context=None):
+def get_support_response(user_message, mode='text', stream=False, context=None, custom_system_prompt=None):
     """
-    Generates a response from Ollama using the Support Persona.
-    Supports streaming.
+    Generates a response from Ollama using the Support Persona with RAG context.
     """
     try:
-        current_system_prompt = SUPPORT_SYSTEM_PROMPT
-        if context:
+        current_system_prompt = custom_system_prompt if custom_system_prompt else SUPPORT_SYSTEM_PROMPT
+        
+        # If context exists and not using a custom prompt that already includes it
+        if context and not custom_system_prompt:
             current_system_prompt += f"\n\nCONTEXT:\n{context}"
 
+        final_prompt = f"{current_system_prompt}\n\nQUESTION: {user_message}"
+        if mode == 'voice':
+             final_prompt += "\n\nCURRENT MODE: VOICE. Respond conversationally and include a '🎙️ Spoken Explanation' section."
+
         messages = [
-            {'role': 'system', 'content': current_system_prompt},
-            {'role': 'user', 'content': user_message}
+            {'role': 'user', 'content': final_prompt}
         ]
 
-        # Append specific instruction for Voice Mode if active
-        if mode == 'voice':
-             messages[0]['content'] += "\n\nCURRENT MODE: VOICE. Respond conversationally and include a '🎙️ Spoken Explanation' section."
-
         response = ollama.chat(
-            model="llama3", 
+            model="tinyllama:latest", # Switch to faster model
             messages=messages,
             stream=stream
         )

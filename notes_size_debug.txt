@@ -1,0 +1,37 @@
+Found Course: Neural Network (ID: 3)
+CourseNotes extracted_text length: 13703 characters
+First 500 characters of notes:
+--- Document: course_materials/Neural-NetworkBasics_MXd4EwU.pdf ---
+Introduction to Neural Networks
+AI-NLP-ML Group
+Department of Computer Science and Engineering
+IIT Patna
+Outline
+●
+Neural Networks
+○
+Introduction
+○
+Motivation
+○
+Biological Neurons and its Operations
+●
+Perceptron Model
+○
+What is Perceptron?
+○
+Perceptron Training Algorithm
+●
+Activation Functions
+○
+Definition
+○
+Types of Activation Functions
+●
+Feed-forward Neural Networks
+●
+Objective Functions
+○
+Definition
+○
+Types of Objective Funct

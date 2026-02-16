@@ -7,6 +7,9 @@ from .models import Course, CourseUnit, CourseMaterial, UserUnitCompletion, Conc
 from .utils.extraction import extract_content, extract_text_from_path
 from core.ai.services import ContentIntelligenceEngine, CourseContextEngine
 from .services.intelligence import AIInsightService
+from ai_engine.document_loader import load_document
+from ai_engine.chunker import split_into_chunks
+from ai_engine.vector_store import create_vector_db
 
 @login_required
 def course_list(request):
@@ -53,10 +56,14 @@ def course_dashboard(request, course_id):
     
     request.session['active_course_id'] = str(course.id)
     materials = course.course_materials.all().order_by('-created_at')
+    
+    # Check if RAG knowledge exists
+    has_knowledge = course.knowledge_chunks.exists()
 
     return render(request, 'course/course_dashboard.html', {
         'course': course,
         'materials': materials,
+        'has_knowledge': has_knowledge
     })
 
 @login_required
@@ -212,6 +219,21 @@ def material_upload_direct(request, course_id):
                 file_type=file_type
             )
             
+            # NEW RAG PIPELINE (Step 4)
+            try:
+                if file_type == 'pdf':
+                    file_path = material.file.path
+                    from ai_engine.document_loader import load_document
+                    from ai_engine.chunker import split_into_chunks
+                    from ai_engine.vector_store import create_vector_db
+                    
+                    pages = load_document(file_path)
+                    chunks = split_into_chunks(pages)
+                    create_vector_db(chunks, course.id)
+                    print(f"RAG Pipeline complete for Course {course.id}")
+            except Exception as e:
+                print(f"RAG Processing failed: {e}")
+
             # Extract text
             try:
                 from .utils.extraction import extract_text_from_path

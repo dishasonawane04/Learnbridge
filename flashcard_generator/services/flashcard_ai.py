@@ -165,47 +165,55 @@ def clean_json_response(response_text):
          
     return []
 
-def generate_flashcards(input_text=None, file_path=None, difficulty="Medium"):
+def generate_flashcards(input_text=None, file_path=None, difficulty="Medium", course_id=None):
     """
-    Generates flashcards from text or file.
-    Returns a list of dicts.
+    Generates flashcards using Course-Aware RAG.
     """
     content = input_text if input_text else ""
     
-    # 1. Extract Text from File
+    # 1. RAG Context Retrieval if course_id provided
+    if course_id:
+        from ai_core.retriever import search_course_material
+        # Search using input_text as query if provided, otherwise general search
+        query = input_text if input_text else "key concepts and definitions"
+        relevant_chunks = search_course_material(query, course_id, top_k=5)
+        if relevant_chunks:
+            content = "\n".join(relevant_chunks) + "\n" + content
+
+    # 2. Extract Text from File (if any)
     if file_path:
+        # ... existing file extraction logic ...
         ext = os.path.splitext(file_path)[1].lower()
         if ext in ['.png', '.jpg', '.jpeg', '.webp']:
-            # Vision Model
              try:
                  user_msg = {'role': 'user', 'content': 'Extract all text and key concepts from this image details.', 'images': [file_path]}
                  desc_response = ollama.chat(model="llava", messages=[user_msg])
                  content += "\nImage Content:\n" + desc_response['message']['content']
              except Exception as e:
                  print(f"Vision model error: {e}")
-                 # Check if we have text input to fall back on
-                 if not content.strip():
-                      return [] # Cannot proceed without content
+                 if not content.strip(): return []
         else:
              file_text = extract_text(file_path)
-             if file_text:
-                content += "\n" + file_text
+             if file_text: content += "\n" + file_text
 
     if len(content.strip()) < 10:
-        print("Content too short.")
         return []
 
-    prompt = (
-        f"📥 Input Content:\n{content}\n"
+    system_prompt = (
+        f"{SYSTEM_PROMPT}\n\n"
+        "STRICT RULE: Only use the provided course material to generate cards. "
+        "Focus on definitions, formulas, and important points."
     )
 
+    prompt = f"📥 Input Content:\n{content}\n"
+
     messages = [
-        {'role': 'system', 'content': SYSTEM_PROMPT},
+        {'role': 'system', 'content': system_prompt},
         {'role': 'user', 'content': prompt}
     ]
 
-    # Model priority list
-    models_to_try = ["llama3.2:1b", "llama3.2", "llama3", "mistral"]
+    # Model priority: Prefer tinyllama for stability/speed on CPU
+    models_to_try = ["tinyllama:latest", "llama3.2:1b", "mistral"]
     response = None
     used_model = None
 

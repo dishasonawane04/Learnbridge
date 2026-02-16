@@ -2,6 +2,35 @@
 {% load static %}
 
 {% block content %}
+<style>
+    .ai-status-indicator {
+        margin-left: 20px;
+        display: flex;
+        align-items: center;
+    }
+
+    .status-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .status-badge.personalized {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-badge.general {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+</style>
 <div class="course-workspace">
     {% if materials.exists %}
     <!-- WORKSPACE MODE: Study Dashboard -->
@@ -9,6 +38,19 @@
         <div class="workspace-title-section">
             <h1>{{ course.title }}</h1>
             <p class="description">{{ course.description|default:"Workspace for this course" }}</p>
+        </div>
+
+        <div class="ai-status-indicator">
+            {% if has_knowledge %}
+            <span class="status-badge personalized">
+                <i class="fas fa-check-circle"></i> AI is now personalized for this course
+            </span>
+            {% else %}
+            <span class="status-badge general">
+                <i class="fas fa-info-circle"></i> Upload notes to activate course-aware AI. Until then AI will answer
+                generally.
+            </span>
+            {% endif %}
         </div>
 
         <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data"

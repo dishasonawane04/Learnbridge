@@ -195,10 +195,28 @@ class CourseContextEngine:
             notes.extracted_text = "\n".join(consolidated_text)
             notes.save()
             
+            # Step 2: Trigger RAG Chunking & Embedding
+            from ai_core.services import process_course_notes_into_knowledge_store
+            process_course_notes_into_knowledge_store(course_id, notes.extracted_text)
+            
             return notes.extracted_text
         except Exception as e:
             logger.error(f"Error consolidating course notes: {e}")
             return ""
+
+    @staticmethod
+    def ask_course_ai(course_id: int, prompt: str) -> str:
+        """
+        Queries AI about a specific course using Hybrid RAG.
+        Used by Summary, Research, and Career tools.
+        """
+        from ai_core.ai_engine import get_hybrid_response_context
+        
+        # 1. Get RAG Context
+        context_text, system_prompt, is_course_aware = get_hybrid_response_context(prompt, course_id)
+        
+        # 2. Query Ollama
+        return CourseContextEngine._query_ollama(system_prompt, f"CONTEXT: {context_text}\n\nQUESTION: {prompt}")
 
     @staticmethod
     def _query_ollama(system: str, user_msg: str) -> str:

@@ -10,6 +10,8 @@ class QuizAttempt(models.Model):
     percentage = models.FloatField()
     difficulty = models.CharField(max_length=20, default='Medium')
     generated_questions = models.JSONField(default=list, blank=True, help_text="Stored questions for review")
+    used_chunk_ids = models.JSONField(default=list, blank=True, help_text="IDs of KnowledgeStore chunks used in this quiz")
+    failed_topics = models.JSONField(default=list, blank=True, help_text="Metadata from failed questions for summary")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

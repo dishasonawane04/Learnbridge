@@ -5,7 +5,7 @@ import time
 
 url = "http://localhost:11434/api/generate"
 payload = {
-    "model": "llava:latest",
+    "model": "tinyllama:latest",
     "prompt": "Hello, are you working?",
     "stream": True,
     "options": {

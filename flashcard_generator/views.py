@@ -295,18 +295,24 @@ def generate_from_unit(request, unit_id):
     """Generates a flashcard deck directly from a Course Unit."""
     unit = get_object_or_404(CourseUnit, id=unit_id)
     
-    # --- CENTRALIZED CONTEXT INJECTION ---
-    from course.services.context_provider import get_course_context
-    context_text = get_course_context(request.user, unit.course.id)
-    
-    if not context_text or len(context_text) < 50:
-        return redirect('course:unit_detail', unit_id=unit.id)
+    # Use localized course_id for RAG
+    course_id = unit.course.id
 
-    # Call AI Service
-    cards_data = generate_flashcards(input_text=context_text, difficulty="Medium")
+    # Call AI Service with unit title as initial query hint
+    cards_data = generate_flashcards(input_text=unit.title, course_id=course_id)
     
     if not cards_data:
+        # Fallback to general unit context extraction if RAG search is empty
+        # (This handles newly created units without embeddings yet)
+        from course.services.context_provider import get_course_context
+        context_text = get_course_context(request.user, course_id)
+        if context_text:
+            cards_data = generate_flashcards(input_text=context_text[:5000])
+
+    if not cards_data:
         return redirect('course:unit_detail', unit_id=unit.id)
+        
+    # ... existing deck creation logic ...
         
     # Create Deck linked to Unit
     deck = FlashcardDeck.objects.create(
@@ -338,20 +344,22 @@ def generate_from_unit(request, unit_id):
 
 @csrf_exempt
 def generate_from_course(request, course_id):
-    """Generates a flashcard deck from the entire Course context."""
+    """Generates a flashcard deck from the Course context using RAG."""
     course = get_object_or_404(Course, id=course_id)
     
-    # Use centralized context engine
-    context_text = CourseContextEngine.get_course_context(course.id)
-    
-    if not context_text or len(context_text) < 50:
-        return redirect('course:course_dashboard', course_id=course.id)
-
-    # Call AI Service
-    cards_data = generate_flashcards(input_text=context_text, difficulty="Medium")
+    # Call AI Service with course title as query hint
+    cards_data = generate_flashcards(input_text=course.title, course_id=course.id)
     
     if not cards_data:
+        # Fallback to general course context if RAG search is empty
+        context_text = CourseContextEngine.get_course_context(course.id)
+        if context_text:
+            cards_data = generate_flashcards(input_text=context_text[:5000])
+
+    if not cards_data:
         return redirect('course:course_dashboard', course_id=course.id)
+        
+    # ... rest of the logic ...
         
     # Create Deck linked to Course
     deck = FlashcardDeck.objects.create(

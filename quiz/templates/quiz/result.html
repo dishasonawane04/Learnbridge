@@ -144,70 +144,88 @@
         {% endif %}
     </div>
 
-    <!-- Review Section -->
-    <div style="text-align: left;">
-        <h2
-            style="font-size: 1.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
-            <i class="fas fa-search" style="color: var(--primary);"></i> Performance Review
-        </h2>
+    <h2
+        style="font-size: 1.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+        <i class="fas fa-brain" style="color: #f87171;"></i> Areas for Improvement
+    </h2>
+    {% if failed_topics %}
+    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-20 p-4 mb-5"
+        style="border-radius: 20px;">
+        <p class="mb-3 fw-bold">Focus your study on these specific concepts from your notes:</p>
+        <ul class="mb-0">
+            {% for topic in failed_topics %}
+            <li class="mb-2 text-light">{{ topic.question }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% else %}
+    <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-20 p-4 mb-5"
+        style="border-radius: 20px;">
+        <i class="fas fa-medal me-2"></i> You demonstrated solid mastery across all sampled topics in this document!
+    </div>
+    {% endif %}
 
-        <div style="display: grid; gap: 1.5rem;">
-            {% for item in results %}
-            <div class="review-item {% if item.is_correct %}correct{% else %}incorrect{% endif %}">
-                <div
-                    style="flex-shrink: 0; width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: {% if item.is_correct %}rgba(34, 197, 94, 0.1){% else %}rgba(239, 68, 68, 0.1){% endif %}; color: {% if item.is_correct %}var(--success){% else %}var(--danger){% endif %}; font-size: 1.2rem;">
-                    <i class="fas {% if item.is_correct %}fa-check-circle{% else %}fa-times-circle{% endif %}"></i>
-                </div>
-                <div>
-                    <span
-                        class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-2"
-                        style="font-size: 0.7rem;">{{ item.type }}</span>
-                    <p
-                        style="font-size: 1.15rem; font-weight: 600; color: var(--text-main); margin-bottom: 1rem; line-height: 1.5;">
-                        {{ item.question }}</p>
+    <h2
+        style="font-size: 1.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+        <i class="fas fa-search" style="color: var(--primary);"></i> Detailed Review
+    </h2>
 
-                    {% if item.type == 'MCQ' or item.type == 'TF' %}
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
-                        {% for opt in item.options %}
-                        <div style="padding: 0.75rem 1rem; border-radius: 10px; font-size: 0.9rem; 
+    <div style="display: grid; gap: 1.5rem;">
+        {% for item in results %}
+        <div class="review-item {% if item.is_correct %}correct{% else %}incorrect{% endif %}">
+            <div
+                style="flex-shrink: 0; width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: {% if item.is_correct %}rgba(34, 197, 94, 0.1){% else %}rgba(239, 68, 68, 0.1){% endif %}; color: {% if item.is_correct %}var(--success){% else %}var(--danger){% endif %}; font-size: 1.2rem;">
+                <i class="fas {% if item.is_correct %}fa-check-circle{% else %}fa-times-circle{% endif %}"></i>
+            </div>
+            <div>
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-2"
+                    style="font-size: 0.7rem;">{{ item.type }}</span>
+                <p
+                    style="font-size: 1.15rem; font-weight: 600; color: var(--text-main); margin-bottom: 1rem; line-height: 1.5;">
+                    {{ item.question }}</p>
+
+                {% if item.type == 'MCQ' or item.type == 'TF' %}
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                    {% for opt in item.options %}
+                    <div style="padding: 0.75rem 1rem; border-radius: 10px; font-size: 0.9rem; 
                                     {% if opt == item.correct_answer %} background: rgba(34, 197, 94, 0.1); border: 1px solid var(--success); color: var(--success);
                                     {% elif opt == item.user_answer and not item.is_correct %} background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger);
                                     {% else %} background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); color: var(--text-dim);
                                     {% endif %}">
-                            {{ opt }}
-                            {% if opt == item.correct_answer %}<i class="fas fa-check-circle float-end mt-1"></i>{%
-                            endif %}
-                            {% if opt == item.user_answer and not item.is_correct %}<i
-                                class="fas fa-times-circle float-end mt-1"></i>{% endif %}
-                        </div>
-                        {% endfor %}
+                        {{ opt }}
+                        {% if opt == item.correct_answer %}<i class="fas fa-check-circle float-end mt-1"></i>{%
+                        endif %}
+                        {% if opt == item.user_answer and not item.is_correct %}<i
+                            class="fas fa-times-circle float-end mt-1"></i>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem;">
+                    <div>
+                        <span
+                            style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Your
+                            Answer</span>
+                        <p
+                            style="margin-top: 0.25rem; color: {% if item.is_correct %}var(--success){% else %}var(--danger){% endif %}; font-weight: 600;">
+                            {{ item.user_answer }}</p>
+                    </div>
+                    {% if not item.is_correct %}
+                    <div>
+                        <span
+                            style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Correct
+                            Answer</span>
+                        <p style="margin-top: 0.25rem; color: var(--success); font-weight: 600;">
+                            {{ item.correct_answer }}
+                        </p>
                     </div>
                     {% endif %}
-
-                    <div style="display: flex; flex-wrap: wrap; gap: 2rem;">
-                        <div>
-                            <span
-                                style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Your
-                                Answer</span>
-                            <p
-                                style="margin-top: 0.25rem; color: {% if item.is_correct %}var(--success){% else %}var(--danger){% endif %}; font-weight: 600;">
-                                {{ item.user_answer }}</p>
-                        </div>
-                        {% if not item.is_correct %}
-                        <div>
-                            <span
-                                style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Correct
-                                Answer</span>
-                            <p style="margin-top: 0.25rem; color: var(--success); font-weight: 600;">
-                                {{ item.correct_answer }}
-                            </p>
-                        </div>
-                        {% endif %}
-                    </div>
                 </div>
             </div>
-            {% endfor %}
         </div>
+        {% endfor %}
     </div>
+</div>
 </div>
 {% endblock %}

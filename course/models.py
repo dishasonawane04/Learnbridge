@@ -26,6 +26,7 @@ class Course(models.Model):
     extracted_text = models.TextField(blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='uploaded_courses')
     
+    page_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -49,12 +50,23 @@ class Course(models.Model):
         # Trigger extraction if file is new or modified
         if is_new_file and self.uploaded_file:
             from .services.document_parser import parse_document
+            from ai_core.services import process_course_notes_into_knowledge_store
             try:
-                extracted = parse_document(self.uploaded_file.path)
-                if extracted:
-                    Course.objects.filter(pk=self.pk).update(extracted_text=extracted)
+                extracted_data = parse_document(self.uploaded_file.path)
+                if extracted_data:
+                    # extracted_data is [{'page_number': 1, 'text': '...'}, ...]
+                    full_text = "\n".join([p['text'] for p in extracted_data])
+                    page_count = len(extracted_data)
+                    
+                    Course.objects.filter(pk=self.pk).update(
+                        extracted_text=full_text,
+                        page_count=page_count
+                    )
+                    
+                    # Also process into KnowledgeStore for RAG
+                    process_course_notes_into_knowledge_store(self.pk, extracted_data)
             except Exception as e:
-                print(f"Error extracting text: {e}")
+                print(f"Error extracting text or indexing: {e}")
 
     def __str__(self):
         return self.title
