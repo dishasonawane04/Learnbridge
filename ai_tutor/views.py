@@ -12,6 +12,41 @@ from analytics.models import ActivityLog
 from course.models import CourseUnit, Course
 from course.services.state import ActiveCourseManager
 from core.ai.services import CourseContextEngine
+import uuid
+
+@csrf_exempt
+def ask_voice(request):
+    """
+    Lightweight Voice-to-Voice API (Browser STT/TTS).
+    Receives text, returns text answer for browser to speak.
+    """
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            question = data.get("question", "")
+            course_id = data.get("course_id")
+
+            if not question:
+                return JsonResponse({"error": "No question provided"}, status=400)
+
+            # Generate AI Answer (Non-Streaming for Voice stability)
+            answer = chat_with_ai(
+                prompt=question,
+                course_id=course_id,
+                stream=False,
+                mode='voice'
+            )
+
+            return JsonResponse({
+                "status": "success",
+                "answer": answer
+            })
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Invalid method"}, status=405)
+
 
 # @login_required # Removed for Anonymous Access
 def tutor_home(request):
@@ -183,25 +218,32 @@ def new_chat(request):
 
 @csrf_exempt
 # @login_required
-def load_chat_history(request, chat_id):
-    """Loads messages for a specific chat."""
+def load_chat(request, chat_id):
+    """Loads messages for a specific chat with instant AJAX loading."""
     if request.user.is_authenticated:
         chat = get_object_or_404(Chat, id=chat_id, user=request.user)
     else:
         if not request.session.session_key: request.session.create()
         chat = get_object_or_404(Chat, id=chat_id, session_key=request.session.session_key)
+    
     messages = chat.messages.all().order_by('created_at')
     
     history = []
     for msg in messages:
         history.append({
-            "sender": msg.sender,
-            "text": msg.content,
+            "role": "user" if msg.sender == "user" else "assistant",
+            "content": msg.content,
             "type": msg.msg_type,
             "file_url": msg.attachment.url if msg.attachment else None
         })
     
-    return JsonResponse({"status": "success", "chat_id": str(chat.id), "title": chat.title, "messages": history})
+    return JsonResponse({
+        "status": "success", 
+        "chat_id": str(chat.id), 
+        "title": chat.title, 
+        "messages": history
+    })
+
 
 # --- MANAGEMENT ACTIONS ---
 

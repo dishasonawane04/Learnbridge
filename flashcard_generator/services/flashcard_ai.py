@@ -165,101 +165,87 @@ def clean_json_response(response_text):
          
     return []
 
+
+from django.conf import settings
+from ai_engine.retriever import retrieve_context
+
 def generate_flashcards(input_text=None, file_path=None, difficulty="Medium", course_id=None):
     """
-    Generates flashcards using Course-Aware RAG.
+    Generates flashcards using Course-Aware RAG and OpenAI.
     """
     content = input_text if input_text else ""
     
-    # 1. RAG Context Retrieval if course_id provided
+    # 1. RAG Context Retrieval
     if course_id:
-        from ai_core.retriever import search_course_material
-        # Search using input_text as query if provided, otherwise general search
-        query = input_text if input_text else "key concepts and definitions"
-        relevant_chunks = search_course_material(query, course_id, top_k=5)
-        if relevant_chunks:
-            content = "\n".join(relevant_chunks) + "\n" + content
+        # We use a broad query to get key concepts
+        query = "important definitions key concepts exam questions"
+        if input_text: query = input_text
+        
+        relevant_context = retrieve_context(query, course_id, k=8)
+        if relevant_context:
+            content += f"\n\nContext from Course Material:\nR{relevant_context}"
 
     # 2. Extract Text from File (if any)
     if file_path:
-        # ... existing file extraction logic ...
-        ext = os.path.splitext(file_path)[1].lower()
-        if ext in ['.png', '.jpg', '.jpeg', '.webp']:
-             try:
-                 user_msg = {'role': 'user', 'content': 'Extract all text and key concepts from this image details.', 'images': [file_path]}
-                 desc_response = ollama.chat(model="llava", messages=[user_msg])
-                 content += "\nImage Content:\n" + desc_response['message']['content']
-             except Exception as e:
-                 print(f"Vision model error: {e}")
-                 if not content.strip(): return []
-        else:
-             file_text = extract_text(file_path)
-             if file_text: content += "\n" + file_text
+        file_text = extract_text(file_path)
+        if file_text: content += "\n" + file_text
 
     if len(content.strip()) < 10:
         return []
 
-    system_prompt = (
-        f"{SYSTEM_PROMPT}\n\n"
-        "STRICT RULE: Only use the provided course material to generate cards. "
-        "Focus on definitions, formulas, and important points."
+    # 3. Call AI (Ollama)
+    from langchain_community.chat_models import ChatOllama
+    
+    llm = ChatOllama(
+        model=settings.OLLAMA_MODEL_TEXT, # e.g. "mistral" or "llama3"
+        temperature=0.3,
+        base_url=settings.OLLAMA_BASE_URL,
+        format="json" 
     )
+    
+    prompt = f"""
+    You are an expert Flashcard Generator.
+    Task: Generate 10-15 high-quality flashcards based on the provided text.
+    
+    Content:
+    {content[:15000]} 
 
-    prompt = f"📥 Input Content:\n{content}\n"
+    Rules:
+    1. Focus on definitions, key concepts, and exam-relevant facts.
+    2. Difficulty: {difficulty}
+    3. JSON Output format:
+    {{
+        "flashcards": [
+            {{
+                "front": "Question or Term",
+                "back": "Answer or Definition",
+                "exam_tip": "One short tip (optional)",
+                "difficulty": "{difficulty}"
+            }}
+        ]
+    }}
+    """
 
-    messages = [
-        {'role': 'system', 'content': system_prompt},
-        {'role': 'user', 'content': prompt}
-    ]
+    try:
+        response = llm.invoke(prompt)
+        ai_output = response.content
+        
+        # Use existing robust cleaner
+        cards = clean_json_response(ai_output)
+        
+        # Normalize
+        valid_cards = []
+        if isinstance(cards, list):
+            for c in cards:
+                if isinstance(c, dict) and 'front' in c and 'back' in c:
+                    c['type'] = 'QA'
+                    valid_cards.append(c)
+            
+        return valid_cards
 
-    # Model priority: Prefer tinyllama for stability/speed on CPU
-    models_to_try = ["tinyllama:latest", "llama3.2:1b", "mistral"]
-    response = None
-    used_model = None
-
-    for model in models_to_try:
-        try:
-            print(f"Attempting flashcard generation with model: {model}")
-            # Try without format='json' because our prompt specifically asks for text format Q: A:
-            response = ollama.chat(model=model, messages=messages)
-            used_model = model
-            break 
-        except Exception as e:
-            error_str = str(e).lower()
-            if "not found" in error_str or "pull" in error_str:
-                 print(f"Model {model} not found, trying next...")
-                 continue
-            else:
-                 # If it's a different error (e.g. context too long), try next or fail
-                 print(f"Model {model} failed with error: {e}")
-                 continue
-
-    if not response:
-        print("All AI models failed to respond.")
+    except Exception as e:
+        print(f"Flashcard Gen Error: {e}")
         return []
-
-    ai_output = response['message']['content'].strip()
-    
-    # Logging for debug
-    print(f"AI Output ({used_model}): {ai_output}...")
-
-    cards = clean_json_response(ai_output)
-    
-    # Handle single object response
-    if isinstance(cards, dict):
-        if 'front' in cards and 'back' in cards:
-            cards = [cards]
-        else:
-            cards = []
-
-    # Final Validation
-    valid_cards = []
-    if isinstance(cards, list):
-        for c in cards:
-            if isinstance(c, dict) and 'front' in c and 'back' in c:
-                valid_cards.append(c)
-    
-    return valid_cards
 
 def explain_card_content(card_front, card_back):
     """

@@ -158,9 +158,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const newId = response.headers.get('X-Chat-ID');
             if (newId && !currentChatId) {
                 currentChatId = newId;
-                // Ideally refresh sidebar here to show new chat, but for now we focus on stream
-                // setTimeout(() => location.reload(), 2000); // Simple hack to update list later
+                addChatToSidebar(newId, text || "New Chat");
             }
+
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -226,18 +226,76 @@ document.addEventListener('DOMContentLoaded', () => {
             if (welcomeScreen) welcomeScreen.style.display = 'none';
 
             data.messages.forEach(msg => {
-                addMessage(msg.text, msg.sender, msg.type, msg.file_url);
+                const sender = msg.role === 'assistant' ? 'ai' : 'user';
+                addMessage(msg.content, sender, msg.type, msg.file_url);
             });
 
         } catch (e) {
             console.error(e);
         }
+
     };
 
-    window.startNewChat = () => {
-        // Just reload page or reset state
-        window.location.reload();
+    window.startNewChat = async () => {
+        try {
+            const res = await fetch('/ai/new/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                currentChatId = data.chat_id;
+                messagesContainer.innerHTML = '';
+                if (welcomeScreen) welcomeScreen.style.display = 'flex';
+                // Reset Sidebar active
+                document.querySelectorAll('.history-item').forEach(i => i.classList.remove('active'));
+
+                // Add to sidebar
+                addChatToSidebar(data.chat_id, "New Chat");
+            }
+        } catch (e) {
+            console.error(e);
+        }
     };
+
+    const addChatToSidebar = (id, title) => {
+        // Avoid duplicate entries
+        if (document.querySelector(`.history-item[data-id="${id}"]`)) return;
+
+        const recentSection = document.getElementById('recent-section');
+        const noChatsMsg = document.getElementById('no-chats-msg');
+        if (noChatsMsg) noChatsMsg.remove();
+
+        const item = document.createElement('div');
+        item.className = 'history-item active';
+        item.setAttribute('data-id', id);
+        item.onclick = () => loadChat(id);
+
+        item.innerHTML = `
+            <div class="chat-title">
+                <i class="ph ph-chat-circle-text"></i>
+                <span>${title}</span>
+            </div>
+            <div class="chat-options">
+                <button class="opts-btn" onclick="toggleMenu(event, '${id}')">
+                    <i class="ph ph-dots-three"></i>
+                </button>
+                <div class="opts-menu" id="menu-${id}">
+                    <button onclick="renameChat(event, '${id}')"><i class="ph ph-pencil"></i> Rename</button>
+                    <button onclick="pinChat(event, '${id}')"><i class="ph ph-push-pin"></i> Pin</button>
+                    <button onclick="archiveChat(event, '${id}')"><i class="ph ph-archive"></i> Archive</button>
+                    <button onclick="shareChat(event, '${id}')"><i class="ph ph-share-network"></i> Share</button>
+                    <button onclick="deleteChat(event, '${id}')" class="delete-opt"><i class="ph ph-trash"></i> Delete</button>
+                </div>
+            </div>
+        `;
+
+        // Insert at top of recent section (after label)
+        const label = recentSection.querySelector('.history-label');
+        label.after(item);
+    };
+
+
 
     window.toggleMenu = (e, chatId) => {
         e.stopPropagation();
@@ -273,40 +331,73 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation();
         const newTitle = prompt("Enter new chat name:");
         if (newTitle) {
-            await fetch(`/ai/api/chat/${chatId}/rename/`, {
+            const res = await fetch(`/ai/rename/${chatId}/`, {
                 method: 'POST',
                 headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title: newTitle })
             });
-            window.location.reload(); // Refresh to see change
+            const data = await res.json();
+            if (data.status === 'success') {
+                const item = document.querySelector(`.history-item[data-id="${chatId}"]`);
+                if (item) item.querySelector('.chat-title span').innerText = newTitle;
+            }
         }
     };
 
     window.deleteChat = async (e, chatId) => {
         e.stopPropagation();
         if (confirm("Delete this chat permanently?")) {
-            await fetch(`/ai/api/chat/${chatId}/delete/`, {
+            const res = await fetch(`/ai/delete/${chatId}/`, {
                 method: 'POST', headers: { 'X-CSRFToken': csrfToken }
             });
-            window.location.reload();
+            const data = await res.json();
+            if (data.status === 'success') {
+                const item = document.querySelector(`.history-item[data-id="${chatId}"]`);
+                if (item) item.remove();
+                if (currentChatId === chatId) startNewChat(); // Reset if deleted current
+            }
         }
     };
 
     window.archiveChat = async (e, chatId) => {
         e.stopPropagation();
-        await fetch(`/ai/api/chat/${chatId}/archive/`, {
+        const res = await fetch(`/ai/archive/${chatId}/`, {
             method: 'POST', headers: { 'X-CSRFToken': csrfToken }
         });
-        window.location.reload();
+        const data = await res.json();
+        if (data.status === 'success') {
+            const item = document.querySelector(`.history-item[data-id="${chatId}"]`);
+            if (item) item.remove();
+            if (currentChatId === chatId) startNewChat();
+        }
     };
 
     window.pinChat = async (e, chatId) => {
         e.stopPropagation();
-        await fetch(`/ai/api/chat/${chatId}/pin/`, {
+        const res = await fetch(`/ai/pin/${chatId}/`, {
             method: 'POST', headers: { 'X-CSRFToken': csrfToken }
         });
-        window.location.reload();
+        const data = await res.json();
+        if (data.status === 'success') {
+            // Simplify: Refresh sidebar or just reload for layout complex moves
+            // But user said "no reload". Let's try to move it.
+            const item = document.querySelector(`.history-item[data-id="${chatId}"]`);
+            if (item) {
+                const pinnedSection = document.getElementById('pinned-section');
+                const recentSection = document.getElementById('recent-section');
+
+                item.remove();
+                if (data.is_pinned) {
+                    pinnedSection.appendChild(item);
+                    item.querySelector('.ph-chat-circle-text')?.classList.replace('ph-chat-circle-text', 'ph-push-pin');
+                } else {
+                    recentSection.appendChild(item);
+                    item.querySelector('.ph-push-pin')?.classList.replace('ph-push-pin', 'ph-chat-circle-text');
+                }
+            }
+        }
     };
+
 
     window.shareChat = async (e, chatId) => {
         e.stopPropagation();
@@ -330,18 +421,142 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     window.sendSuggestion = (text) => sendMessage(text);
 
-    // --- Voice Utils (Keep existing logic simplified) ---
-    // (Omitted detailed TTS code for brevity, assume similar to before or re-include if needed by user. 
-    //  For now, including basic placeholder for speackSentence to avoid errors)
+    // --- Voice Utils (Browser APIs) ---
     const speakSentence = (text) => {
         if ('speechSynthesis' in window) {
-            const u = new SpeechSynthesisUtterance(text);
-            window.speechSynthesis.speak(u);
+            // Cancel any current speech
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = "en-IN";
+            utterance.rate = 1;
+            utterance.pitch = 1;
+
+            // Visual Feedback: Speaking
+            const statusDiv = document.getElementById('voice-status');
+            if (statusDiv) statusDiv.innerText = "AI is speaking...";
+
+            utterance.onend = () => {
+                if (statusDiv) statusDiv.innerText = "";
+            };
+
+            window.speechSynthesis.speak(utterance);
         }
     };
 
-    // Voice Input logic... (Can be re-added fully if widely used, cutting for brevity in this specific artifact to focus on Chat Mgmt)
+    // --- Voice Input Logic (STT) ---
     window.startVoiceInput = () => {
-        // ... implementation same as before
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Speech recognition is not supported in this browser.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-IN";
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        // Visual Feedback: Listening
+        const attachBtnIcon = attachBtn.querySelector('i');
+        const originalIcon = attachBtnIcon.className;
+        attachBtn.innerHTML = '<span class="typing-dots" style="color:red"><span>.</span><span>.</span><span>.</span></span>';
+
+        // Show status message if possible or use a dedicated element
+        let statusDiv = document.getElementById('voice-status');
+        if (!statusDiv) {
+            statusDiv = document.createElement('div');
+            statusDiv.id = 'voice-status';
+            statusDiv.style = "font-size: 0.8rem; color: var(--primary); margin-top: 0.5rem; text-align: center; font-weight: 500;";
+            document.querySelector('.input-wrapper').appendChild(statusDiv);
+        }
+        statusDiv.innerText = "Listening...";
+
+        recognition.onstart = () => {
+            console.log("Speech recognition started");
+        };
+
+        recognition.onresult = async (event) => {
+            const transcript = event.results[0][0].transcript;
+            chatInput.value = transcript;
+            statusDiv.innerText = "Thinking...";
+
+            // Auto-send to AI
+            await sendVoiceQuestion(transcript);
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech recognition error", event.error);
+            attachBtn.innerHTML = `<i class="${originalIcon}"></i>`;
+
+            if (event.error === 'no-speech') {
+                statusDiv.innerText = "Could not hear you. Please speak clearly and try again.";
+            } else if (event.error === 'not-allowed') {
+                alert("Microphone permission denied. Please allow microphone access in your browser settings.");
+                statusDiv.innerText = "";
+            } else {
+                statusDiv.innerText = "Connection Error. Please check your microphone.";
+            }
+
+            setTimeout(() => { statusDiv.innerText = ""; }, 4000);
+        };
+
+        recognition.onend = () => {
+            attachBtn.innerHTML = `<i class="${originalIcon}"></i>`;
+            if (statusDiv.innerText === "Listening...") {
+                statusDiv.innerText = "";
+            }
+        };
+
+        recognition.start();
+    };
+
+    const sendVoiceQuestion = async (text) => {
+        if (!text) return;
+
+        // Get course ID from URL
+        let course_id = null;
+        const pathParts = window.location.pathname.split('/');
+        if (pathParts.includes('course')) {
+            const idx = pathParts.indexOf('course');
+            if (pathParts[idx + 1]) course_id = pathParts[idx + 1];
+        }
+
+        // Show User Message
+        addMessage(text, 'user', 'text');
+
+        // Show AI Message loading
+        const aiMsgDiv = addMessage("", 'ai');
+        const intentContentDiv = aiMsgDiv.querySelector('.content');
+        intentContentDiv.innerHTML = '<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span>';
+
+        try {
+            const response = await fetch('/ai/ask_voice/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    question: text,
+                    course_id: course_id
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                intentContentDiv.innerHTML = data.answer.replace(/\n/g, '<br>');
+                scrollToBottom();
+
+                // Speak the answer
+                speakSentence(data.answer);
+            } else {
+                intentContentDiv.innerText = "Error: " + (data.error || "Unknown error");
+            }
+        } catch (err) {
+            console.error(err);
+            intentContentDiv.innerText = "Connection Error. Please ensure Ollama is running.";
+        }
     };
 });

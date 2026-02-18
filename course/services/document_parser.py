@@ -1,6 +1,5 @@
 import os
 import fitz  # PyMuPDF
-from docxtpl import DocxTemplate
 from docx import Document
 import logging
 

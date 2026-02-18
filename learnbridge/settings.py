@@ -222,3 +222,5 @@ OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
 OLLAMA_MODEL_TEXT = os.getenv('OLLAMA_MODEL_TEXT', 'llama3.2:1b')
 OLLAMA_MODEL_VISION = os.getenv('OLLAMA_MODEL_VISION', 'llava:latest')
 OLLAMA_MODEL_EMBED = os.getenv('OLLAMA_MODEL_EMBED', 'llama3.2:1b')
+
+

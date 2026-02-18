@@ -12,7 +12,7 @@ def chat_with_ai(prompt, image_path=None, document_path=None, mode='text', strea
     Real AI response generator using local Ollama instance and RAG.
     """
     # Step 1: Get RAG context and system prompt
-    context_text, system_prompt, is_course_aware = get_hybrid_response_context(prompt, course_id)
+    context_text, system_prompt, is_course_aware = get_hybrid_response_context(prompt, course_id, mode=mode)
     
     # Step 2: Construct the final prompt for Ollama
     if context_text:

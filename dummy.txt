@@ -1,0 +1,3 @@
+This is a dummy document for testing RAG processing.
+It contains some text to be chunked and embedded.
+End of document.

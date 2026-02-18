@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block content %}
+
 <style>
     .ai-status-indicator {
         margin-left: 20px;
@@ -62,6 +63,22 @@
                 <i class="fas fa-plus"></i> Add More Notes
             </button>
         </form>
+
+        {% if user.is_staff or user.account_profile.role == "Faculty" %}
+        <div class="mt-0" style="margin-left: 10px; display: flex; gap: 10px;">
+            <form method="POST" action="{% url 'quiz:generate_quiz' course.id %}" onsubmit="showQuizLoading()">
+                {% csrf_token %}
+                <button type="submit" class="btn-add-notes"
+                    style="background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; border: none;">
+                    <i class="fas fa-magic"></i> Generate AI Quiz
+                </button>
+            </form>
+            <a href="{% url 'quiz:create_quiz_manual' course.id %}" class="btn-add-notes"
+                style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                <i class="fas fa-plus-circle"></i> Create Manual Quiz
+            </a>
+        </div>
+        {% endif %}
     </div>
 
     <div class="workspace-grid">
@@ -108,7 +125,8 @@
                 <div class="btn-open-tool-sm">Open</div>
             </a>
 
-            <a href="{% url 'quiz:quiz_start' %}?course_id={{ course.id }}" class="tool-card">
+            <a href="{% url 'quiz:quiz_start' %}?course_id={{ course.id }}" class="tool-card"
+                onclick="showQuizLoading()">
                 <div class="tool-top">
                     <div class="tool-icon-wrap"><i class="fas fa-graduation-cap"></i></div>
                     <h4 class="tool-name">Quiz Generator</h4>
@@ -161,6 +179,8 @@
 </div>
 
 <script>
+
+
     const dropZone = document.getElementById('dropZone');
     const onboardingInput = document.getElementById('onboardingInput');
 

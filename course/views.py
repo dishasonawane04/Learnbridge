@@ -91,10 +91,15 @@ def upload_notes(request, course_id):
                 if extracted:
                     material.extracted_text = extracted
                     material.save()
-                    # Consolidate into CourseNotes
-                    CourseContextEngine.consolidate_course_notes(course.id)
+                    
+                # RAG Processing
+                from ai_engine.course_processor import process_document
+                process_document(material.file.path, course.id)
+                
+                # Consolidate into CourseNotes
+                CourseContextEngine.consolidate_course_notes(course.id)
             except Exception as e:
-                print(f"Extraction failed: {e}")
+                print(f"Extraction/RAG failed: {e}")
                 
     return redirect('course:course_dashboard', course_id=course.id)
 
@@ -221,16 +226,9 @@ def material_upload_direct(request, course_id):
             
             # NEW RAG PIPELINE (Step 4)
             try:
-                if file_type == 'pdf':
-                    file_path = material.file.path
-                    from ai_engine.document_loader import load_document
-                    from ai_engine.chunker import split_into_chunks
-                    from ai_engine.vector_store import create_vector_db
-                    
-                    pages = load_document(file_path)
-                    chunks = split_into_chunks(pages)
-                    create_vector_db(chunks, course.id)
-                    print(f"RAG Pipeline complete for Course {course.id}")
+                from ai_engine.course_processor import process_document
+                process_document(material.file.path, course.id)
+                print(f"RAG Pipeline complete for Course {course.id}")
             except Exception as e:
                 print(f"RAG Processing failed: {e}")
 

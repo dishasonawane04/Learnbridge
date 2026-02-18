@@ -13,6 +13,10 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from ai_engine.quiz_generator import generate_quiz
+from .models import Quiz, Question, Option
+from .forms import ManualQuestionForm
+from .utils.document_reader import get_course_text
+from .utils.ollama_quiz import generate_mcq
 
 SUBJECTS = [
     {"key": "Python", "name": "Python Programming", "icon": "fab fa-python"},
@@ -41,11 +45,22 @@ def subjects_view(request):
     return render(request, 'quiz/subjects.html', {'subjects': SUBJECTS})
 
 def quiz_view(request):
-    """Main quiz view responsive to CourseContext"""
+    """Main quiz view responsive to CourseContext and course_id parameter"""
     subject = request.GET.get('subject', 'General')
-    active_course = ActiveCourseManager.get_active_course(request)
+    course_id_param = request.GET.get('course_id')
+    
+    # Enable explicit course override via URL
+    if course_id_param:
+        # We don't strictly check user here if we want demo mode, 
+        # but ActiveCourseManager does. For consistency:
+        active_course = get_object_or_404(Course, id=course_id_param)
+        # Set as active course in session
+        request.session['active_course_id'] = active_course.id
+    else:
+        active_course = ActiveCourseManager.get_active_course(request)
     
     if request.method == 'POST':
+        # ... (POST handling remains same)
         questions = request.session.get('questions', [])
         score = 0
         results = []
@@ -53,13 +68,13 @@ def quiz_view(request):
         for i, q in enumerate(questions):
             user_answer = request.POST.get(f'q{i}', '').strip()
             # Simple exact match for now, could be improved with AI grading for SHORT
-            is_correct = user_answer.lower() == q['answer'].lower()
+            is_correct = user_answer.lower() == q['answer'].lower() if 'answer' in q else (user_answer.lower() == q['correct_answer'].lower() if 'correct_answer' in q else False)
             if is_correct: score += 1
             
             results.append({
                 'question': q['question'],
                 'user_answer': user_answer or 'Not answered',
-                'correct_answer': q['answer'],
+                'correct_answer': q.get('correct_answer') or q.get('answer'),
                 'is_correct': is_correct,
                 'type': q.get('type', 'MCQ'),
                 'options': q.get('options', [])
@@ -68,18 +83,7 @@ def quiz_view(request):
         total = len(questions)
         percentage = (score / total * 100) if total > 0 else 0
         
-        # Track history and weak areas
-        used_chunk_ids = [q.get('chunk_id') for q in questions if q.get('chunk_id')]
-        failed_topics = []
-        for res in results:
-            if not res['is_correct']:
-                # Find the original question to get chunk metadata if possible
-                failed_topics.append({
-                    'question': res['question'],
-                    'answer': res['correct_answer']
-                })
-
-        # Save attempt with History tracking (Feature 5) and progress reporting (Feature 7)
+        # Save attempt
         QuizAttempt.objects.create(
             user=request.user if request.user.is_authenticated else None,
             course=active_course,
@@ -87,14 +91,14 @@ def quiz_view(request):
             score=score,
             total=total,
             percentage=percentage,
-            generated_questions=questions,
-            used_chunk_ids=used_chunk_ids,
-            failed_topics=failed_topics
+            generated_questions=questions
         )
         
         # Clear session after successful save
         if 'questions' in request.session:
             del request.session['questions']
+        if 'quiz_course_id' in request.session:
+            del request.session['quiz_course_id']
 
         return render(request, 'quiz/result.html', {
             'subject': subject,
@@ -103,26 +107,32 @@ def quiz_view(request):
             'percentage': percentage,
             'results': results,
             'passed': percentage >= 70,
-            'course': active_course,
-            'failed_topics': failed_topics
+            'course': active_course
         })
     
     questions = request.session.get('questions', [])
+    session_course_id = request.session.get('quiz_course_id')
     
-    # Validation: Ensure existing session questions have the new required keys
-    if questions and (not isinstance(questions[0], dict) or 'correct_index' not in questions[0] or 'id' not in questions[0]):
-        print("Outdated quiz session detected, clearing...")
-        questions = []
+    # If course_id or subject is provided, it's likely a fresh click - clear old session questions
+    if request.GET.get('course_id') or request.GET.get('subject') or (active_course and session_course_id != active_course.id):
         if 'questions' in request.session:
             del request.session['questions']
+        questions = []
     
-    # Generate questions based on Active Course
+    # Generate fresh questions for new attempt
     if not questions:
         if active_course:
-            # Step 7: Load Questions into Quiz Page
-            questions = generate_quiz(active_course.id)
-            if not questions:
-                # Instead of a separate file, we'll render a template with an error message
+            # DYNAMIC GENERATION: Always generate fresh questions for students
+            # Pass user to ensure repetition prevention (Question Hashing)
+            ai_questions = generate_quiz(active_course.id, user=request.user, num_questions=5)
+            
+            if ai_questions:
+                # Store questions as dicts in session for dynamic attempt
+                # No permanent Quiz object created here; it's specific to this attempt session
+                questions = ai_questions
+                request.session['questions'] = questions
+                request.session['quiz_course_id'] = active_course.id
+            else:
                 return render(request, 'quiz/quiz.html', {
                     'subject': subject,
                     'error_message': "No questions generated. Please ensure you have uploaded course material and it has been processed.",
@@ -130,18 +140,13 @@ def quiz_view(request):
                 })
         else:
             return redirect('quiz:quiz_subjects')
-            
-        request.session['questions'] = questions
-    
-    # Track which chunks are being used in this attempt
-    # We will save these at the end of the attempt
     
     return render(request, 'quiz/quiz.html', {
         'subject': subject,
         'questions': questions,
-        'course': active_course,
-        'LETTERS': ['A', 'B', 'C', 'D', 'E']
+        'course': active_course
     })
+
 
 # Legacy explanation logic removed in favor of Step 8 (pre-generated reveal)
 
@@ -150,3 +155,189 @@ def start_unit_quiz(request, unit_id):
     unit = get_object_or_404(CourseUnit, id=unit_id)
     ActiveCourseManager.set_active_course(request, unit.course.id)
     return redirect(f"{reverse('quiz:quiz_start')}?subject={unit.title}")
+
+@login_required
+def generate_quiz_view(request, course_id):
+    """View for faculty to generate a quiz from course materials using Ollama."""
+    # Check if user is faculty/staff using account_profile
+    is_faculty = request.user.is_staff or (hasattr(request.user, 'account_profile') and request.user.account_profile.role == 'Faculty')
+    if not is_faculty:
+        return redirect('course:course_dashboard', course_id=course_id)
+        
+    course = get_object_or_404(Course, id=course_id)
+    text = get_course_text(course)
+    
+    if not text:
+        # No material to generate from
+        return redirect('course:course_dashboard', course_id=course_id)
+        
+    # Use the more robust generator from ai_engine
+    ai_questions = generate_quiz(course.id)
+    
+    if not ai_questions:
+        # AI failed to generate
+        return redirect('course:course_dashboard', course_id=course_id)
+        
+    quiz = Quiz.objects.create(
+        course=course,
+        title=f"{course.title} AI Quiz"
+    )
+    
+    for q in ai_questions:
+        question_obj = Question.objects.create(
+            quiz=quiz,
+            question_text=q["question"],
+            explanation=q.get("explanation", "")
+        )
+        
+        for i, opt in enumerate(q["options"]):
+            Option.objects.create(
+                question=question_obj,
+                option_text=opt,
+                is_correct=(i == q["correct_index"])
+            )
+            
+    return redirect('course:course_dashboard', course_id=course.id)
+
+@login_required
+def create_quiz_manual(request, course_id):
+    """View for faculty to manually create quiz questions."""
+    # Check if user is faculty/staff using account_profile
+    is_faculty = request.user.is_staff or (hasattr(request.user, 'account_profile') and request.user.account_profile.role == 'Faculty')
+    if not is_faculty:
+        return redirect('course:course_dashboard', course_id=course_id)
+        
+    course = get_object_or_404(Course, id=course_id)
+    # Ensure a manual quiz exists for this course
+    quiz, created = Quiz.objects.get_or_create(
+        course=course, 
+        title=f"{course.title} Manual Quiz"
+    )
+    
+    if request.method == 'POST':
+        form = ManualQuestionForm(request.POST)
+        if form.is_valid():
+            q = Question.objects.create(
+                quiz=quiz,
+                question_text=form.cleaned_data["question"],
+                explanation=form.cleaned_data.get("explanation", "")
+            )
+            
+            options = [
+                form.cleaned_data["option1"],
+                form.cleaned_data["option2"],
+                form.cleaned_data["option3"],
+                form.cleaned_data["option4"],
+            ]
+            
+            correct_idx = int(form.cleaned_data["correct_option"]) - 1
+            
+            for i, opt_text in enumerate(options):
+                Option.objects.create(
+                    question=q,
+                    option_text=opt_text,
+                    is_correct=(i == correct_idx)
+                )
+            # Redirect back to same page to add more questions or show success
+            return redirect('quiz:create_quiz_manual', course_id=course_id)
+    else:
+        form = ManualQuestionForm()
+        
+    return render(request, "quiz/manual_quiz_form.html", {
+        "form": form,
+        "course": course,
+        "quiz": quiz
+    })
+
+@login_required
+def submit_quiz(request):
+    """Refactored to handle dynamic session-based quiz attempts"""
+    questions = request.session.get('questions', [])
+    if not questions:
+        return redirect('quiz:quiz_subjects')
+    
+    course_id = request.session.get('quiz_course_id')
+    course = get_object_or_404(Course, id=course_id)
+    
+    score = 0
+    total = len(questions)
+    results = []
+    
+    # Create the attempt record early
+    attempt = QuizAttempt.objects.create(
+        user=request.user,
+        course=course,
+        subject=request.POST.get('subject', 'General Practice'),
+        score=0, # Updated later
+        total=total,
+        percentage=0.0,
+        accuracy=0.0,
+        generated_questions=questions
+    )
+    
+    for q in questions:
+        q_id = q['id']
+        selected_index = request.POST.get(f"question_{q_id}")
+        
+        is_correct = False
+        user_answer = "Not answered"
+        
+        if selected_index is not None and selected_index != "":
+            selected_index = int(selected_index)
+            user_answer = q['options'][selected_index]
+            if selected_index == q['correct_index']:
+                score += 1
+                is_correct = True
+        
+        correct_answer = q['options'][q['correct_index']]
+        explanation = q.get('explanation', '')
+        
+        # Save per-question answer for analytics
+        StudentAnswer.objects.create(
+            attempt=attempt,
+            question_text=q['question'],
+            selected_option=user_answer,
+            correct_option=correct_answer,
+            is_correct=is_correct,
+            explanation=explanation
+        )
+        
+        # Record history for repetition prevention
+        StudentQuestionHistory.objects.get_or_create(
+            user=request.user,
+            course=course,
+            question_hash=q['hash']
+        )
+        
+        results.append({
+            'question': q['question'],
+            'user_answer': user_answer,
+            'correct_answer': correct_answer,
+            'is_correct': is_correct,
+            'explanation': explanation,
+            'type': 'MCQ',
+            'options': q['options']
+        })
+        
+    percentage = (score / total * 100) if total > 0 else 0
+    
+    # Update attempt summary
+    attempt.score = score
+    attempt.percentage = round(percentage, 2)
+    attempt.accuracy = round(percentage, 2)
+    attempt.save()
+    
+    # Clear session
+    if 'questions' in request.session: del request.session['questions']
+    if 'quiz_course_id' in request.session: del request.session['quiz_course_id']
+    
+    return render(request, "quiz/result.html", {
+        "attempt": attempt,
+        "score": score,
+        "total": total,
+        "percentage": round(percentage, 2),
+        "results": results,
+        "passed": percentage >= 70,
+        "course": course,
+        "subject": attempt.subject
+    })
