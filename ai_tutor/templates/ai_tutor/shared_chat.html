@@ -1,4 +1,4 @@
-{% load static %}
+{% load static template_filters %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -53,7 +53,9 @@
         {% for msg in messages %}
         <div class="message {% if msg.sender == 'user' %}user-message{% else %}ai-message{% endif %}">
             <div class="avatar">
-                {% if msg.sender == 'user' %}U{% else %}
+                {% if msg.sender == 'user' %}
+                {{ chat.user|get_initials }}
+                {% else %}
                 <i class="ph ph-robot"></i>
                 {% endif %}
             </div>

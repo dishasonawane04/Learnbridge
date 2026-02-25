@@ -4,6 +4,12 @@ import os
 import re
 import pypdf
 import docx
+import warnings
+
+# Suppress LangChain deprecation and user warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="langchain")
+from langchain_core._api import LangChainDeprecationWarning
+warnings.filterwarnings("ignore", category=LangChainDeprecationWarning)
 
 SYSTEM_PROMPT = (
     "You are an AI-powered Flashcard Generator.\n"

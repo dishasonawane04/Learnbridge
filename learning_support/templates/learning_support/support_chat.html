@@ -1,4 +1,4 @@
-{% load static %}
+{% load static template_filters %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -90,7 +90,7 @@
 
             <div class="user-profile">
                 <div class="avatar" style="background: var(--accent);">
-                    {% if request.user.is_authenticated %}U{% else %}G{% endif %}
+                    {{ request.user|get_initials }}
                 </div>
                 <div class="username">
                     {% if request.user.is_authenticated %}
@@ -117,7 +117,8 @@
                 </div>
             </header>
 
-            <div class="messages-container" id="messages-container" data-chat-id="{{ current_chat.id|default:'' }}">
+            <div class="messages-container" id="messages-container" data-chat-id="{{ current_chat.id|default:'' }}"
+                data-user-initials="{{ request.user|get_initials }}">
                 {% if not chat_messages %}
                 <!-- Welcome Message (Only if empty) -->
                 <div class="message ai-message">
@@ -135,7 +136,7 @@
                     <div class="avatar"><i class="ph ph-life-buoy"></i></div>
                     <div class="content">{{ msg.content|linebreaksbr }}</div>
                     {% else %}
-                    <div class="avatar"><i class="ph ph-user"></i></div>
+                    <div class="avatar">{{ request.user|get_initials }}</div>
                     <div class="content">{{ msg.content|linebreaksbr }}</div>
                     {% endif %}
                 </div>

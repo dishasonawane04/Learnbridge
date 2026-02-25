@@ -26,7 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sender === 'ai') {
             msgDiv.innerHTML = `<div class="avatar"><i class="ph ph-life-buoy"></i></div>${contentHtml}`;
         } else {
-            msgDiv.innerHTML = `<div class="avatar"><i class="ph ph-user"></i></div>${contentHtml}`;
+            const initials = messagesContainer.dataset.userInitials || "U";
+            msgDiv.innerHTML = `<div class="avatar">${initials}</div>${contentHtml}`;
         }
 
         messagesContainer.insertBefore(msgDiv, loadingIndicator);

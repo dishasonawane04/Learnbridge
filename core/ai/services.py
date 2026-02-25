@@ -205,15 +205,22 @@ class CourseContextEngine:
             return ""
 
     @staticmethod
-    def ask_course_ai(course_id: int, prompt: str) -> str:
+    def ask_course_ai(course_id: int, prompt: str, specialized_mode: str = None) -> str:
         """
         Queries AI about a specific course using Hybrid RAG.
         Used by Summary, Research, and Career tools.
         """
         from ai_core.ai_engine import get_hybrid_response_context
+        from ai_engine.retriever import retrieve_diverse_context
         
-        # 1. Get RAG Context
-        context_text, system_prompt, is_course_aware = get_hybrid_response_context(prompt, course_id)
+        # 1. Get Context
+        if specialized_mode == 'summary':
+            # Use MMR diverse sampling for summaries to get better syllabus coverage
+            context_text = retrieve_diverse_context(course_id, k=5)
+            from ai_core.ai_engine import get_specialized_system_prompt
+            system_prompt = get_specialized_system_prompt(mode='summary')
+        else:
+            context_text, system_prompt, is_course_aware = get_hybrid_response_context(prompt, course_id)
         
         # 2. Query Ollama
         return CourseContextEngine._query_ollama(system_prompt, f"CONTEXT: {context_text}\n\nQUESTION: {prompt}")
@@ -232,7 +239,7 @@ class CourseContextEngine:
                         "temperature": 0.3 # Low temperature for factual recall
                     }
                 },
-                timeout=30
+                timeout=180 # Increased for complex course summaries
             )
             response.raise_for_status()
             return response.json().get('response', "Error: Empty response from AI.")

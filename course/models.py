@@ -25,6 +25,7 @@ class Course(models.Model):
     uploaded_file = models.FileField(upload_to='courses/', null=True, blank=True)
     extracted_text = models.TextField(blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='uploaded_courses')
+    executive_summary = models.TextField(blank=True, help_text="Cached AI-generated summary of the course")
     
     page_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -60,7 +61,8 @@ class Course(models.Model):
                     
                     Course.objects.filter(pk=self.pk).update(
                         extracted_text=full_text,
-                        page_count=page_count
+                        page_count=page_count,
+                        executive_summary="" # Clear cache on new material
                     )
                     
                     # Also process into KnowledgeStore for RAG
@@ -91,18 +93,23 @@ class CourseUnit(models.Model):
     def is_lesson(self):
         return True
 
+def course_material_upload_path(instance, filename):
+    """Dynamic path: media/courses/{course_id}/materials/{filename}"""
+    # Defensive check for unit-only materials (legacy support)
+    course_id = instance.course.id if instance.course else (instance.unit.course.id if instance.unit else 'misc')
+    return f'courses/{course_id}/materials/{filename}'
+
 class CourseMaterial(models.Model):
     FILE_TYPES = (
         ('pdf', 'PDF Document'),
         ('ppt', 'PowerPoint'),
-        ('image', 'Image'),
-        ('audio', 'Audio'),
+        ('image', 'Image/Diagram'),
         ('text', 'Text/Markdown'),
     )
     
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='course_materials', null=True, blank=True)
     unit = models.ForeignKey(CourseUnit, on_delete=models.CASCADE, related_name='materials', null=True, blank=True)
-    file = models.FileField(upload_to='course_materials/')
+    file = models.FileField(upload_to=course_material_upload_path)
     file_type = models.CharField(max_length=10, choices=FILE_TYPES)
     extracted_text = models.TextField(blank=True, help_text="AI-extracted text content for context")
     summary = models.TextField(blank=True, help_text="AI-generated summary")
@@ -110,6 +117,42 @@ class CourseMaterial(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        # Automate extraction and RAG processing
+        if is_new and self.file:
+            try:
+                # 1. Extract Text
+                from .utils.extraction import extract_text_from_path
+                extracted = extract_text_from_path(self.file.path)
+                if extracted:
+                    self.extracted_text = extracted
+                    # Use update to avoid triggering save() again recursively
+                    CourseMaterial.objects.filter(pk=self.pk).update(extracted_text=extracted)
+                
+                # 2. RAG Processing
+                from ai_engine.course_processor import process_document
+                cid = self.course.id if self.course else self.unit.course.id
+                process_document(self.file.path, cid)
+                
+                # 3. Consolidate into CourseNotes
+                from .services.state import CourseContextEngine
+                CourseContextEngine.consolidate_course_notes(cid)
+
+                # 4. Invalidate cache
+                if self.course:
+                    self.course.executive_summary = ""
+                    self.course.save(update_fields=['executive_summary'])
+                elif self.unit and self.unit.course:
+                    self.unit.course.executive_summary = ""
+                    self.unit.course.save(update_fields=['executive_summary'])
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Automated processing failed for Material {self.id}: {e}")
 
     def __str__(self):
         if self.unit:

@@ -17,4 +17,9 @@ urlpatterns = [
     path('progress/', views.progress_view, name='flashcard_progress'),
     path('api/generate_from_unit/<int:unit_id>/', views.generate_from_unit, name='generate_from_unit'),
     path('api/generate_from_course/<int:course_id>/', views.generate_from_course, name='generate_from_course'),
+    
+    # Dynamic RAG Flashcards
+    path('course/<int:course_id>/', views.dynamic_flashcards_view, name='dynamic_flashcards'),
+    path('api/course/<int:course_id>/dynamic/', views.get_dynamic_flashcards_api, name='get_dynamic_flashcards_api'),
+    path('api/course/<int:course_id>/regenerate/', views.regenerate_flashcards_api, name='regenerate_flashcards_api'),
 ]

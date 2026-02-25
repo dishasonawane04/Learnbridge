@@ -173,6 +173,40 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    position: sticky;
+    top: 40px;
+}
+
+.tools-scroll-area {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 480px;
+    /* Force scrollable at a smaller height */
+    overflow-y: auto;
+    padding-right: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(99, 102, 241, 0.4) transparent;
+}
+
+/* Premium Scrollbar for Tools */
+.tools-scroll-area::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tools-scroll-area::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+}
+
+.tools-scroll-area::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.2);
+    border-radius: 10px;
+    transition: 0.3s;
+}
+
+.tools-scroll-area::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.5);
 }
 
 .tool-card {

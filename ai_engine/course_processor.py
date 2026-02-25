@@ -1,6 +1,5 @@
 from ai_engine.document_loader import load_document
 from ai_engine.chunker import split_into_chunks
-from ai_engine.vector_store import create_vector_db, load_vector_db, get_embeddings_model
 import os
 
 def process_document(file_path, course_id):
@@ -24,7 +23,8 @@ def process_document(file_path, course_id):
     print(f"Generated {len(chunks)} chunks.")
     
     # 3. Embed & Store
-    existing_db = load_vector_db(course_id)
+    from ai_engine.vector_store import load_vector_db, create_vector_db
+    existing_db = load_vector_db(course_id, auto_index=False)
     
     if existing_db:
         print(f"Updating existing Vector DB for Course {course_id}")
@@ -50,6 +50,7 @@ def process_document(file_path, course_id):
 def create_vector_db_instance(chunks):
     """Helper to create a local FAISS instance in memory"""
     from langchain_community.vectorstores import FAISS
+    from ai_engine.vector_store import get_embeddings_model
     embeddings = get_embeddings_model()
     return FAISS.from_documents(chunks, embeddings)
 

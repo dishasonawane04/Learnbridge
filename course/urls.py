@@ -7,6 +7,7 @@ urlpatterns = [
     path('', views.course_list, name='list'),
     path('create/', views.course_create, name='create'),
     path('<int:course_id>/', views.course_dashboard, name='course_dashboard'),
+    path('<int:course_id>/dashboard/', views.course_dashboard), # Alias for convenience
     path('unit/<int:unit_id>/', views.unit_detail, name='unit_detail'),
     path('<int:course_id>/unit/create/', views.unit_create, name='unit_create'),
     path('<int:course_id>/add-lesson/', views.unit_create, name='add_lesson'),

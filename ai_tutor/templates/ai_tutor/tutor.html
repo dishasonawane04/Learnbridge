@@ -1,4 +1,4 @@
-{% load static %}
+{% load static template_filters %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -104,7 +104,7 @@
 
             <div class="user-profile">
                 <div class="avatar">
-                    {% if request.user.is_authenticated %}{{ request.user.username.0|upper }}{% else %}G{% endif %}
+                    {{ request.user|get_initials }}
                 </div>
                 <div class="username">
                     {% if request.user.is_authenticated %}

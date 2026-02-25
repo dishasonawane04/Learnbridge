@@ -68,3 +68,16 @@ class Flashcard(models.Model):
         self.last_reviewed_at = timezone.now()
         self.next_review_date = timezone.now() # Review ASAP
         self.save()
+
+class StudentFlashcardHistory(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcard_history')
+    course = models.ForeignKey('course.Course', on_delete=models.CASCADE, related_name='flashcard_history')
+    card_hash = models.CharField(max_length=64, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student', 'course', 'card_hash')
+        verbose_name_plural = "Student Flashcard Histories"
+
+    def __str__(self):
+        return f"{self.student.username} - {self.course.title} - {self.card_hash[:8]}"

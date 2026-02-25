@@ -50,12 +50,15 @@ async def sentence_explain(request):
         image_url = None
         response = None
 
-        from course.services.context_provider import get_course_context
-        course_id = request.session.get("active_course_id") or request.GET.get('course_id')
-        context = ""
+        from ai_engine.retriever import retrieve_diverse_context
+        course_id = request.session.get("active_course_id")
+        context_text = ""
+        context_instruction = ""
+        
         if course_id:
-            context_text = get_course_context(request.user, course_id=course_id)
-            context = f"\nUse the following COURSE CONTEXT for domain accuracy:\n{context_text}\n"
+            context_text = retrieve_diverse_context(course_id, k=5)
+            if context_text.strip():
+                context_instruction = f"\nUse the following COURSE CONTEXT for domain accuracy. If the user's question is outside this context, explain it generally but mention: 'This is outside your uploaded course, but here is a general explanation.'\n\nCOURSE CONTEXT:\n{context_text}\n"
 
         if image:
              def save_file(img):
@@ -70,7 +73,7 @@ async def sentence_explain(request):
                     model=settings.OLLAMA_MODEL_VISION,
                     messages=[{
                         'role': 'user',
-                        'content': f"Explain the complex sentences from this image in simple, plain English. {context} Do not use markdown, asterisks, or special symbols. Just plain text suitable for reading aloud. If a sentence is provided here: '{sentence}', focus on that.",
+                        'content': f"Explain the complex sentences from this image in simple, plain English. {context_instruction} Do not use markdown, asterisks, or special symbols. Just plain text suitable for reading aloud. If a sentence is provided here: '{sentence}', focus on that.",
                         'images': [image_path]
                     }]
                 )
@@ -84,7 +87,7 @@ async def sentence_explain(request):
                     model=settings.OLLAMA_MODEL_TEXT,
                     messages=[{
                         'role': 'user',
-                        'content': f"Explain this sentence in simple, plain English interactions. {context} Do NOT use markdown, bolding (**), or bullet points. Use natural conversational paragraphs only. Sentence to explain: '{sentence}'. Also provide a real-world example in plain text."
+                        'content': f"Explain this sentence in simple, plain English interactions. {context_instruction} Do NOT use markdown, bolding (**), or bullet points. Use natural conversational paragraphs only. Sentence to explain: '{sentence}'. Also provide a real-world example in plain text."
                     }]
                 )
                 response = res['message']['content']

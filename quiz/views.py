@@ -45,19 +45,13 @@ def subjects_view(request):
     return render(request, 'quiz/subjects.html', {'subjects': SUBJECTS})
 
 def quiz_view(request):
-    """Main quiz view responsive to CourseContext and course_id parameter"""
-    subject = request.GET.get('subject', 'General')
-    course_id_param = request.GET.get('course_id')
+    # Main quiz view responsive to CourseContext and course_id parameter
+    active_course = ActiveCourseManager.get_active_course(request)
     
-    # Enable explicit course override via URL
-    if course_id_param:
-        # We don't strictly check user here if we want demo mode, 
-        # but ActiveCourseManager does. For consistency:
-        active_course = get_object_or_404(Course, id=course_id_param)
-        # Set as active course in session
-        request.session['active_course_id'] = active_course.id
-    else:
-        active_course = ActiveCourseManager.get_active_course(request)
+    if not active_course:
+        return redirect('course:course_list')
+        
+    subject = request.GET.get('subject', active_course.title)
     
     if request.method == 'POST':
         # ... (POST handling remains same)

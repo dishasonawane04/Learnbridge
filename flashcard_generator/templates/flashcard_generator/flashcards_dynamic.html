@@ -1,0 +1,438 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dynamic Flashcards: {{ course.title }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            width: 100%;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 100;
+        }
+
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--text-main);
+        }
+
+        .progress-container {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 2rem;
+            text-align: center;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(51, 65, 85, 0.5);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Loading Spinner */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(139, 92, 246, 0.1);
+            border-left-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Flashcard Container */
+        .study-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            width: 100%;
+            perspective: 1000px;
+            padding: 2rem;
+        }
+
+        .flashcard {
+            width: 650px;
+            height: 420px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            padding: 3.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: rgba(30, 41, 59, 0.85);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .card-content {
+            font-size: 1.6rem;
+            font-weight: 500;
+            line-height: 1.4;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-label {
+            position: absolute;
+            top: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .hint-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 3rem;
+            display: flex;
+            gap: 1.2rem;
+            align-items: center;
+        }
+
+        .btn-nav {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 1rem;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .btn-nav:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            transform: scale(1.1);
+        }
+
+        .btn-action {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: var(--text-main);
+            padding: 0.8rem 1.8rem;
+            border-radius: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .btn-action:hover {
+            background: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .btn-regenerate {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-regenerate:hover {
+            background: var(--danger);
+        }
+
+        .shuffle-badge {
+            background: var(--accent);
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <h2 style="margin-bottom: 0.5rem;">Generating Flashcards...</h2>
+        <p class="text-muted" id="loadingStatus">Scanning your course material & identifying key concepts</p>
+    </div>
+
+    <header>
+        <a href="{% url 'course:course_dashboard' course.id %}" class="back-link">
+            <i class="ph ph-arrow-left"></i> Exit Study
+        </a>
+        <div class="progress-container">
+            <div id="progressText" style="font-weight: 600; font-size: 0.9rem;">Initializing...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 0.8rem;">
+            <button class="btn-action" onclick="shuffleCards()">
+                <i class="ph ph-shuffle"></i> Shuffle
+            </button>
+            <button class="btn-action btn-regenerate" onclick="regenerateCards()">
+                <i class="ph ph-arrows-clockwise"></i> Regenerate
+            </button>
+        </div>
+    </header>
+
+    <div class="study-area">
+        <div class="flashcard" id="flashcard" onclick="flipCard()">
+            <!-- Front -->
+            <div class="card-face card-front">
+                <div class="card-label">Concept / Question</div>
+                <div class="card-content" id="cardFront">...</div>
+                <div class="hint-text"><i class="ph ph-mouse-click"></i> Click to see explanation</div>
+            </div>
+
+            <!-- Back -->
+            <div class="card-face card-back">
+                <div class="card-label">Explanation</div>
+                <div class="card-content" id="cardBack" style="font-size: 1.2rem; font-weight: 400; text-align: left;">
+                    ...</div>
+                <div class="hint-text" style="background: rgba(139, 92, 246, 0.1); color: var(--accent);">
+                    <i class="ph ph-check-circle"></i> Mastered this concept?
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-nav" id="prevBtn" onclick="prevCard()"><i class="ph ph-caret-left"></i></button>
+            <div style="width: 200px; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+                Use arrow keys to navigate
+            </div>
+            <button class="btn-nav" id="nextBtn" onclick="nextCard()"><i class="ph ph-caret-right"></i></button>
+        </div>
+    </div>
+
+    <script>
+        const courseId = {{ course.id }};
+        let cards = [];
+        let currentIndex = 0;
+        let isFlipped = false;
+
+        async function fetchCards(isRegenerate = false) {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.opacity = '1';
+            overlay.style.display = 'flex';
+
+            const endpoint = isRegenerate
+                ? `/flashcards/api/course/${courseId}/regenerate/`
+                : `/flashcards/api/course/${courseId}/dynamic/`;
+
+            try {
+                const res = await fetch(endpoint);
+                const data = await res.json();
+                cards = data.cards;
+
+                // Handle Backend Error Reporting
+                if (cards.length === 1 && cards[0].error) {
+                    const statusEl = document.getElementById('loadingStatus');
+                    statusEl.innerText = cards[0].error;
+                    statusEl.style.color = "var(--danger)";
+                    setTimeout(() => { window.location.href = `/course/${courseId}/`; }, 5000);
+                    return;
+                }
+
+                if (cards.length === 0) {
+                    document.getElementById('loadingStatus').innerText = "AI could not generate enough flashcards from this material. Try adding more detail.";
+                    setTimeout(() => { window.location.href = `/course/${courseId}/`; }, 4000);
+                    return;
+                }
+
+                currentIndex = 0;
+                updateUI();
+
+                overlay.style.opacity = '0';
+                setTimeout(() => { overlay.style.display = 'none'; }, 500);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loadingStatus').innerText = "An error occurred. Retrying...";
+                setTimeout(() => fetchCards(isRegenerate), 2000);
+            }
+        }
+
+        function updateUI() {
+            if (cards.length === 0) return;
+
+            const card = cards[currentIndex];
+            document.getElementById('cardFront').innerText = card.front;
+            document.getElementById('cardBack').innerText = card.back;
+            document.getElementById('progressText').innerText = `CONCEPT ${currentIndex + 1} OF ${cards.length}`;
+            document.getElementById('progressBar').style.width = `${((currentIndex + 1) / cards.length) * 100}%`;
+
+            isFlipped = false;
+            document.getElementById('flashcard').classList.remove('flipped');
+
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            document.getElementById('prevBtn').style.opacity = currentIndex === 0 ? '0.3' : '1';
+        }
+
+        function flipCard() {
+            isFlipped = !isFlipped;
+            document.getElementById('flashcard').classList.toggle('flipped');
+        }
+
+        function nextCard() {
+            if (currentIndex < cards.length - 1) {
+                currentIndex++;
+                updateUI();
+            } else {
+                // Shake end of deck?
+                const cardEl = document.getElementById('flashcard');
+                cardEl.style.transform = isFlipped ? 'rotateY(180deg) scale(1.02)' : 'scale(1.02)';
+                setTimeout(() => {
+                    cardEl.style.transform = isFlipped ? 'rotateY(180deg)' : '';
+                }, 200);
+            }
+        }
+
+        function prevCard() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateUI();
+            }
+        }
+
+        function shuffleCards() {
+            cards.sort(() => Math.random() - 0.5);
+            currentIndex = 0;
+            updateUI();
+        }
+
+        function regenerateCards() {
+            if (confirm("Regenerate will clear the current set and create 12 NEW flashcards. Continue?")) {
+                fetchCards(true);
+            }
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                if (!isFlipped && e.key === ' ') {
+                    flipCard();
+                } else if (e.key === 'ArrowRight') {
+                    nextCard();
+                }
+            } else if (e.key === 'ArrowLeft') {
+                prevCard();
+            } else if (e.key === 'f') {
+                flipCard();
+            }
+        });
+
+        // Init
+        fetchCards();
+    </script>
+</body>
+
+</html>

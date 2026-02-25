@@ -1,5 +1,7 @@
 from ai_engine.vector_store import load_vector_db
 from django.conf import settings
+import logging
+logger = logging.getLogger(__name__)
 
 def retrieve_context(query, course_id, k=6):
     """
@@ -43,3 +45,48 @@ def retrieve_distributed_context(course_id, k=4):
         selected_docs = [all_docs[idx] for idx in sorted(list(set(indices)))]
 
     return "\n\n".join([f"[Topic Section {i+1}]: {d.page_content}" for i, d in enumerate(selected_docs)])
+def retrieve_diverse_context(course_id, k=8, fetch_k=20):
+    """
+    Retrieve diverse context from across the entire document using MMR and randomized sampling.
+    If vector retrieval fails or is empty, falls back to raw extracted text.
+    """
+    import random
+    db = load_vector_db(course_id)
+    raw_context = ""
+    
+    if db:
+        logger.info(f"RAG: Retrieving {k} chunks for Course {course_id}...")
+        try:
+            # Enhanced hints for better syllabus coverage
+            hints = ["core concepts", "definitions", "summary", "introduction", "conclusions", "details", "examples", "formulas"]
+            query = random.choice(hints)
+            
+            docs = db.max_marginal_relevance_search(
+                query,
+                k=k,
+                fetch_k=fetch_k,
+                lambda_mult=0.5
+            )
+            raw_context = "\n\n".join([f"[Context {i+1}]: {d.page_content}" for i, d in enumerate(docs)])
+            logger.info(f"RAG: Success! Retrieved {len(docs)} chunks.")
+        except Exception as e:
+            logger.error(f"RAG: MMR Search failed, trying distributed fallback: {e}")
+            raw_context = retrieve_distributed_context(course_id, k=k)
+    
+    # 2. Robust Fallback: If still no context, use full extracted text
+    if not raw_context.strip():
+        logger.info(f"RAG: No chunks found for Course {course_id}. Falling back to full extracted text...")
+        try:
+            from course.models import Course
+            course = Course.objects.filter(id=course_id).first()
+            if course and course.extracted_text:
+                full_text = course.extracted_text.strip()
+                # Use first 5,000 characters as fallback context
+                raw_context = full_text[:5000]
+                logger.info(f"RAG: Fallback Success! Using {len(raw_context)} chars of extracted text.")
+            else:
+                logger.warning(f"RAG: No extracted text found for Course {course_id}.")
+        except Exception as e:
+            logger.error(f"RAG: Fallback failed: {e}")
+
+    return raw_context

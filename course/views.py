@@ -78,28 +78,12 @@ def upload_notes(request, course_id):
             elif ext in ['ppt', 'pptx']: file_type = 'ppt'
             elif ext in ['jpg', 'jpeg', 'png', 'webp']: file_type = 'image'
             
-            material = CourseMaterial.objects.create(
+            # Create the material - automated processing in models.py handles the rest
+            CourseMaterial.objects.create(
                 course=course,
                 file=file,
                 file_type=file_type
             )
-            
-            # Extract text
-            try:
-                from .utils.extraction import extract_text_from_path
-                extracted = extract_text_from_path(material.file.path)
-                if extracted:
-                    material.extracted_text = extracted
-                    material.save()
-                    
-                # RAG Processing
-                from ai_engine.course_processor import process_document
-                process_document(material.file.path, course.id)
-                
-                # Consolidate into CourseNotes
-                CourseContextEngine.consolidate_course_notes(course.id)
-            except Exception as e:
-                print(f"Extraction/RAG failed: {e}")
                 
     return redirect('course:course_dashboard', course_id=course.id)
 
@@ -218,31 +202,12 @@ def material_upload_direct(request, course_id):
         elif ext in ['jpg', 'jpeg', 'png', 'webp']: file_type = 'image'
         
         if file_obj:
-            material = CourseMaterial.objects.create(
+            # Create the material - automated processing in models.py handles the rest
+            CourseMaterial.objects.create(
                 course=course,
                 file=file_obj,
                 file_type=file_type
             )
-            
-            # NEW RAG PIPELINE (Step 4)
-            try:
-                from ai_engine.course_processor import process_document
-                process_document(material.file.path, course.id)
-                print(f"RAG Pipeline complete for Course {course.id}")
-            except Exception as e:
-                print(f"RAG Processing failed: {e}")
-
-            # Extract text
-            try:
-                from .utils.extraction import extract_text_from_path
-                extracted = extract_text_from_path(material.file.path)
-                if extracted:
-                    material.extracted_text = extracted
-                    material.save()
-                    # Consolidate into CourseNotes
-                    CourseContextEngine.consolidate_course_notes(course.id)
-            except Exception as e:
-                print(f"Extraction failed: {e}")
             
         return redirect('course:course_dashboard', course_id=course.id)
     return redirect('course:course_dashboard', course_id=course.id)
@@ -390,11 +355,10 @@ def unit_search_api(request):
         
 @login_required
 def switch_course(request, course_id):
-    """View to explicitly switch the active course context"""
+    # View to explicitly switch the active course context
     from .services.state import ActiveCourseManager
-    ActiveCourseManager.set_active_course(request, course_id)
-    
-    # Redirect to where the user came from, or the course detail
+    course = ActiveCourseManager.set_active_course(request, course_id)
+    return redirect('course:course_dashboard', course_id=course.id)
     referer = request.META.get('HTTP_REFERER')
     if referer and 'course/' in referer:
         return redirect('course:course_dashboard', course_id=course_id)
@@ -439,12 +403,28 @@ def course_career(request, course_id):
 def course_summary(request, course_id):
     """Generates a comprehensive executive summary of the entire course material."""
     course = get_object_or_404(Course, id=course_id)
+    
+    # Return cached summary if available
+    if course.executive_summary:
+        return render(request, 'course/ai_tool_result.html', {
+            'course': course,
+            'tool_name': 'Course Summary Engine',
+            'content': course.executive_summary,
+            'icon': 'fa-file-invoice'
+        })
+        
     prompt = (
         "Synthesize all provided course material into a comprehensive Executive Summary. "
         "Include: 1. Core Objectives 2. Key Frameworks/Theories 3. Critical Takeaways. "
         "Be professional and structured."
     )
-    content = CourseContextEngine.ask_course_ai(course.id, prompt)
+    content = CourseContextEngine.ask_course_ai(course.id, prompt, specialized_mode='summary')
+    
+    # Cache the result if successful
+    if "Error contacting AI service" not in content and "Error:" not in content:
+        course.executive_summary = content
+        course.save(update_fields=['executive_summary'])
+        
     return render(request, 'course/ai_tool_result.html', {
         'course': course,
         'tool_name': 'Course Summary Engine',

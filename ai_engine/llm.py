@@ -1,5 +1,7 @@
 import ollama
 from django.conf import settings
+import logging
+logger = logging.getLogger(__name__)
 
 def ask_llm(prompt):
     """Simple wrapper for Ollama chat."""
@@ -11,5 +13,5 @@ def ask_llm(prompt):
         )
         return response["message"]["content"].strip()
     except Exception as e:
-        print(f"LLM Error: {e}")
+        logger.error(f"LLM Error: {e}")
         return "[]"

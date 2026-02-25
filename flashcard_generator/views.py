@@ -1,9 +1,11 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.utils import timezone
+from django.core.cache import cache
 import json
 import os
 from .models import FlashcardDeck, Flashcard
@@ -12,6 +14,9 @@ from analytics.models import ActivityLog
 from course.models import CourseUnit, Course
 from course.services.state import ActiveCourseManager
 from core.ai.services import CourseContextEngine
+from .services.dynamic_gen import generate_flashcards_dynamic
+import logging
+logger = logging.getLogger(__name__)
 
 def flashcard_home(request):
     # Get decks ordered by creation
@@ -357,6 +362,15 @@ def generate_from_course(request, course_id):
             cards_data = generate_flashcards(input_text=context_text[:5000])
 
     if not cards_data:
+        # 5. Robust Parsing
+        # The `cards_data` variable is already the result of `generate_flashcards`,
+        # which should handle robust parsing and return an error message if generation fails.
+        # So, if `cards_data` is empty here, it means no valid cards were generated.
+        print(f"Gen: LLM returned empty or invalid response for Course {course_id}.")
+        # The `generate_flashcards` function should ideally return a list with an error dict
+        # if it fails, or an empty list if no cards were generated but no error occurred.
+        # If it returns an empty list, we redirect. If it returns an error dict, we should handle it.
+        # For now, assuming an empty list means no cards, so redirect.
         return redirect('course:course_dashboard', course_id=course.id)
         
     # ... rest of the logic ...
@@ -395,3 +409,69 @@ def generate_from_course(request, course_id):
         )
 
     return redirect('flashcard_generator:study_deck', deck_id=deck.id)
+
+@login_required
+def dynamic_flashcards_view(request, course_id=None):
+    """
+    Renders the flashcard study page for a course using dynamic generation.
+    """
+    if course_id:
+        course = get_object_or_404(Course, id=course_id)
+        # Ensure it's active in session
+        request.session['active_course_id'] = course.id
+    else:
+        course = ActiveCourseManager.get_active_course(request)
+    
+    if not course:
+        return redirect('course:course_list')
+        
+    return render(request, "flashcard_generator/flashcards_dynamic.html", {
+        'course': course
+    })
+
+@csrf_exempt
+def get_dynamic_flashcards_api(request, course_id):
+    """
+    API endpoint for getting dynamic flashcards.
+    """
+    logger.info(f"API: get_dynamic_flashcards_api called for Course {course_id}")
+    course = get_object_or_404(Course, id=course_id)
+    
+    # 10-minute cache is handled inside generate_flashcards_dynamic
+    try:
+        cards = generate_flashcards_dynamic(request.user, course.id)
+        logger.info(f"API: Flashcards generated successfully for Course {course_id}. Count: {len(cards)}")
+    except Exception as e:
+        logger.error(f"API: Error generating flashcards for Course {course_id}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        cards = [{"error": "An internal server error occurred during generation."}]
+    
+    return JsonResponse({
+        "course_title": course.title,
+        "cards": cards
+    })
+
+@csrf_exempt
+def regenerate_flashcards_api(request, course_id):
+    """
+    Forces regeneration of flashcards by clearing cache.
+    """
+    logger.info(f"API: regenerate_flashcards_api called for Course {course_id}")
+    course = get_object_or_404(Course, id=course_id)
+    cache_key = f"flashcards_session_{request.user.id}_{course.id}"
+    cache.delete(cache_key)
+    
+    try:
+        cards = generate_flashcards_dynamic(request.user, course.id)
+        logger.info(f"API: Flashcards regenerated successfully for Course {course_id}")
+    except Exception as e:
+        logger.error(f"API: Error regenerating flashcards for Course {course_id}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        cards = [{"error": "An internal server error occurred during regeneration."}]
+    
+    return JsonResponse({
+        "status": "success",
+        "cards": cards
+    })
