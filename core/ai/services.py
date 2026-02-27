@@ -208,38 +208,59 @@ class CourseContextEngine:
     def ask_course_ai(course_id: int, prompt: str, specialized_mode: str = None) -> str:
         """
         Queries AI about a specific course using Hybrid RAG.
-        Used by Summary, Research, and Career tools.
+        Optimized for SPEED with Fast Path and Model Neutralization.
         """
-        from ai_core.ai_engine import get_hybrid_response_context
+        from ai_core.ai_engine import get_hybrid_response_context, get_specialized_system_prompt
         from ai_engine.retriever import retrieve_diverse_context
+        from course.models import CourseNotes
         
-        # 1. Get Context
+        # 1. Faster Context Retrieval
+        context_text = ""
         if specialized_mode == 'summary':
-            # Use MMR diverse sampling for summaries to get better syllabus coverage
-            context_text = retrieve_diverse_context(course_id, k=5)
-            from ai_core.ai_engine import get_specialized_system_prompt
+            # Use CourseNotes directly for "Fast Path" if total text is reasonable
+            notes = CourseNotes.objects.filter(course_id=course_id).first()
+            if notes and len(notes.extracted_text) < 25000: # Increased threshold for speed
+                logger.info(f"Summary: Fast Path triggered for Course {course_id}")
+                context_text = notes.extracted_text[:20000] # Use more text directly
+            else:
+                logger.info(f"Summary: Using fast similarity retrieval.")
+                from ai_engine.retriever import retrieve_context
+                context_text = retrieve_context(prompt, course_id, k=8)
+            
             system_prompt = get_specialized_system_prompt(mode='summary')
         else:
             context_text, system_prompt, is_course_aware = get_hybrid_response_context(prompt, course_id)
         
-        # 2. Query Ollama
-        return CourseContextEngine._query_ollama(system_prompt, f"CONTEXT: {context_text}\n\nQUESTION: {prompt}")
+        # 2. Query Ollama with dynamic model and speed constraints
+        return CourseContextEngine._query_ollama(
+            system_prompt, 
+            f"CONTEXT: {context_text}\n\nQUESTION: {prompt}",
+            num_predict=500 if specialized_mode == 'summary' else 400, # Reduced for speed
+            top_k=20
+        )
 
     @staticmethod
-    def _query_ollama(system: str, user_msg: str) -> str:
+    def _query_ollama(system: str, user_msg: str, **kwargs) -> str:
         try:
-            model = "llama3" # Enforce llama3
+            # Neutralize model choice for speed (OLLAMA_MODEL_TEXT is usually 1B)
+            model = getattr(settings, 'OLLAMA_MODEL_TEXT', 'llama3.2:1b')
+            
+            options = {
+                "temperature": 0.3,
+                "num_predict": 400,
+                "top_k": 30
+            }
+            options.update(kwargs)
+            
             response = requests.post(
-                "http://localhost:11434/api/generate",
+                f"{settings.OLLAMA_BASE_URL}/api/generate",
                 json={
                     "model": model,
                     "prompt": f"{system}\n\nStudent: {user_msg}\nAI:",
                     "stream": False,
-                    "options": {
-                        "temperature": 0.3 # Low temperature for factual recall
-                    }
+                    "options": options
                 },
-                timeout=180 # Increased for complex course summaries
+                timeout=120
             )
             response.raise_for_status()
             return response.json().get('response', "Error: Empty response from AI.")

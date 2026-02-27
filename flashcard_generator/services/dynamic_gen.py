@@ -14,9 +14,10 @@ logger = logging.getLogger(__name__)
 def get_card_hash(front_text):
     return hashlib.sha256(front_text.strip().lower().encode()).hexdigest()
 
-def generate_flashcards_dynamic(user, course_id, count=12):
+def generate_flashcards_dynamic(user, course_id, count=8):
     """
     Dynamic flashcard generation with RAG, Repetition Avoidance, and Caching.
+    Optimized for SPEED (Simpler retrieval, smaller count, prediction limits).
     """
     cache_key = f"flashcards_session_{user.id}_{course_id}"
     cached_cards = cache.get(cache_key)
@@ -25,52 +26,41 @@ def generate_flashcards_dynamic(user, course_id, count=12):
         logger.info(f"Returning cached flashcards for User {user.id}, Course {course_id}")
         return cached_cards
 
-    # 1. Retrieve Diverse Context (RAG with Fallback)
-    # Reducing k to 5 to avoid overwhelming the 1B model context window
-    context = retrieve_diverse_context(course_id, k=5)
-    
-    # 2. Check if we have enough content to actually generate cards
+    # 1. Faster Context Retrieval (Similarity instead of MMR for speed)
+    from ai_engine.retriever import retrieve_context
     from course.models import Course
     course = Course.objects.filter(id=course_id).first()
     
+    # Fast Path: If material is short, skip RAG and use full text directly
+    if course and course.extracted_text and len(course.extracted_text) < 4000:
+        logger.info(f"Gen: Fast Path triggered for Course {course_id} (short material)")
+        context = course.extracted_text
+    else:
+        logger.info(f"Gen: Using standard similarity retrieval for speed.")
+        context = retrieve_context("key concepts and definitions", course_id, k=5)
+    
+    # ... Validation remains mostly same ...
     total_text_len = len(course.extracted_text or "") if course else 0
-    num_materials = course.course_materials.count() if course else 0
     
-    
-    logger.info(f"Gen: Course {course_id} | Materials: {num_materials} | Text Length: {total_text_len} | Context Chunks: {len(context) if context else 0}")
+    if not context or len(context.strip()) < 200:
+        return [{"error": "AI could not find enough context. Please ensure your material contains clear academic concepts."}]
 
-    if not context or len(context.strip()) < 300:
-        if num_materials == 0:
-            print("Gen: No materials found.")
-            return [{"error": "Please upload course materials to generate flashcards."}]
-        elif total_text_len < 300:
-            print(f"Gen: Material too short ({total_text_len} chars).")
-            return [{"error": "The uploaded material is too short to generate meaningful flashcards."}]
-        else:
-            # This shouldn't happen with our fallback, but just in case
-            print("Gen: Still not enough context after fallback.")
-            return [{"error": "AI could not find enough context in the documents. Try adding more detailed material."}]
-
-    # 3. Prepare Prompt
-    # 1B models perform MUCH better with a simplified prompt and a one-shot example.
+    # 3. Optimized Prompt & Model Constraints
     prompt = f"""
-    You are an academic tutor. Create educational flashcards based ONLY on the provided context.
+    Create 8 educational flashcards based ONLY on this context. 
+    Format: JSON Array of {{"front": "...", "back": "..."}}.
     
     Context:
-    {context}
-
-    Task: Generate 10-12 distinct flashcards in a JSON array.
-    
-    Example Output:
-    [
-      {{"front": "What is the capital of France?", "back": "Paris is the capital city."}}
-    ]
-
-    CRITICAL: Output ONLY a raw JSON array. No conversational text.
+    {context[:3000]}
     """
 
-    # 4. Call LLM (Ollama)
-    raw_response = ask_llm(prompt)
+    # 4. Call LLM with strict limits for speed
+    raw_response = ask_llm(
+        prompt, 
+        num_predict=400,  # Prevent long-windedness
+        top_k=20,         # Narrower sampling for faster decoding
+        repeat_penalty=1.2
+    )
     
     # 5. Robust Parsing
     generated_cards = clean_json_response(raw_response)

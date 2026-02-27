@@ -1,304 +1,564 @@
 {% extends "base.html" %}
 
 {% block content %}
+<!-- Use Marked.js for real-time markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 <style>
-    /* ChatGPT-style Refinements */
-    #chat-wrapper {
-        max-width: 800px;
-        margin: 0 auto;
-        height: calc(100vh - 140px);
-        display: flex;
-        flex-direction: column;
+    /* ========================================= 
+       PREMIUM SAAS AI THEME (ChatGPT/Notion Style)
+       ========================================= */
+    :root {
+        --chat-max-width: 1000px;
+        --navy-dark: #0b0f1a;
+        --navy-accent: #151c2c;
+        --purple-svc: #6d28d9;
+        --purple-light: #8b5cf6;
+        --user-gradient: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+        --ai-glass: rgba(255, 255, 255, 0.03);
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --nav-height: 70px;
     }
 
-    #chat-container {
+    /* 1️⃣ Full Page Layout (Fixed Viewport) */
+    main {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        height: 100vh;
+        background: linear-gradient(180deg, var(--navy-dark) 0%, #0d0d1e 100%) !important;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* Prevent page scroll */
+        position: relative;
+    }
+
+    /* 2️⃣ Fixed Header Section */
+    .chat-header-fixed {
+        width: 100%;
+        backdrop-filter: blur(20px);
+        background: rgba(11, 15, 26, 0.8);
+        border-bottom: 1px solid var(--glass-border);
+        z-index: 100;
+        padding: 1rem 0;
+    }
+
+    .header-content {
+        max-width: var(--chat-max-width);
+        margin: 0 auto;
+        padding: 0 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .header-info h1 { font-size: 1.75rem; font-weight: 800; color: white; margin: 0; }
+    .header-info p { font-size: 0.9rem; color: rgba(255,255,255,0.4); margin: 0; font-weight: 500; }
+
+    .badge-course {
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        color: #a78bfa;
+        padding: 10px 15px;
+        border-radius: 30px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+        display: inline-block;
+    }
+
+    .clear-btn {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        color: #a78bfa;
+        padding: 0.6rem 1rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    .clear-btn:hover { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #f87171; }
+
+    .back-btn {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        color: #a78bfa;
+        padding: 0.6rem 1rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        transition: 0.3s;
+    }
+    .back-btn:hover { background: rgba(99, 102, 241, 0.2); border-color: #8b5cf6; color: white; transform: translateX(-4px); }
+
+    /* 3️⃣ Scrollable Chat Area */
+    #chat-scroll-area {
         flex-grow: 1;
         overflow-y: auto;
-        padding: 2rem;
-        margin-bottom: 1rem;
+        display: flex;
+        flex-direction: column;
+        padding: 2rem 1.5rem 160px 1.5rem;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,0.1) transparent;
+    }
+
+    #chat-scroll-area::-webkit-scrollbar { width: 6px; }
+    #chat-scroll-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+    .chat-inner {
+        max-width: var(--chat-max-width);
+        width: 100%;
+        margin: 0 auto;
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
-        background: transparent;
-        border: none;
     }
 
-    .chat-input {
+    /* 4️⃣ Premium Bubble Design */
+    .bubble-wrap {
+        display: flex;
+        flex-direction: column;
         width: 100%;
-        height: 52px;
-        padding: 0 1.25rem;
-        background: rgba(15, 23, 42, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 26px;
+        animation: messageFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes messageFadeUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-bubble {
+        padding: 1.25rem 1.75rem;
+        line-height: 1.75;
+        font-size: 1.05rem;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    .user-msg { align-self: flex-end; max-width: 85%; }
+    .user-bubble {
+        background: var(--user-gradient);
         color: white;
-        font-size: 1rem;
-        transition: all 0.2s;
+        border-radius: 20px 20px 4px 20px;
+        border: 1px solid rgba(255,255,255,0.1);
     }
 
-    .chat-input:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    .ai-msg { align-self: flex-start; max-width: 95%; width: 100%; }
+    .ai-bubble {
+        background: var(--ai-glass);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        color: #e2e8f0;
+        border-radius: 4px 20px 20px 20px;
     }
 
-    .icon-btn,
-    .send-btn {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: var(--text-light);
-        cursor: pointer;
-        transition: all 0.2s;
+    .md-box h3 { color: white; margin-top: 1.5rem; font-size: 1.3rem; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.4rem; }
+    .md-box h3:first-child { margin-top: 0; }
+    .md-box p { margin-bottom: 1.25rem; }
+    .md-box ul { margin-bottom: 1.25rem; padding-left: 1.5rem; }
+    .md-box li { margin-bottom: 0.5rem; }
+
+    /* 5️⃣ Sticky Input Bar (The Dock) */
+    .input-dock-fixed {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 2.5rem 1.5rem;
+        background: linear-gradient(to top, var(--navy-dark) 60%, transparent);
+        z-index: 90;
+        pointer-events: none;
+    }
+
+    .input-container {
+        max-width: var(--chat-max-width);
+        margin: 0 auto;
+        pointer-events: all;
+    }
+
+    .saas-input-bar {
+        background: rgba(21, 28, 44, 0.8);
+        backdrop-filter: blur(30px);
+        border: 1px solid var(--glass-border);
+        border-radius: 40px;
+        padding: 0.5rem 1rem;
         display: flex;
         align-items: center;
-        justify-content: center;
+        gap: 0.75rem;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+        transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
     }
 
-    .icon-btn:hover,
-    .send-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
+    .saas-input-bar:focus-within {
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15), 0 25px 70px rgba(0,0,0,0.9);
+        background: rgba(21, 28, 44, 0.95);
     }
 
-    .send-btn {
-        background: linear-gradient(135deg, var(--primary), var(--accent));
+    .main-chat-input {
+        background: transparent;
         border: none;
-    }
-
-    .chip {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 0.6rem 1.2rem;
-        border-radius: 20px;
-        color: var(--text-light);
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .chip:hover {
-        background: rgba(99, 102, 241, 0.15);
-        border-color: var(--primary);
         color: white;
+        padding: 0.75rem 0.5rem;
+        font-size: 1.1rem;
+        width: 100%;
+        outline: none;
+        font-family: inherit;
     }
 
-    .typing-dots span {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        background: var(--text-light);
+    .mic-btn { color: rgba(255,255,255,0.3); font-size: 1.25rem; transition: 0.3s; cursor: pointer; background:none; border:none; padding: 0.5rem;}
+    .mic-btn:hover { color: var(--purple-light); }
+
+    .send-btn-saas {
+        background: var(--user-gradient);
+        color: white; border: none;
+        width: 48px; height: 48px;
         border-radius: 50%;
-        animation: typing 1.4s infinite ease-in-out both;
-        margin: 0 2px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+    }
+    .send-btn-saas:hover:not(:disabled) { transform: translateY(-2px) scale(1.05); box-shadow: 0 8px 30px rgba(124, 58, 237, 0.5); }
+    .send-btn-saas:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* 6️⃣ Modal & Confirmation */
+    .modal-overlay {
+        position: fixed; top:0; left:0; width:100%; height:100%;
+        background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+        display: none; align-items: center; justify-content: center; z-index: 1000;
+        animation: fadeIn 0.3s ease;
+    }
+    .modal-card {
+        background: var(--navy-accent); padding: 2.5rem; border-radius: 28px;
+        max-width: 400px; width: 90%; text-align: center;
+        border: 1px solid var(--glass-border); box-shadow: 0 30px 100px rgba(0,0,0,0.8);
+    }
+    .modal-card h3 { color: white; margin-bottom: 1rem; font-size: 1.5rem; }
+    .modal-card p { color: rgba(255,255,255,0.5); margin-bottom: 2rem; }
+    .modal-actions { display: flex; gap: 1rem; justify-content: center; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* 7️⃣ Empty State */
+    .empty-saas {
+        text-align: center;
+        margin: auto;
+        animation: messageFadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .empty-icon {
+        width: 100px; height: 100px;
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 35px;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 2rem auto;
+        font-size: 3rem; color: #a78bfa;
+        transform: rotate(-5deg);
     }
 
-    .typing-dots span:nth-child(1) {
-        animation-delay: -0.32s;
+    /* Error UI */
+    .error-saas-card {
+        background: rgba(239, 68, 68, 0.05);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 20px;
+        padding: 1.5rem;
+        display: flex; gap: 1.25rem; align-items: center;
+        color: #fca5a5;
     }
 
-    .typing-dots span:nth-child(2) {
-        animation-delay: -0.16s;
-    }
-
-    @keyframes typing {
-
-        0%,
-        80%,
-        100% {
-            transform: scale(0);
-        }
-
-        40% {
-            transform: scale(1);
-        }
-    }
+    /* Loading dots */
+    .saas-typing { display: flex; gap: 5px; padding: 0.5rem; }
+    .saas-typing span { width: 7px; height: 7px; background: #8b5cf6; border-radius: 50%; animation: saasBounce 1.4s infinite; opacity: 0.4; }
+    .saas-typing span:nth-child(2) { animation-delay: 0.2s; }
+    .saas-typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes saasBounce { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-5px); opacity: 1; } }
 </style>
 
-<div id="chat-wrapper">
-    <!-- Header -->
-    <div style="text-align: center; margin-bottom: 1.5rem; flex-shrink: 0; position: relative;">
-        <h1
-            style="font-size: 2rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
-            AI Explainer
-        </h1>
-        <div style="display: flex; justify-content: center; gap: 1.5rem; align-items: center;">
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Smart context-aware assistant</p>
-            <form method="get" action="?clear=true" style="margin:0;">
-                <button type="button" onclick="location.href='?clear=true'"
-                    style="background: none; border: none; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; text-decoration: underline;">Clear
-                    Chat</button>
-            </form>
+<!-- Confirmation Modal -->
+<div id="clearModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3>Clear Conversation?</h3>
+        <p>This will permanently delete your chat history with this AI assistant for this session.</p>
+        <div class="modal-actions">
+            <button onclick="closeModal()" class="btn btn-ghost" style="padding: 0.75rem 1.5rem;">Cancel</button>
+            <a id="confirmClearBtn" href="{% url 'sentence_explain:sentence_explain' %}?clear=true" class="btn btn-danger" style="padding: 0.75rem 1.5rem; border-radius: 14px; background: #dc2626; color: white;">Clear Chat</a>
         </div>
+    </div>
+</div>
 
-        <button id="stopSpeakingBtn" onclick="stopSpeaking()"
-            style="display: none; position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: rgba(239, 68, 68, 0.2); color: var(--error); border: 1px solid var(--error); padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; font-size: 0.9rem; align-items: center; gap: 0.5rem;">
-            <i class="fas fa-stop"></i> Stop Audio
-        </button>
+<div id="chat-wrapper" style="height: 100%; display: flex; flex-direction: column;">
+    <!-- Fixed Header -->
+    <div class="chat-header-fixed">
+        <div class="header-content">
+            <div class="header-info">
+                <span class="badge-course">{{ active_course.title|truncatechars:25 }}</span>
+                <h1>AI Explainer</h1>
+                <p>Course-Aware Smart Assistant</p>
+            </div>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                {% if active_course %}
+                <a href="{% url 'course:course_dashboard' active_course.id %}" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Course
+                </a>
+                {% endif %}
+                <button onclick="openModal()" class="clear-btn">
+                    <i class="fas fa-trash-alt"></i> Clear Chat
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- Chat Area -->
-    <div id="chat-container">
-        {% if not chat_history %}
-        <div style="text-align: center; color: var(--text-light); margin: auto; padding: 2rem;">
-            <h3 style="font-weight: 600; font-size: 1.5rem; margin-bottom: 0.75rem; color: white;">
-                Ask anything from your course
-            </h3>
-            <p style="font-size: 1rem; color: var(--text-dim); max-width: 450px; margin: 0 auto;">
-                I'll explain concepts, provide examples, and answer questions based on your study material.
+    <!-- Scrollable Chat Content -->
+    <div id="chat-scroll-area">
+        <div class="chat-inner">
+            
+            {% if not chat_history %}
+            <div class="empty-saas">
+                <div class="empty-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+                <h2 style="font-size: 2.25rem; font-weight: 800; color: white; margin-bottom: 0.5rem;">Start Learning</h2>
+                <p style="color: rgba(255,255,255,0.4); font-size: 1.2rem; max-width: 500px; margin: 0 auto 3rem auto;">
+                    Ask anything from your uploaded course material. I'll provide structured explanations and examples.
+                </p>
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="setQuickPrompt('Explain this concept simply')" class="chip" style="padding: 0.75rem 1.5rem; border-radius: 14px; font-weight: 600;">Explain simply</button>
+                    <button onclick="setQuickPrompt('Show me a practical example')" class="chip" style="padding: 0.75rem 1.5rem; border-radius: 14px; font-weight: 600;">Give example</button>
+                    <button onclick="setQuickPrompt('What are the top 3 takeaways?')" class="chip" style="padding: 0.75rem 1.5rem; border-radius: 14px; font-weight: 600;">Top takeaways</button>
+                </div>
+            </div>
+            {% endif %}
+
+            <div id="message-list-saas" style="display: flex; flex-direction: column; gap: 2rem;">
+                {% for msg in chat_history %}
+                {% if msg.role == 'user' %}
+                <div class="bubble-wrap user-msg">
+                    <div class="message-bubble user-bubble">
+                        {% if msg.image %}
+                        <img src="{{ msg.image }}" style="max-width: 100%; border-radius: 14px; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.2); display: block;">
+                        {% endif %}
+                        {{ msg.content }}
+                    </div>
+                </div>
+                {% else %}
+                <div class="bubble-wrap ai-msg">
+                    <div style="display: flex; gap: 1.5rem; width: 100%;">
+                        <div style="flex-shrink: 0; width: 44px; height: 44px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-robot" style="color: #a78bfa; font-size: 1.25rem;"></i>
+                        </div>
+                        <div style="flex-grow: 1;">
+                            <div class="message-bubble ai-bubble md-box">
+                                {{ msg.content }}
+                            </div>
+                            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                                <button onclick="speakText(this.parentNode.previousElementSibling.innerText)" class="btn btn-ghost btn-sm" style="color: #a78bfa; padding: 0; background: none; border: none; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <i class="fas fa-volume-up"></i> Listen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Loading Template -->
+            <div id="bot-thinking" style="display: none; margin-bottom: 2rem;" class="bubble-wrap ai-msg">
+                <div style="display: flex; gap: 1.5rem;">
+                    <div style="flex-shrink: 0; width: 44px; height: 44px; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-sparkles fa-spin" style="color: #a78bfa;"></i>
+                    </div>
+                    <div class="message-bubble ai-bubble" style="padding: 1rem 1.75rem;">
+                        <div style="display: flex; align-items: center; gap: 10px; color: rgba(255,255,255,0.4);">
+                            Generating explanation <div class="saas-typing"><span></span><span></span><span></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-injection"></div>
+        </div>
+    </div>
+
+    <!-- Sticky Floating Dock -->
+    <div class="input-dock-fixed">
+        <div class="input-container">
+            <div class="saas-input-bar">
+                <form id="saasForm" style="display: flex; width: 100%; align-items: center; gap: 0.5rem;">
+                    {% csrf_token %}
+                    <input type="file" id="imageInput" name="image" accept="image/*" style="display: none;" onchange="onFileAttach()">
+                    
+                    <button type="button" onclick="document.getElementById('imageInput').click()" class="mic-btn" title="Upload Image">
+                        <i class="fas fa-plus" id="uploadIco"></i>
+                    </button>
+
+                    <button type="button" class="mic-btn" title="Voice Search (Coming Soon)">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+
+                    <input type="text" id="userInput" name="sentence" 
+                           placeholder="Ask your concept here..." autocomplete="off"
+                           class="main-chat-input" required>
+
+                    <button type="submit" id="sendGo" class="send-btn-saas">
+                        <i class="fas fa-arrow-up" style="font-size: 1.2rem;"></i>
+                    </button>
+                </form>
+            </div>
+            <p style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.8rem; margin-top: 1rem; font-weight: 500;">
+                <i class="fas fa-shield-check" style="margin-right: 5px;"></i> Professional AI Tutor • Secure Session
             </p>
         </div>
-        {% endif %}
-
-        {% for msg in chat_history %}
-        {% if msg.role == 'user' %}
-        <div style="align-self: flex-end; max-width: 80%;">
-            <div
-                style="background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.3); padding: 1rem 1.5rem; border-radius: 20px 20px 0 20px; color: white;">
-                {% if msg.image %}
-                <img src="{{ msg.image }}" alt="Uploaded"
-                    style="max-width: 100%; border-radius: 12px; margin-bottom: 0.5rem;">
-                {% endif %}
-                {{ msg.content }}
-            </div>
-        </div>
-        {% else %}
-        <div style="align-self: flex-start; max-width: 90%;">
-            <div style="display: flex; gap: 1rem;">
-                <div
-                    style="flex-shrink: 0; width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-robot" style="color: white; font-size: 0.9rem;"></i>
-                </div>
-                <div>
-                    <div
-                        style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 1.25rem; border-radius: 0 20px 20px 20px; color: var(--text-main); line-height: 1.6;">
-                        {{ msg.content|linebreaks }}
-                    </div>
-                    <button data-text="{{ msg.content }}" onclick="speakText(this.dataset.text)" class="btn-text"
-                        style="margin-top: 0.6rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; background: none; border: none; cursor: pointer; padding: 0;">
-                        <i class="fas fa-volume-up"></i> Read Aloud
-                    </button>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-        {% endfor %}
-
-        <div id="loading-indicator" style="display: none; align-self: flex-start; max-width: 80%;">
-            <div style="display: flex; gap: 1rem;">
-                <div
-                    style="flex-shrink: 0; width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%;">
-                </div>
-                <div
-                    style="background: rgba(255, 255, 255, 0.05); padding: 1rem 1.5rem; border-radius: 0 20px 20px 20px;">
-                    <div class="typing-dots"><span></span><span></span><span></span></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Input Area -->
-    <div style="padding: 1rem 0; flex-shrink: 0;">
-        <div style="display: flex; gap: 0.75rem; justify-content: center; margin-bottom: 1.5rem; flex-wrap: wrap;">
-            <button type="button" onclick="setQuickPrompt('Explain this concept simply')" class="chip">Explain
-                simply</button>
-            <button type="button" onclick="setQuickPrompt('Give me an example')" class="chip">Give example</button>
-            <button type="button" onclick="setQuickPrompt('How does this work?')" class="chip">How it works?</button>
-            <button type="button" onclick="setQuickPrompt('Summarize key points')" class="chip">Summarize</button>
-        </div>
-
-        <div class="glass-card" style="padding: 1rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 30px;">
-            <form method="post" enctype="multipart/form-data" onsubmit="handleSubmit()"
-                style="display: flex; gap: 0.75rem; align-items: center;">
-                {% csrf_token %}
-                <input type="file" id="imageInput" name="image" accept="image/*" style="display: none;"
-                    onchange="updateImagePreview()">
-
-                <button type="button" onclick="document.getElementById('imageInput').click()" class="icon-btn">
-                    <i class="fas fa-image" id="imageIcon"></i>
-                </button>
-
-                <div style="flex-grow: 1;">
-                    <input type="text" id="sentenceInput" name="sentence"
-                        placeholder="Ask a question, explain a sentence, or upload an image…" required
-                        class="chat-input">
-                </div>
-
-                <button type="submit" class="send-btn">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </form>
-        </div>
-        <p style="text-align: center; font-size: 0.75rem; color: var(--text-dim); margin-top: 1rem;">
-            Explaining based on your course content context
-        </p>
     </div>
 </div>
 
 <script>
-    const chatContainer = document.getElementById('chat-container');
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    const scroller = document.getElementById('chat-scroll-area');
+    const msgList = document.getElementById('message-list-saas');
+    const thinking = document.getElementById('bot-thinking');
+    const inputForm = document.getElementById('saasForm');
+    const uInput = document.getElementById('userInput');
+    const fInput = document.getElementById('imageInput');
+    const sBtn = document.getElementById('sendGo');
+    const errorBox = document.getElementById('error-injection');
+    const modal = document.getElementById('clearModal');
 
-    function handleSubmit() {
-        document.getElementById('loading-indicator').style.display = 'block';
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        document.getElementById('sentenceInput').placeholder = "AI is thinking...";
+    // Init Marked
+    marked.setOptions({ gfm: true, breaks: true });
+
+    // Initial Scroll
+    scroller.scrollTop = scroller.scrollHeight;
+    document.querySelectorAll('.md-box').forEach(el => {
+        el.innerHTML = marked.parse(el.textContent);
+    });
+
+    function jumpToBottom() {
+        scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
     }
 
-    function setQuickPrompt(text) {
-        const input = document.getElementById('sentenceInput');
-        input.value = text;
-        input.focus();
-        input.style.borderColor = 'var(--primary)';
-        setTimeout(() => input.style.borderColor = 'rgba(255, 255, 255, 0.1)', 500);
-    }
+    function openModal() { modal.style.display = 'flex'; }
+    function closeModal() { modal.style.display = 'none'; }
 
-    function updateImagePreview() {
-        if (document.getElementById('imageInput').files[0]) {
-            document.getElementById('imageIcon').style.color = 'var(--success)';
-            document.getElementById('sentenceInput').placeholder = "Image attached! Click send...";
-            document.getElementById('sentenceInput').required = false;
+    function onFileAttach() {
+        if (fInput.files[0]) {
+            document.getElementById('uploadIco').className = 'fas fa-check-circle';
+            document.getElementById('uploadIco').style.color = '#8b5cf6';
+            uInput.placeholder = "Image attached. Press enter...";
+            uInput.required = false;
         }
     }
 
-    function speakText(text) {
+    async function handleSaaSSubmit(ev) {
+        if (ev) ev.preventDefault();
+        const text = uInput.value.trim();
+        const file = fInput.files.length > 0;
+        if (!text && !file) return;
+
+        const formData = new FormData(inputForm);
+
+        // UI: Push User Message
+        const uWrap = document.createElement('div');
+        uWrap.className = 'bubble-wrap user-msg';
+        uWrap.innerHTML = `<div class="message-bubble user-bubble"><div class="txt-area">${text || ""}</div></div>`;
+        
+        if (file) {
+            const rd = new FileReader();
+            rd.onload = (e) => {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.maxWidth = '100%'; img.style.borderRadius = '14px';
+                img.style.marginBottom = '1rem'; img.style.display = 'block';
+                uWrap.querySelector('.message-bubble').prepend(img);
+            };
+            rd.readAsDataURL(fInput.files[0]);
+            if (!text) uWrap.querySelector('.txt-area').innerText = "[Analyzing Screenshot]";
+        }
+        msgList.appendChild(uWrap);
+        
+        // State
+        uInput.value = ""; uInput.disabled = true; sBtn.disabled = true;
+        thinking.style.display = 'block'; errorBox.innerHTML = ""; jumpToBottom();
+
+        try {
+            const res = await fetch("{% url 'sentence_explain:sentence_explain_api' %}", {
+                method: "POST", body: formData, headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+            });
+
+            if (!res.ok) throw new Error("Offline");
+
+            thinking.style.display = 'none';
+            const aWrap = document.createElement('div');
+            aWrap.className = 'bubble-wrap ai-msg';
+            aWrap.innerHTML = `
+                <div style="display: flex; gap: 1.5rem; width: 100%;">
+                    <div style="flex-shrink: 0; width: 44px; height: 44px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-robot" style="color: #a78bfa; font-size: 1.25rem;"></i>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <div class="message-bubble ai-bubble md-live"></div>
+                        <div class="ai-ctrl" style="display: none; margin-top: 1rem;">
+                             <button onclick="speakText(this.parentNode.previousElementSibling.innerText)" style="background: none; border: none; color: #a78bfa; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 0;">
+                                <i class="fas fa-volume-up"></i> Listen
+                             </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            msgList.appendChild(aWrap);
+            const liveBox = aWrap.querySelector('.md-live');
+            const ctrl = aWrap.querySelector('.ai-ctrl');
+
+            const read = res.body.getReader();
+            const dec = new TextDecoder();
+            let raw = "";
+            while (true) {
+                const { value, done } = await read.read();
+                if (done) break;
+                raw += dec.decode(value, { stream: true });
+                liveBox.innerHTML = marked.parse(raw);
+                jumpToBottom();
+            }
+            ctrl.style.display = 'block';
+
+            fInput.value = "";
+            document.getElementById('uploadIco').className = 'fas fa-plus';
+            document.getElementById('uploadIco').style.color = 'inherit';
+
+        } catch (err) {
+            thinking.style.display = 'none';
+            errorBox.innerHTML = `
+                <div class="error-saas-card">
+                    <div style="width: 48px; height: 48px; background: rgba(239, 68, 68, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fas fa-triangle-exclamation" style="font-size: 1.3rem;"></i>
+                    </div>
+                    <div>
+                        <strong style="display: block; color: white; font-size: 1.1rem; margin-bottom: 2px;">AI Service Temporarily Unavailable</strong>
+                        <span style="font-size: 0.95rem; opacity: 0.8;">The AI engine is currently offline. Please try again shortly.</span>
+                    </div>
+                </div>
+            `;
+        } finally {
+            uInput.disabled = false; sBtn.disabled = false;
+            uInput.placeholder = "Ask your concept here...";
+            uInput.focus(); jumpToBottom();
+        }
+    }
+
+    if (inputForm) inputForm.addEventListener('submit', handleSaaSSubmit);
+
+    function setQuickPrompt(t) { uInput.value = t; uInput.focus(); }
+
+    function speakText(t) {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.95;
-        utterance.pitch = 1.0;
-        utterance.volume = 1;
-        utterance.lang = "en-US";
-
-        function loadVoicesAndSpeak() {
-            const voices = window.speechSynthesis.getVoices();
-            const preferred = voices.find(v => v.name.includes("Google US English")) ||
-                voices.find(v => v.name.includes("Samantha")) ||
-                voices.find(v => v.lang === "en-US");
-
-            if (preferred) utterance.voice = preferred;
-            window.speechSynthesis.speak(utterance);
-        }
-
-        if (window.speechSynthesis.getVoices().length === 0) {
-            window.speechSynthesis.onvoiceschanged = loadVoicesAndSpeak;
-        } else {
-            loadVoicesAndSpeak();
-        }
-
-        utterance.onstart = () => document.getElementById('stopSpeakingBtn').style.display = 'flex';
-        utterance.onend = () => document.getElementById('stopSpeakingBtn').style.display = 'none';
-    }
-
-    function stopSpeaking() {
-        window.speechSynthesis.cancel();
-        document.getElementById('stopSpeakingBtn').style.display = 'none';
-    }
-
-    window.onload = function () {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        const input = document.getElementById('sentenceInput');
-        input.placeholder = "Ask a question, explain a sentence, or upload an image…";
+        const u = new SpeechSynthesisUtterance(t);
+        u.rate = 1.0; u.pitch = 1.0; u.lang = "en-US";
+        window.speechSynthesis.speak(u);
     }
 </script>
 {% endblock %}

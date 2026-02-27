@@ -45,9 +45,10 @@ def retrieve_distributed_context(course_id, k=4):
         selected_docs = [all_docs[idx] for idx in sorted(list(set(indices)))]
 
     return "\n\n".join([f"[Topic Section {i+1}]: {d.page_content}" for i, d in enumerate(selected_docs)])
-def retrieve_diverse_context(course_id, k=8, fetch_k=20):
+def retrieve_diverse_context(course_id, query=None, k=8, fetch_k=20):
     """
     Retrieve diverse context from across the entire document using MMR and randomized sampling.
+    If query is provided, it prioritizes content relevant to the query while maintaining diversity.
     If vector retrieval fails or is empty, falls back to raw extracted text.
     """
     import random
@@ -57,12 +58,15 @@ def retrieve_diverse_context(course_id, k=8, fetch_k=20):
     if db:
         logger.info(f"RAG: Retrieving {k} chunks for Course {course_id}...")
         try:
-            # Enhanced hints for better syllabus coverage
-            hints = ["core concepts", "definitions", "summary", "introduction", "conclusions", "details", "examples", "formulas"]
-            query = random.choice(hints)
+            # If no query provided, use enhanced hints for better syllabus coverage
+            if not query:
+                hints = ["core concepts", "definitions", "summary", "introduction", "conclusions", "details", "examples", "formulas"]
+                search_query = random.choice(hints)
+            else:
+                search_query = query
             
             docs = db.max_marginal_relevance_search(
-                query,
+                search_query,
                 k=k,
                 fetch_k=fetch_k,
                 lambda_mult=0.5

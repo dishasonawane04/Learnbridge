@@ -404,24 +404,46 @@ def course_summary(request, course_id):
     """Generates a comprehensive executive summary of the entire course material."""
     course = get_object_or_404(Course, id=course_id)
     
-    # Return cached summary if available
+    # Return cached summary if available - CLEARING ONCE TO RE-FORMAT
     if course.executive_summary:
-        return render(request, 'course/ai_tool_result.html', {
-            'course': course,
-            'tool_name': 'Course Summary Engine',
-            'content': course.executive_summary,
-            'icon': 'fa-file-invoice'
-        })
+        # Check if it has markdown, if so, clear it once
+        if '#' in course.executive_summary or '*' in course.executive_summary:
+             course.executive_summary = ""
+             course.save(update_fields=['executive_summary'])
+        else:
+            return render(request, 'course/ai_tool_result.html', {
+                'course': course,
+                'tool_name': 'Course Summary Engine',
+                'content': course.executive_summary,
+                'icon': 'fa-file-invoice',
+                'is_error': False
+            })
         
     prompt = (
-        "Synthesize all provided course material into a comprehensive Executive Summary. "
-        "Include: 1. Core Objectives 2. Key Frameworks/Theories 3. Critical Takeaways. "
-        "Be professional and structured."
+        "Synthesize all provided course material into a clean textbook-style Executive Summary. "
+        "Cover Major Concepts, Core Objectives, and Critical Takeaways. "
+        "\nSTRICT REQUIREMENTS: "
+        "1. Output must be PLAIN ACADEMIC TEXT only. "
+        "2. Use ONLY paragraphs. No bullet points or symbols. "
+        "3. ABSOLUTELY NO markdown: No #, no *, no _, no bold, no italic. "
+        "4. Use simple, clear language with logical organization. "
+        "5. If listing items, use normal sentences starting with 'First,', 'Second,', etc. or simple numbers (1, 2, 3)."
     )
     content = CourseContextEngine.ask_course_ai(course.id, prompt, specialized_mode='summary')
     
+    # --- ROBUST TEXT CLEANING (Strip all markdown/symbols) ---
+    import re
+    # Remove #, *, _, `, and other common markdown symbols
+    content = re.sub(r'[#*_`~>|+]', '', content)
+    # Remove bullet symbols (•, -, +, *) at the start of lines or middle
+    content = re.sub(r'^[ \t]*[-+*•][ \t]+', '', content, flags=re.MULTILINE)
+    # Ensure paragraphs are clean
+    content = re.sub(r'\n{3,}', '\n\n', content).strip()
+    
+    is_error = "Error contacting AI service" in content or content.startswith("Error:")
+    
     # Cache the result if successful
-    if "Error contacting AI service" not in content and "Error:" not in content:
+    if not is_error:
         course.executive_summary = content
         course.save(update_fields=['executive_summary'])
         
@@ -429,7 +451,8 @@ def course_summary(request, course_id):
         'course': course,
         'tool_name': 'Course Summary Engine',
         'content': content,
-        'icon': 'fa-file-invoice'
+        'icon': 'fa-file-invoice',
+        'is_error': is_error
     })
 @login_required
 def course_delete(request, course_id):

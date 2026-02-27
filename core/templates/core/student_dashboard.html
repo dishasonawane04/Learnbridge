@@ -111,62 +111,60 @@
 
     </div>
 
-    {% if active_course %}
-    <!-- Contextual Quick-Access Hub -->
-    <div class="glass-card fade-in"
-        style="margin-bottom: 3rem; padding: 2.5rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 24px; position: relative; overflow: hidden;">
-        <div
-            style="position: absolute; top: -100px; right: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(99, 102, 241, 0.2), transparent); filter: blur(60px); z-index: 0;">
-        </div>
-
-        <div style="position: relative; z-index: 1;">
-            <div class="d-flex justify-content-between align-items-start mb-4">
-                <div>
-                    <span class="badge badge-primary mb-2" style="background: var(--primary);"><i
-                            class="fas fa-bolt"></i> Quick Study Hub</span>
-                    <h2 style="font-size: 2rem; font-weight: 800; margin: 0;">Continue: <span class="gradient-text">{{
-                            active_course.title }}</span></h2>
+    <!-- Dynamic Quick-Access Hub -->
+    <div id="quickStudyHubContainer">
+        <!-- Loading Skeleton (Shown by default) -->
+        <div class="glass-card skeleton-hub"
+            style="margin-bottom: 3rem; padding: 2.5rem; height: 300px; position: relative; overflow: hidden;">
+            <div class="skeleton-shimmer"></div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+                <div style="width: 60%;">
+                    <div class="skeleton-line" style="width: 40%; height: 20px; margin-bottom: 1rem;"></div>
+                    <div class="skeleton-line" style="width: 80%; height: 40px;"></div>
                 </div>
-                <a href="{% url 'course:course_dashboard' active_course.id %}" class="btn btn-secondary"
-                    style="border-radius: 12px; padding: 0.75rem 1.5rem;">
-                    <i class="fas fa-external-link-alt"></i> Full Dashboard
-                </a>
+                <div class="skeleton-line" style="width: 120px; height: 45px; border-radius: 12px;"></div>
             </div>
-
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-                <!-- Quick AI Tutor -->
-                <a href="{% url 'ai_tutor:start_course_chat' active_course.id %}"
-                    class="btn btn-glass-ai p-3 text-start d-flex align-items-center gap-3">
-                    <div class="ai-icon bg-primary"><i class="fas fa-robot"></i></div>
-                    <div>
-                        <div class="fw-bold text-white small">AI Tutor</div>
-                        <div class="x-small text-muted">Course-linked chat</div>
-                    </div>
-                </a>
-
-                <!-- Quick Quiz -->
-                <a href="{% url 'quiz:quiz_start' %}?subject={{ active_course.title|urlencode }}"
-                    class="btn btn-glass-ai p-3 text-start d-flex align-items-center gap-3">
-                    <div class="ai-icon bg-success"><i class="fas fa-vial"></i></div>
-                    <div>
-                        <div class="fw-bold text-white small">Take Quiz</div>
-                        <div class="x-small text-muted">Test knowledge</div>
-                    </div>
-                </a>
-
-                <!-- Quick Summary -->
-                <a href="{% url 'course:summary' active_course.id %}"
-                    class="btn btn-glass-ai p-3 text-start d-flex align-items-center gap-3">
-                    <div class="ai-icon bg-secondary"><i class="fas fa-file-invoice"></i></div>
-                    <div>
-                        <div class="fw-bold text-white small">Summarize</div>
-                        <div class="x-small text-muted">Core concepts</div>
-                    </div>
-                </a>
+                <div class="skeleton-line" style="height: 64px; border-radius: 16px;"></div>
+                <div class="skeleton-line" style="height: 64px; border-radius: 16px;"></div>
+                <div class="skeleton-line" style="height: 64px; border-radius: 16px;"></div>
             </div>
         </div>
     </div>
+
     <style>
+        .skeleton-hub {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .skeleton-line {
+            background: rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+
+        .skeleton-shimmer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
         .btn-glass-ai {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -195,8 +193,90 @@
         .x-small {
             font-size: 0.75rem;
         }
+
+        .active-course-gradient {
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
     </style>
-    {% endif %}
+
+    <script>
+        async function loadQuickHub() {
+            const container = document.getElementById('quickStudyHubContainer');
+            try {
+                const response = await fetch('/core/api/user/active-course/');
+                const data = await response.json();
+
+                if (data && data.status === 'success') {
+                    // Show Active Course Hub
+                    container.innerHTML = `
+                        <div class="glass-card fade-in" 
+                             style="margin-bottom: 3rem; padding: 2.5rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 24px; position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -100px; right: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(99, 102, 241, 0.2), transparent); filter: blur(60px); z-index: 0;"></div>
+                            <div style="position: relative; z-index: 1;">
+                                <div class="d-flex justify-content-between align-items-start mb-4">
+                                    <div>
+                                        <span class="badge badge-primary mb-2" style="background: var(--primary);"><i class="fas fa-bolt"></i> Quick Study Hub</span>
+                                        <h2 style="font-size: 2rem; font-weight: 800; margin: 0;">Continue: <span class="active-course-gradient">${data.title}</span></h2>
+                                    </div>
+                                    <a href="${data.url}" class="btn btn-secondary" style="border-radius: 12px; padding: 0.75rem 1.5rem;">
+                                        <i class="fas fa-external-link-alt"></i> Full Dashboard
+                                    </a>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                                    <a href="/ai-tutor/chat/${data.id}/" class="btn btn-glass-ai p-3 text-start d-flex align-items-center gap-3">
+                                        <div class="ai-icon bg-primary"><i class="fas fa-robot"></i></div>
+                                        <div>
+                                            <div class="fw-bold text-white small">AI Tutor</div>
+                                            <div class="x-small text-muted">Course-linked chat</div>
+                                        </div>
+                                    </a>
+                                    <a href="/quiz/start/?subject=${encodeURIComponent(data.title)}" class="btn btn-glass-ai p-3 text-start d-flex align-items-center gap-3">
+                                        <div class="ai-icon bg-success"><i class="fas fa-vial"></i></div>
+                                        <div>
+                                            <div class="fw-bold text-white small">Take Quiz</div>
+                                            <div class="x-small text-muted">Test knowledge</div>
+                                        </div>
+                                    </a>
+                                    <a href="/course/${data.id}/summary/" class="btn btn-glass-ai p-3 text-start d-flex align-items-center gap-3">
+                                        <div class="ai-icon bg-secondary"><i class="fas fa-file-invoice"></i></div>
+                                        <div>
+                                            <div class="fw-bold text-white small">Summarize</div>
+                                            <div class="x-small text-muted">Core concepts</div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Show Empty State / Start a Course
+                    container.innerHTML = `
+                        <div class="glass-card fade-in" 
+                             style="margin-bottom: 3rem; padding: 2.5rem; background: linear-gradient(135deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.7)); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <h2 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 0.5rem;">Continue Your Learning Journey</h2>
+                                    <p style="color: var(--text-muted); margin: 0;">You haven't selected an active course yet. Jump back into one of your studies.</p>
+                                </div>
+                                <a href="{% url 'course:list' %}" class="btn btn-primary" style="padding: 1rem 2rem; border-radius: 12px;">
+                                    <i class="fas fa-play-circle"></i> Start a Course
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load active course:', error);
+                container.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadQuickHub);
+    </script>
 
     <!-- Course Stats Grid -->
     <div

@@ -8,32 +8,39 @@ class OllamaEmbeddings(Embeddings):
     def __init__(self, model_name=None):
         from django.conf import settings
         import ollama
-        self.model = model_name or settings.OLLAMA_MODEL_TEXT
+        self.model = model_name or getattr(settings, 'OLLAMA_MODEL_EMBED', 'all-minilm')
         
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        import ollama
+    def _call_ollama_embeddings(self, text: str) -> List[float]:
+        import requests
+        from django.conf import settings
         import logging
         logger = logging.getLogger(__name__)
+
+        # Try both localhost and 127.0.0.1 for Windows stability
+        urls = [f"{settings.OLLAMA_BASE_URL}/api/embeddings", 
+                f"{settings.OLLAMA_BASE_URL.replace('localhost', '127.0.0.1')}/api/embeddings"]
+        
+        for url in urls:
+            try:
+                payload = {"model": self.model, "prompt": text}
+                response = requests.post(url, json=payload, timeout=15)
+                response.raise_for_status()
+                return response.json().get('embedding', [0.0] * 2048)
+            except Exception as e:
+                logger.warning(f"Embedding attempt failed for {url}: {e}")
+                continue
+        
+        logger.error("All embedding attempts failed.")
+        return [0.0] * 2048
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
         embeddings = []
         for text in texts:
-            try:
-                res = ollama.embeddings(model=self.model, prompt=text)
-                embeddings.append(res['embedding'])
-            except Exception as e:
-                logger.error(f"Ollama Embedding Error: {e}")
-                embeddings.append([0.0] * 2048) # Fallback 0-vector
+            embeddings.append(self._call_ollama_embeddings(text))
         return embeddings
 
     def embed_query(self, text: str) -> List[float]:
-        import ollama
-        import logging
-        logger = logging.getLogger(__name__)
-        try:
-            res = ollama.embeddings(model=self.model, prompt=text)
-            return res['embedding']
-        except Exception as e:
-            logger.error(f"Ollama Embedding Error: {e}")
-            return [0.0] * 2048 # Fallback
+        return self._call_ollama_embeddings(text)
 
 # Cache model instance globally
 _model_instance = None

@@ -49,36 +49,55 @@ def chat_with_ai(prompt, image_path=None, document_path=None, mode='text', strea
             # Let's return error to be safe.
             if not stream: return f"Error processing image: {str(e)}"
 
+    # Prepare retry URLs for Windows stability
+    urls = [url]
+    if "localhost" in settings.OLLAMA_BASE_URL:
+        urls.append(url.replace("localhost", "127.0.0.1"))
+
     if stream:
         def generate():
-            try:
-                # Check connection before starting
-                response = requests.post(url, json=payload, stream=True, timeout=90)
-                response.raise_for_status()
-                
-                for line in response.iter_lines():
-                    if line:
-                        try:
-                            chunk = json.loads(line.decode('utf-8'))
-                            response_part = chunk.get('response', '')
-                            if response_part:
-                                yield response_part
-                            if chunk.get('done'):
-                                break
-                        except json.JSONDecodeError:
-                            continue
-            except requests.exceptions.ConnectionError:
-                yield "Error: Ollama is not running. Please start Ollama on your machine."
-            except Exception as e:
-                yield f"AI Stream Error: {str(e)}"
+            success = False
+            for target_url in urls:
+                try:
+                    # Check connection before starting
+                    response = requests.post(target_url, json=payload, stream=True, timeout=90)
+                    response.raise_for_status()
+                    success = True
+                    
+                    for line in response.iter_lines():
+                        if line:
+                            try:
+                                chunk = json.loads(line.decode('utf-8'))
+                                response_part = chunk.get('response', '')
+                                if response_part:
+                                    yield response_part
+                                if chunk.get('done'):
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+                    if success: break # exit url loop
+                except requests.exceptions.ConnectionError:
+                    continue # try next URL
+                except Exception as e:
+                    yield f"AI Stream Error: {str(e)}"
+                    break
+            
+            if not success:
+                logger.error(f"Failed to connect to Ollama after trying: {', '.join(urls)}")
+                raise requests.exceptions.ConnectionError("Ollama connection failed")
         
         return generate()
     else:
-        try:
-            response = requests.post(url, json=payload, timeout=60)
-            response.raise_for_status()
-            return response.json().get('response', "I failed to generate an answer.")
-        except requests.exceptions.ConnectionError:
-            return "Error: Ollama is not running. Please start Ollama on your machine."
-        except Exception as e:
-            return f"AI Error: {str(e)}"
+        for target_url in urls:
+            try:
+                response = requests.post(target_url, json=payload, timeout=60)
+                response.raise_for_status()
+                return response.json().get('response', "I failed to generate an answer.")
+            except requests.exceptions.ConnectionError:
+                continue
+            except Exception as e:
+                logger.error(f"AI Error: {str(e)}")
+                raise
+        
+        logger.error(f"Failed to connect to Ollama after trying: {', '.join(urls)}")
+        raise requests.exceptions.ConnectionError("Ollama connection failed")

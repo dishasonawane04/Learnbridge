@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from .models import UserActivity
 from accounts.models import UserProfile
@@ -19,6 +20,9 @@ def set_active_course(request):
         course_id = request.POST.get('course_id')
         if course_id:
             request.session['active_course_id'] = course_id
+            # Set is_active flag in DB
+            Course.objects.filter(user=request.user).update(is_active=False)
+            Course.objects.filter(user=request.user, id=course_id).update(is_active=True)
             messages.success(request, f"Active course updated.")
     
     next_url = request.POST.get('next')
@@ -43,6 +47,14 @@ def dashboard(request):
 
     # 1. Course Stats
     user_courses = Course.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Ensure at least one course is active if none is set
+    if user_courses.exists() and not user_courses.filter(is_active=True).exists():
+        first_course = user_courses.first()
+        first_course.is_active = True
+        first_course.save()
+        request.session['active_course_id'] = str(first_course.id)
+
     total_courses = user_courses.count()
     
     # Calculate Total Units and Materials
@@ -121,6 +133,7 @@ def dashboard(request):
 
     context = {
         'profile': profile,
+        'active_course': user_courses.filter(is_active=True).first(),
         'total_courses': total_courses,
         'total_units': total_units,
         'total_materials': total_materials,
@@ -143,3 +156,24 @@ def role_selection(request):
             UserProfile.objects.get_or_create(user=request.user, defaults={'role': role})
             return redirect('core:dashboard')
     return render(request, 'core/role_selection.html')
+
+@login_required
+def active_course_api(request):
+    """
+    API endpoint to return the current user's active course.
+    """
+    active_course = Course.objects.filter(user=request.user, is_active=True).first()
+    if not active_course:
+        # Fallback to session if is_active is not yet set
+        course_id = request.session.get('active_course_id')
+        if course_id:
+            active_course = Course.objects.filter(user=request.user, id=course_id).first()
+    
+    if active_course:
+        return JsonResponse({
+            'status': 'success',
+            'id': active_course.id,
+            'title': active_course.title,
+            'url': f"/course/{active_course.id}/"
+        })
+    return JsonResponse({'status': 'null'}, safe=False)

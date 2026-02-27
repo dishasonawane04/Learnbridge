@@ -28,6 +28,7 @@ class Course(models.Model):
     executive_summary = models.TextField(blank=True, help_text="Cached AI-generated summary of the course")
     
     page_count = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -139,7 +140,7 @@ class CourseMaterial(models.Model):
                 process_document(self.file.path, cid)
                 
                 # 3. Consolidate into CourseNotes
-                from .services.state import CourseContextEngine
+                from core.ai.services import CourseContextEngine
                 CourseContextEngine.consolidate_course_notes(cid)
 
                 # 4. Invalidate cache

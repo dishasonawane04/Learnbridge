@@ -3,88 +3,40 @@
 
 {% block content %}
 
-<style>
-    .ai-status-indicator {
-        margin-left: 20px;
-        display: flex;
-        align-items: center;
-    }
-
-    .status-badge {
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .status-badge.personalized {
-        background: rgba(16, 185, 129, 0.15);
-        color: #10b981;
-        border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-
-    .status-badge.general {
-        background: rgba(245, 158, 11, 0.15);
-        color: #f59e0b;
-        border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-</style>
 <div class="course-workspace">
     {% if materials.exists %}
-    <!-- WORKSPACE MODE: Study Dashboard -->
-    <div class="workspace-header-area">
+    <!-- HEADER AREA -->
+    <div class="workspace-header-area fade-in">
         <div class="workspace-title-section">
             <h1>{{ course.title }}</h1>
-            <p class="description">{{ course.description|default:"Workspace for this course" }}</p>
+            <p class="description">{{ course.description|default:"Workspace for your personalized AI course" }}</p>
         </div>
 
-        <div class="ai-status-indicator">
+        <div class="header-actions">
             {% if has_knowledge %}
-            <span class="status-badge personalized">
-                <i class="fas fa-check-circle"></i> AI is now personalized for this course
-            </span>
-            {% else %}
-            <span class="status-badge general">
-                <i class="fas fa-info-circle"></i> Upload notes to activate course-aware AI. Until then AI will answer
-                generally.
+            <span class="status-badge">
+                <i class="fas fa-sparkles"></i> AI Personalized
             </span>
             {% endif %}
-        </div>
 
-        <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data"
-            id="addMoreForm">
-            {% csrf_token %}
-            <input type="file" name="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx"
-                onchange="this.form.submit()">
-            <button type="button" class="btn-add-notes" onclick="document.getElementById('fileInput').click();">
-                <i class="fas fa-plus"></i> Add More Notes
-            </button>
-        </form>
-
-        {% if user.is_staff or user.account_profile.role == "Faculty" %}
-        <div class="mt-0" style="margin-left: 10px; display: flex; gap: 10px;">
-            <form method="POST" action="{% url 'quiz:generate_quiz' course.id %}" onsubmit="showQuizLoading()">
+            <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data"
+                id="addMoreForm">
                 {% csrf_token %}
-                <button type="submit" class="btn-add-notes"
-                    style="background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; border: none;">
-                    <i class="fas fa-magic"></i> Generate AI Quiz
+                <input type="file" name="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx"
+                    onchange="this.form.submit()" style="display: none;">
+                <button type="button" class="btn-add-notes" onclick="document.getElementById('fileInput').click();">
+                    <i class="fas fa-plus"></i> Add Notes
                 </button>
             </form>
-            <a href="{% url 'quiz:create_quiz_manual' course.id %}" class="btn-add-notes"
-                style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
-                <i class="fas fa-plus-circle"></i> Create Manual Quiz
-            </a>
         </div>
-        {% endif %}
     </div>
 
-    <div class="workspace-grid">
-        <!-- LEFT COLUMN: Materials (70%) -->
+    <!-- MAIN TWO-COLUMN WORKSPACE -->
+    <div class="workspace-grid fade-in">
+
+        <!-- PRIMARY COLUMN: Materials (65%) -->
         <div class="materials-column">
-            <span class="section-label">Your Materials</span>
+            <span class="section-label" style="margin-bottom: 24px;">Your Materials</span>
             <div class="materials-list">
                 {% for mat in materials %}
                 <div class="material-row">
@@ -95,7 +47,7 @@
                         </div>
                         <div class="file-details">
                             <span class="file-name">{{ mat.file.name|cut:"course_materials/" }}</span>
-                            <span class="upload-date">Added on {{ mat.created_at|date:"M d, Y" }}</span>
+                            <span class="upload-date">Uploaded on {{ mat.created_at|date:"M d, Y" }}</span>
                         </div>
                     </div>
                     <div class="material-actions">
@@ -108,63 +60,94 @@
                         </a>
                     </div>
                 </div>
+                {% empty %}
+                <p
+                    style="color: #64748b; font-size: 0.9rem; padding: 20px; text-align: center; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.05);">
+                    No materials uploaded yet.</p>
                 {% endfor %}
             </div>
         </div>
 
-        <!-- RIGHT COLUMN: AI Tools (30%) -->
-        <div class="tools-column">
-            <span class="section-label">AI Study Tools</span>
+        <!-- UTILITY COLUMN: Sticky AI Tools (35%) -->
+        <div class="tools-sidebar">
+            <div class="sidebar-header">
+                <span class="sidebar-label">AI Study Assistant</span>
+                <div class="sidebar-divider"></div>
+            </div>
 
-            <div class="tools-scroll-area">
-                <a href="{% url 'ai_tutor:start_course_chat' course.id %}" class="tool-card">
-                    <div class="tool-top">
-                        <div class="tool-icon-wrap"><i class="fas fa-brain"></i></div>
-                        <h4 class="tool-name">AI Tutor</h4>
+            <div class="tools-list">
+                <a href="{% url 'ai_tutor:start_course_chat' course.id %}" class="compact-tool-card">
+                    <div class="tool-left-group">
+                        <div class="tool-icon-sm"><i class="fas fa-brain"></i></div>
+                        <div class="tool-info-compact">
+                            <span class="tool-title-sm">AI Tutor</span>
+                            <span class="tool-subtitle-sm">Interactive course-based assistant</span>
+                        </div>
                     </div>
-                    <p class="tool-desc">Ask questions and clarify doubts directly from your uploaded notes.</p>
-                    <div class="btn-open-tool-sm">Open</div>
+                    <i class="fas fa-chevron-right tool-arrow"></i>
                 </a>
 
-                <a href="{% url 'quiz:quiz_start' %}?course_id={{ course.id }}" class="tool-card"
+                <a href="{% url 'quiz:quiz_start' %}?course_id={{ course.id }}" class="compact-tool-card"
                     onclick="showQuizLoading()">
-                    <div class="tool-top">
-                        <div class="tool-icon-wrap"><i class="fas fa-graduation-cap"></i></div>
-                        <h4 class="tool-name">Quiz Generator</h4>
+                    <div class="tool-left-group">
+                        <div class="tool-icon-sm"><i class="fas fa-graduation-cap"></i></div>
+                        <div class="tool-info-compact">
+                            <span class="tool-title-sm">Quiz Generator</span>
+                            <span class="tool-subtitle-sm">Dynamic questions from syllabus</span>
+                        </div>
                     </div>
-                    <p class="tool-desc">Test your knowledge with AI-generated MCQs based on your study materials.</p>
-                    <div class="btn-open-tool-sm">Open</div>
+                    <i class="fas fa-chevron-right tool-arrow"></i>
                 </a>
 
-                <a href="{% url 'flashcard_generator:dynamic_flashcards' course.id %}" class="tool-card"
+                <a href="{% url 'flashcard_generator:dynamic_flashcards' course.id %}" class="compact-tool-card"
                     onclick="showAIProcessing('Generating Flashcards', 'Mining concepts and creating active recall cards...')">
-                    <div class="tool-top">
-                        <div class="tool-icon-wrap"><i class="fas fa-layer-group"></i></div>
-                        <h4 class="tool-name">Flashcards</h4>
+                    <div class="tool-left-group">
+                        <div class="tool-icon-sm"><i class="fas fa-layer-group"></i></div>
+                        <div class="tool-info-compact">
+                            <span class="tool-title-sm">Flashcards</span>
+                            <span class="tool-subtitle-sm">Smart revision cards</span>
+                        </div>
                     </div>
-                    <p class="tool-desc">Master key concepts and definitions with automated active recall cards.</p>
-                    <div class="btn-open-tool-sm">Open</div>
+                    <i class="fas fa-chevron-right tool-arrow"></i>
                 </a>
 
-                <a href="{% url 'learning_support:start_course_support' course.id %}" class="tool-card"
+                <a href="{% url 'learning_support:start_course_support' course.id %}" class="compact-tool-card"
                     onclick="showAIProcessing('AI Learning Support', 'Initializing context-aware assistant...')">
-                    <div class="tool-top">
-                        <div class="tool-icon-wrap"><i class="fas fa-life-ring"></i></div>
-                        <h4 class="tool-name">Learning Support</h4>
+                    <div class="tool-left-group">
+                        <div class="tool-icon-sm"><i class="fas fa-life-ring"></i></div>
+                        <div class="tool-info-compact">
+                            <span class="tool-title-sm">Learning Support</span>
+                            <span class="tool-subtitle-sm">Context-aware study helper</span>
+                        </div>
                     </div>
-                    <p class="tool-desc">Get hints, simplifications, and examples to help you when you're stuck.</p>
-                    <div class="btn-open-tool-sm">Open</div>
+                    <i class="fas fa-chevron-right tool-arrow"></i>
                 </a>
 
-                <a href="{% url 'course:summary' course.id %}" class="tool-card"
+                <a href="{% url 'course:summary' course.id %}" class="compact-tool-card"
                     onclick="showAIProcessing('Synthesizing Summary', 'Using AI to condense course materials into an executive overview...')">
-                    <div class="tool-top">
-                        <div class="tool-icon-wrap"><i class="fas fa-list-check"></i></div>
-                        <h4 class="tool-name">Summary Engine</h4>
+                    <div class="tool-left-group">
+                        <div class="tool-icon-sm"><i class="fas fa-list-check"></i></div>
+                        <div class="tool-info-compact">
+                            <span class="tool-title-sm">Summary Engine</span>
+                            <span class="tool-subtitle-sm">Structured topic summaries</span>
+                        </div>
                     </div>
-                    <p class="tool-desc">Get a concise, structured overview of your documents in seconds.</p>
-                    <div class="btn-open-tool-sm">Open</div>
+                    <i class="fas fa-chevron-right tool-arrow"></i>
                 </a>
+
+                {% if has_knowledge %}
+                <a href="{% url 'sentence_explain:sentence_explain' %}" class="compact-tool-card"
+                    onclick="showAIProcessing('Sentence Explainer', 'Preparing context-aware explanation engine...')">
+                    <div class="tool-left-group">
+                        <div class="tool-icon-sm"><i class="fas fa-quote-left"></i></div>
+                        <div class="tool-info-compact">
+                            <span class="tool-title-sm">Sentence Explainer</span>
+                            <span class="tool-subtitle-sm">Breakdown of complex sentences</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right tool-arrow"></i>
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>

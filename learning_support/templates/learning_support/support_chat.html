@@ -12,46 +12,121 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <style>
-        /* Override Accents for Support App (Green Theme) */
+        /* ========================================= 
+           UNIFIED SAAS AI THEME (Indigo/Purple)
+           ========================================= */
         :root {
-            --accent: #10b981;
-            /* Emerald */
-            --accent-hover: #059669;
-            --accent-glow: rgba(16, 185, 129, 0.3);
+            --navy-dark: #0b0f1a;
+            --navy-accent: #151c2c;
+            --purple-svc: #6d28d9;
+            --purple-light: #8b5cf6;
+            --user-gradient: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+            --ai-glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            
+            --accent: #8b5cf6;
+            --accent-hover: #7c3aed;
+            --accent-glow: rgba(139, 92, 246, 0.3);
+            
+            --bg-dark: #0b0f1a;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --border-color: var(--glass-border);
+        }
+
+        body {
+            background: linear-gradient(180deg, var(--navy-dark) 0%, #0d0d1e 100%) !important;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .sidebar {
+            background: rgba(11, 15, 26, 0.8) !important;
+            backdrop-filter: blur(20px);
+            border-right: 9px solid var(--glass-border) !important;
+        }
+
+        .chat-area {
+            background: transparent !important;
+        }
+
+        .chat-header {
+            background: rgba(11, 15, 26, 0.8) !important;
+            backdrop-filter: blur(20px);
+            border-bottom: 9px solid var(--glass-border) !important;
         }
 
         .user-message .content {
-            background: var(--accent);
-            color: white;
-            box-shadow: 0 4px 15px var(--accent-glow);
+            background: var(--user-gradient) !important;
+            color: white !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 6px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ai-message .content {
+            background: var(--ai-glass) !important;
+            backdrop-filter: blur(20px);
+            border: 6px solid var(--glass-border) !important;
+            color: #e2e8f0 !important;
+        }
+
+        .history-item.active {
+            background: rgba(139, 92, 246, 0.1) !important;
+            color: white !important;
+            border-left: 6px solid var(--accent) !important;
+        }
+
+        .new-chat-btn {
+            background: var(--user-gradient) !important;
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3) !important;
+        }
+
+        /* Input Area Enhancements */
+        .input-wrapper {
+            background: rgba(21, 28, 44, 0.8) !important;
+            backdrop-filter: blur(30px);
+            border: 9px solid var(--glass-border) !important;
+            border-radius: 24px !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--purple-light) !important;
+            box-shadow: 0 0 0 1px var(--purple-light), 0 0 20px var(--accent-glow) !important;
+        }
+
+        .send-btn {
+            background: var(--user-gradient) !important;
+            border-radius: 12px !important;
         }
 
         /* Hint Buttons specific to Support */
         .hint-bar {
             display: flex;
-            gap: 10px;
-            padding: 0 2rem 1rem 2rem;
+            gap: 12px;
+            padding: 0 2rem 1.5rem 2rem;
             justify-content: center;
         }
 
         .hint-btn {
-            background: var(--bg-card);
-            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.5);
             border-radius: 20px;
-            padding: 8px 16px;
+            padding: 10px 20px;
             font-size: 0.85rem;
-            border: 1px solid var(--border-color);
+            font-weight: 600;
+            border: 9px solid var(--glass-border);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
 
         .hint-btn:hover {
-            border-color: var(--accent);
-            color: var(--text-main);
-            transform: translateY(-2px);
+            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--purple-light);
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
@@ -115,6 +190,17 @@
                             together.{% endif %}</span>
                     </div>
                 </div>
+                <div class="header-actions" style="margin-left: auto; display: flex; gap: 1rem; align-items: center;">
+                    {% if active_course %}
+                    <a href="{% url 'course:course_dashboard' active_course.id %}" class="back-link-saas" 
+                       style="text-decoration: none; color: var(--text-muted); font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;">
+                        <i class="ph ph-arrow-left"></i> Back to Course
+                    </a>
+                    <style>
+                        .back-link-saas:hover { background: rgba(255,255,255,0.1) !important; color: white !important; transform: translateX(-2px); }
+                    </style>
+                    {% endif %}
+                </div>
             </header>
 
             <div class="messages-container" id="messages-container" data-chat-id="{{ current_chat.id|default:'' }}"
@@ -122,10 +208,12 @@
                 {% if not chat_messages %}
                 <!-- Welcome Message (Only if empty) -->
                 <div class="message ai-message">
-                    <div class="avatar"><i class="ph ph-life-buoy"></i></div>
+                    <div class="avatar"><i class="ph ph-life-buoy" style="color: var(--purple-light); font-size: 1.5rem;"></i></div>
                     <div class="content">
-                        Hello! I see you might be stuck. <br>
-                        I can give you <b>hints</b>, <b>simplify</b> concepts, or offer <b>examples</b>. <br>
+                        <h2 style="font-size: 1.25rem; color: white; margin-bottom: 0.5rem;">Hello! I see you might be stuck.</h2>
+                        I can give you <span style="color: var(--purple-light); font-weight: 600;">hints</span>, 
+                        <span style="color: var(--purple-light); font-weight: 600;">simplify</span> concepts, 
+                        or offer <span style="color: var(--purple-light); font-weight: 600;">examples</span>. <br>
                         What are you working on?
                     </div>
                 </div>

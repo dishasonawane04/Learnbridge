@@ -1,118 +1,140 @@
 import os
 from django.shortcuts import render, redirect
+from django.http import JsonResponse, StreamingHttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
-import ollama
-from asgiref.sync import sync_to_async
 from core.utils import log_activity
 
-@sync_to_async
-def get_chat_history(request):
-    return request.session.get('chat_history', [])
-
-@sync_to_async
-def update_history(request, user_input, response, image_url=None):
-    if 'chat_history' not in request.session:
-        request.session['chat_history'] = []
-    
-    request.session['chat_history'].append({'role': 'user', 'content': user_input, 'image': image_url})
-    request.session['chat_history'].append({'role': 'ai', 'content': response})
-    request.session.modified = True
-
-@sync_to_async
-def clear_history(request):
-    if 'chat_history' in request.session:
-        del request.session['chat_history']
-
-@sync_to_async
-def get_user(request):
-    return request.user
-
-async def sentence_explain(request):
-    # Clear history if requested
+def sentence_explain(request):
+    """
+    Synchronous view that renders the explainer page and handles clear history.
+    """
     if request.GET.get('clear'):
-        await clear_history(request)
-        return redirect('sentence_explain')
+        if 'chat_history' in request.session:
+            del request.session['chat_history']
+        return redirect('sentence_explain:sentence_explain')
 
-    # Ensure history exists (conceptually, though get_chat_history handles empty default)
+    history = request.session.get('chat_history', [])
+    active_course_id = request.session.get("active_course_id")
     
-    if request.method == "POST":
-        sentence = request.POST.get("sentence")
-        image = request.FILES.get("image")
-        print(f"DEBUG: Input Sentence: {sentence}") # Debug log
-        
-        user_input = sentence
-        if image:
-            user_input = "[Uploaded Image]" 
-        
-        client = ollama.AsyncClient()
+    return render(request, "sentence_explain/explain.html", {
+        "chat_history": history,
+        "course_id": active_course_id
+    })
 
-        image_url = None
-        response = None
+@csrf_exempt
+def sentence_explain_api(request):
+    """
+    API endpoint for the Sentence Explainer. Returns a streaming response.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST allowed"}, status=405)
 
+    sentence = request.POST.get("sentence", "")
+    image = request.FILES.get("image")
+    course_id = request.session.get("active_course_id")
+
+    user_input = sentence
+    if image:
+        user_input = "[Uploaded Image]"
+
+    image_url = None
+    image_path = None
+
+    if image:
+        from django.core.files.storage import FileSystemStorage
+        fs = FileSystemStorage()
+        filename = fs.save(image.name, image)
+        image_url = fs.url(filename)
+        image_path = fs.path(filename)
+
+    # Construct the instruction
+    context_text = ""
+    if course_id:
         from ai_engine.retriever import retrieve_diverse_context
-        course_id = request.session.get("active_course_id")
-        context_text = ""
-        context_instruction = ""
-        
-        if course_id:
-            context_text = retrieve_diverse_context(course_id, k=5)
-            if context_text.strip():
-                context_instruction = f"\nUse the following COURSE CONTEXT for domain accuracy. If the user's question is outside this context, explain it generally but mention: 'This is outside your uploaded course, but here is a general explanation.'\n\nCOURSE CONTEXT:\n{context_text}\n"
+        context_text = retrieve_diverse_context(course_id, query=sentence, k=5)
 
-        if image:
-             def save_file(img):
-                fs = FileSystemStorage()
-                filename = fs.save(img.name, img)
-                return fs.url(filename), fs.path(filename)
-            
-             image_url, image_path = await sync_to_async(save_file)(image)
+    context_instruction = ""
+    if context_text and context_text.strip():
+        context_instruction = (
+            f"\n### COURSE CONTEXT INFORMATION ###\n"
+            f"The following excerpts are from the student's active course material. "
+            f"PRIORITIZE this information. \n\n"
+            f"--- CONTEXT START ---\n{context_text}\n--- CONTEXT END ---\n"
+        )
+    else:
+        context_instruction = "\n(No specific course context found. Use general knowledge but add a disclaimer if outside course scope.)\n"
 
-             try:
-                res = await client.chat(
-                    model=settings.OLLAMA_MODEL_VISION,
-                    messages=[{
-                        'role': 'user',
-                        'content': f"Explain the complex sentences from this image in simple, plain English. {context_instruction} Do not use markdown, asterisks, or special symbols. Just plain text suitable for reading aloud. If a sentence is provided here: '{sentence}', focus on that.",
-                        'images': [image_path]
-                    }]
-                )
-                response = res['message']['content']
-             except Exception as e:
-                response = f"Error processing image: {str(e)}"
+    prompt_style = (
+        "You are a professional 'Sentence Explainer' for students. Break down complex concepts "
+        "into clear, easy-to-understand language. \n\n"
+        "RESPONSE STRUCTURE (Use these exact Markdown headers):\n"
+        "### 📘 Explanation\n"
+        "(Detailed explanation of the concept/sentence)\n\n"
+        "### 💡 Key Points\n"
+        "(Bullet points of the most important takeaways)\n\n"
+        "### 📝 Example\n"
+        "(A relatable, real-world scenario or application)\n\n"
+        "GUIDELINES:\n"
+        "1. Use clear, encouraging tone.\n"
+        "2. Define difficult terms within the explanation.\n"
+        "3. PRIORITIZE the provided COURSE CONTEXT. If not found, use general knowledge with: '[Note: This is general knowledge]'.\n"
+        "4. Use Markdown for visual hierarchy (headers, bolding, lists).\n"
+    )
 
-        elif sentence:
-            try:
-                res = await client.chat(
-                    model=settings.OLLAMA_MODEL_TEXT,
-                    messages=[{
-                        'role': 'user',
-                        'content': f"Explain this sentence in simple, plain English interactions. {context_instruction} Do NOT use markdown, bolding (**), or bullet points. Use natural conversational paragraphs only. Sentence to explain: '{sentence}'. Also provide a real-world example in plain text."
-                    }]
-                )
-                response = res['message']['content']
-            except Exception as e:
-                response = f"Error generating explanation: {str(e)}"
+    model = settings.OLLAMA_MODEL_TEXT
+    if image:
+        model = settings.OLLAMA_MODEL_VISION
 
-        # Update History via Async Wrapper
-        await update_history(request, user_input, response, image_url)
+    final_prompt = f"{prompt_style} {context_instruction} \n\n Task: Explain: '{sentence or 'Image content'}'"
 
-        # Log Activity
-        user = await get_user(request)
-        await sync_to_async(log_activity)(
-            user=user,
-            app_name="sentence_explain",
-            topic=sentence[:50] if sentence else "Textbook OCR",
-            input_type="image" if image else "text",
-            time_spent=40,
-            outcome="completed"
+    # Streaming Response
+    from ai_tutor.ai_logic import chat_with_ai
+    
+    try:
+        # Check connection or start generator
+        ai_generator = chat_with_ai(
+            prompt=final_prompt,
+            image_path=image_path,
+            stream=True,
+            course_id=course_id,
         )
 
-    # Get history for render
-    history = await get_chat_history(request)
-    last_response = history[-1]['content'] if history else None
+        def event_stream():
+            try:
+                full_response = ""
+                for chunk in ai_generator:
+                    full_response += chunk
+                    yield chunk
 
-    return await sync_to_async(render)(request, "sentence_explain/explain.html", {
-        "chat_history": history,
-        "last_response": last_response
-    })
+                # Post-processing: Update history
+                if 'chat_history' not in request.session:
+                    request.session['chat_history'] = []
+                
+                request.session['chat_history'].append({'role': 'user', 'content': user_input, 'image': image_url})
+                request.session['chat_history'].append({'role': 'ai', 'content': full_response})
+                request.session.modified = True
+                request.session.save()
+
+                # Log Activity
+                log_activity(
+                    user=request.user if request.user.is_authenticated else None,
+                    app_name="sentence_explain",
+                    topic=sentence[:50] if sentence else "Image explanation",
+                    input_type="image" if image else "text",
+                    time_spent=30,
+                    outcome="completed"
+                )
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Streaming error: {e}")
+                # We can't change status code once streaming starts, so we just stop.
+                pass
+
+        return StreamingHttpResponse(event_stream(), content_type='text/plain')
+
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"AI Connection error: {e}")
+        return JsonResponse({"error": "Service Unavailable"}, status=503)
