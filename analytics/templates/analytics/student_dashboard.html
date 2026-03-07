@@ -224,6 +224,55 @@
             transform: translateX(-3px);
             border-color: rgba(255, 255, 255, 0.2) !important;
         }
+
+        .chart-container-box {
+            position: relative;
+            height: 350px;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid transparent;
+        }
+
+        .chart-container-box:hover {
+            transform: scale(1.01);
+            border-color: var(--accent);
+            box-shadow: 0 0 30px var(--accent-glow), inset 0 0 15px var(--accent-glow);
+        }
+
+        .chart-container-box::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.05),
+                    transparent);
+            transition: 0.6s;
+            pointer-events: none;
+        }
+
+        .chart-container-box:hover::after {
+            left: 150%;
+        }
+
+        .score-high {
+            color: #10b981 !important;
+        }
+
+        .score-medium {
+            color: #f59e0b !important;
+        }
+
+        .score-low {
+            color: #ef4444 !important;
+        }
     </style>
 </head>
 
@@ -282,7 +331,9 @@
                 <div class="chart-header">
                     <div class="chart-title">Learning Activity</div>
                 </div>
-                <canvas id="activityChart" style="width: 100%; height: 300px;"></canvas>
+                <div class="chart-container-box">
+                    <canvas id="activityChart"></canvas>
+                </div>
             </div>
 
             <!-- Recent Activity List -->
@@ -327,8 +378,8 @@
                         </div>
                         <div class="activity-time">{{ session.created_at|timesince }} ago</div>
                     </div>
-                    <div class="activity-meta"
-                        style="font-weight:700; color:{% if session.readiness_score >= 80 %}#10b981{% elif session.readiness_score >= 50 %}#f59e0b{% else %}#ef4444{% endif %};">
+                    <div class="activity-meta {% if session.readiness_score >= 80 %}score-high{% elif session.readiness_score >= 50 %}score-medium{% else %}score-low{% endif %}"
+                        style="font-weight:700;">
                         {{ session.readiness_score|default:"In Progress" }}%
                     </div>
                 </div>
