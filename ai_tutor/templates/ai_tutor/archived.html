@@ -49,22 +49,25 @@
             gap: 0.8rem;
         }
 
-        .back-link {
-            color: var(--text-muted);
+        .back-btn-premium {
             text-decoration: none;
-            display: flex;
+            color: #94a3b8 !important;
+            font-size: 0.9rem;
+            display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            font-weight: 500;
-            transition: color 0.2s;
-            padding: 0.5rem 1rem;
+            padding: 0.6rem 1.25rem;
+            background: #0f172a !important;
             border-radius: 8px;
-            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            transition: all 0.2s ease;
         }
 
-        .back-link:hover {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.1);
+        .back-btn-premium:hover {
+            background: #1e293b !important;
+            color: white !important;
+            transform: translateX(-3px);
+            border-color: rgba(255, 255, 255, 0.2) !important;
         }
 
         .archive-list {
@@ -138,7 +141,7 @@
     <div class="container">
         <header>
             <h1><i class="ph ph-archive"></i> Archived Chats</h1>
-            <a href="{% url 'ai_tutor:tutor_home' %}" class="back-link">
+            <a href="{% url 'ai_tutor:tutor_home' %}" class="back-btn-premium">
                 <i class="ph ph-arrow-left"></i> Back to Tutor
             </a>
         </header>

@@ -23,11 +23,11 @@
             --user-gradient: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
             --ai-glass: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(255, 255, 255, 0.08);
-            
+
             --accent: #8b5cf6;
             --accent-hover: #7c3aed;
             --accent-glow: rgba(139, 92, 246, 0.3);
-            
+
             --bg-dark: #0b0f1a;
             --bg-card: rgba(255, 255, 255, 0.03);
             --border-color: var(--glass-border);
@@ -128,6 +128,27 @@
             transform: translateY(-3px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
+
+        .back-btn-premium {
+            text-decoration: none;
+            color: #94a3b8 !important;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            background: #0f172a !important;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn-premium:hover {
+            background: #1e293b !important;
+            color: white !important;
+            transform: translateX(-3px);
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
     </style>
 </head>
 
@@ -191,15 +212,22 @@
                     </div>
                 </div>
                 <div class="header-actions" style="margin-left: auto; display: flex; gap: 1rem; align-items: center;">
+                    <a href="{% url 'core:dashboard' %}" class="back-btn-premium">
+                        <i class="ph ph-arrow-left"></i> &larr; Back to Dashboard
+                    </a>
                     {% if active_course %}
-                    <a href="{% url 'course:course_dashboard' active_course.id %}" class="back-link-saas" 
-                       style="text-decoration: none; color: var(--text-muted); font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;">
+                    <a href="{% url 'course:course_dashboard' active_course.id %}" class="back-link-saas"
+                        style="text-decoration: none; color: var(--text-muted); font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;">
                         <i class="ph ph-arrow-left"></i> Back to Course
                     </a>
-                    <style>
-                        .back-link-saas:hover { background: rgba(255,255,255,0.1) !important; color: white !important; transform: translateX(-2px); }
-                    </style>
                     {% endif %}
+                    <style>
+                        .back-link-saas:hover {
+                            background: rgba(255, 255, 255, 0.1) !important;
+                            color: white !important;
+                            transform: translateX(-2px);
+                        }
+                    </style>
                 </div>
             </header>
 
@@ -208,11 +236,13 @@
                 {% if not chat_messages %}
                 <!-- Welcome Message (Only if empty) -->
                 <div class="message ai-message">
-                    <div class="avatar"><i class="ph ph-life-buoy" style="color: var(--purple-light); font-size: 1.5rem;"></i></div>
+                    <div class="avatar"><i class="ph ph-life-buoy"
+                            style="color: var(--purple-light); font-size: 1.5rem;"></i></div>
                     <div class="content">
-                        <h2 style="font-size: 1.25rem; color: white; margin-bottom: 0.5rem;">Hello! I see you might be stuck.</h2>
-                        I can give you <span style="color: var(--purple-light); font-weight: 600;">hints</span>, 
-                        <span style="color: var(--purple-light); font-weight: 600;">simplify</span> concepts, 
+                        <h2 style="font-size: 1.25rem; color: white; margin-bottom: 0.5rem;">Hello! I see you might be
+                            stuck.</h2>
+                        I can give you <span style="color: var(--purple-light); font-weight: 600;">hints</span>,
+                        <span style="color: var(--purple-light); font-weight: 600;">simplify</span> concepts,
                         or offer <span style="color: var(--purple-light); font-weight: 600;">examples</span>. <br>
                         What are you working on?
                     </div>

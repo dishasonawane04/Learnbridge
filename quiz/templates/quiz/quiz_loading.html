@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+    .loading-container {
+        max-width: 600px;
+        margin: 5rem auto;
+        text-align: center;
+        padding: 3rem;
+    }
+
+    .pulse-container {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 2rem;
+    }
+
+    .pulse-circle {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: var(--primary);
+        opacity: 0.1;
+        animation: pulse 2s infinite ease-in-out;
+    }
+
+    .pulse-inner {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        top: 30px;
+        left: 30px;
+        background: var(--primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+            opacity: 0.1;
+        }
+
+        50% {
+            transform: scale(1.5);
+            opacity: 0.3;
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 0.1;
+        }
+    }
+
+    .progress-bar-container {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 2rem 0;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), #818cf8);
+        width: 0%;
+        transition: width 0.5s ease;
+    }
+
+    .status-text {
+        font-size: 1.2rem;
+        color: white;
+        margin-bottom: 0.5rem;
+    }
+
+    .sub-status {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
+    .question-preview {
+        margin-top: 2rem;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 12px;
+        border: 1px dashed rgba(255, 255, 255, 0.1);
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="glass-card loading-container">
+    <div class="pulse-container">
+        <div class="pulse-circle"></div>
+        <div class="pulse-inner">
+            <i class="fas fa-brain"></i>
+        </div>
+    </div>
+
+    <div class="status-text" id="mainStatus">AI is preparing your quiz...</div>
+    <div class="sub-status" id="subStatus">Analyzing course materials and user notes.</div>
+
+    <div class="progress-bar-container">
+        <div class="progress-fill" id="streamProgress"></div>
+    </div>
+
+    <div id="qPreview" class="question-preview">
+        <div style="font-size: 0.75rem; color: var(--primary); text-transform: uppercase; margin-bottom: 0.5rem;">Coming
+            up:</div>
+        <div id="qText" style="font-size: 0.9rem; font-style: italic;"></div>
+    </div>
+</div>
+
+<script>
+    const courseId = "{{ course.id }}";
+    const questions = [];
+    const eventSource = new EventSource(`/quiz/api/generate-stream/${courseId}/`);
+
+    let timer = setTimeout(() => {
+        if (questions.length === 0) {
+            document.getElementById('mainStatus').innerText = "Taking longer than expected...";
+            document.getElementById('subStatus').innerText = "The AI is working hard on your material.";
+        }
+    }, 30000);
+
+    let failTimer = setTimeout(() => {
+        if (questions.length === 0) {
+            eventSource.close();
+            document.getElementById('mainStatus').innerText = "Quiz generation timed out.";
+            document.getElementById('subStatus').innerHTML = 'Please try again or <a href="' + window.location.href + '" style="color: var(--primary)">refresh</a>.';
+        }
+    }, 120000); // Extended to 120s for slower hardware
+
+    eventSource.onmessage = function (event) {
+        if (event.data === "[DONE]") {
+            eventSource.close();
+            clearTimeout(timer);
+            clearTimeout(failTimer);
+            document.getElementById('mainStatus').innerText = "Quiz Ready!";
+            document.getElementById('subStatus').innerText = "Finalizing your attempt...";
+
+            // Save questions to session via another API call
+            fetch('/quiz/api/save-streamed-questions/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    questions: questions,
+                    course_id: courseId
+                })
+            }).then(() => {
+                window.location.href = "{% url 'quiz:quiz_start' %}?course_id=" + courseId;
+            });
+            return;
+        }
+
+        try {
+            const data = JSON.parse(event.data);
+
+            if (data.status === 'timeout' || data.status === 'error' || data.error) {
+                eventSource.close();
+                clearTimeout(timer);
+                clearTimeout(failTimer);
+
+                const msg = data.message || data.error || "Generation stalled.";
+                document.getElementById('mainStatus').innerText = "Notice";
+                document.getElementById('subStatus').innerHTML = msg + ' <br><br> <a href="' + window.location.href + '" class="btn btn-sm btn-primary" style="margin-top: 1rem;">Retry Generation</a>';
+
+                // If we got some questions, maybe allow starting with those?
+                // For now, retry is safer.
+                return;
+            }
+
+            const q = data;
+            questions.push(q);
+
+            // Update UI
+            const targetNum = 8;
+            const prog = (questions.length / targetNum) * 100;
+            document.getElementById('streamProgress').style.width = Math.min(prog, 100) + '%';
+            document.getElementById('mainStatus').innerText = `Generated ${questions.length} questions...`;
+
+            const preview = document.getElementById('qPreview');
+            preview.style.display = 'block';
+            document.getElementById('qText').innerText = q.question;
+
+        } catch (e) {
+            console.error("Parse error", e);
+        }
+    };
+
+    eventSource.onerror = function (err) {
+        console.error("SSE Error:", err);
+        eventSource.close();
+    };
+</script>
+{% endblock %}

@@ -1,15 +1,97 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>AI Tutor Response</title>
+    <meta charset="UTF-8">
+    <title>AI Tutor Response - LearnBridge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #8b5cf6;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 4rem 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: var(--bg-card);
+            padding: 2.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            color: var(--accent);
+            margin: 1.5rem 0 0.5rem 0;
+        }
+
+        p {
+            line-height: 1.6;
+            margin: 0 0 1.5rem 0;
+            color: var(--text-main);
+        }
+
+        .back-btn-premium {
+            text-decoration: none;
+            color: #94a3b8 !important;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.5rem;
+            background: #0f172a !important;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            transition: all 0.2s ease;
+            width: 100%;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .back-btn-premium:hover {
+            background: #1e293b !important;
+            color: white !important;
+            transform: translateY(-2px);
+        }
+    </style>
 </head>
+
 <body>
-    <h2>Question:</h2>
-    <p>{{ question }}</p>
+    <div class="container">
+        <h1><i class="ph ph-robot"></i> AI Response</h1>
 
-    <h2>Answer:</h2>
-    <p>{{ answer }}</p>
+        <h2>Question:</h2>
+        <p>{{ question }}</p>
 
-    <a href="/">Ask another question</a>
+        <h2>Answer:</h2>
+        <p>{{ answer }}</p>
+
+        <a href="{% url 'ai_tutor:tutor_home' %}" class="back-btn-premium">
+            <i class="ph ph-chat-circle-text"></i> Back to Chat
+        </a>
+        <a href="{% url 'core:dashboard' %}" class="back-btn-premium" style="opacity: 0.7;">
+            <i class="ph ph-house"></i> Dashboard
+        </a>
+    </div>
 </body>
+
 </html>

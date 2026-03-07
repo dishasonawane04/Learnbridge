@@ -26,7 +26,8 @@
         <!-- Course Grid -->
         <div class="course-grid">
             {% for course in courses %}
-            <div class="course-card-premium" onclick="window.location='{% url 'course:course_dashboard' course.id %}'">
+            <div class="course-card-premium" data-id="{{ course.id }}"
+                onclick="window.location='{% url 'course:course_dashboard' course.id %}'">
                 <div class="card-body">
                     <div class="card-top">
                         <div class="course-icon-badge">
@@ -74,8 +75,8 @@
                     </div>
 
                     <!-- Delete Action (Absolute) -->
-                    <a href="{% url 'course:delete' course.id %}" class="btn-delete-card"
-                        onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this course?')">
+                    <a href="javascript:void(0)" class="btn-delete-card"
+                        onclick="event.stopPropagation(); window.handleCourseDeletion('{{ course.id }}', '{{ course.title|escapejs }}')">
                         <i class="fas fa-trash-can"></i>
                     </a>
                 </div>

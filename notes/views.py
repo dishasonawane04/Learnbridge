@@ -2,9 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from .models import Note
+from .models import Note, NoteImage
 from core.utils import log_activity
 from asgiref.sync import sync_to_async
+from django.core.files.base import ContentFile
 import ollama
 import markdown
 
@@ -41,12 +42,31 @@ async def generate_notes(request):
 
         if action == "save":
             content = request.POST.get("content")
+            course_id = request.POST.get("course_id")
+            images = request.FILES.getlist("images")
+            
             if content:
-                await sync_to_async(Note.objects.create)(
+                # Create the Note
+                note = await sync_to_async(Note.objects.create)(
                     user=request.user,
+                    course_id=course_id if course_id else None,
                     topic=topic,
-                    content=content
+                    content=content,
+                    is_ai_generated=True
                 )
+                
+                # Save Images
+                for img in images:
+                    await sync_to_async(NoteImage.objects.create)(
+                        note=note,
+                        image=img
+                    )
+                
+                # Trigger context consolidation if linked to course
+                if course_id:
+                    from core.ai.services import CourseContextEngine
+                    await sync_to_async(CourseContextEngine.consolidate_course_notes)(course_id)
+                
                 return redirect('notes_list')
 
         # --- CENTRALIZED CONTEXT INJECTION ---

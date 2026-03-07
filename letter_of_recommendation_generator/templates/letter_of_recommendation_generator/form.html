@@ -71,7 +71,9 @@
         <button type="submit" class="btn">
             <i class="ph ph-sparkle"></i> Generate Letter
         </button>
-        <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}" class="btn btn-outline">Cancel</a>
+        <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}" class="btn btn-outline">
+            <i class="ph ph-arrow-left"></i> Back to My Letters
+        </a>
     </div>
 </form>
 {% endblock %}

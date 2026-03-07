@@ -86,6 +86,28 @@
             color: var(--text-main);
         }
 
+        .back-btn-premium {
+            text-decoration: none;
+            color: #94a3b8 !important;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            background: #0f172a !important;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            transition: all 0.2s ease;
+            margin-bottom: 1rem;
+        }
+
+        .back-btn-premium:hover {
+            background: #1e293b !important;
+            color: white !important;
+            transform: translateX(-3px);
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+
         /* Main Content */
         .main-content {
             flex: 1;
@@ -296,11 +318,11 @@
     </aside>
 
     <main class="main-content">
-        <header>
+        <header style="flex-direction: column; align-items: flex-start; gap: 1rem;">
+            <a href="{% url 'core:dashboard' %}" class="back-btn-premium">
+                <i class="ph ph-arrow-left"></i> &larr; Back to Dashboard
+            </a>
             <h1>Your Learning Library</h1>
-            <div class="user-profile">
-                <!-- User avatar could go here -->
-            </div>
         </header>
 
         {% if active_course %}
@@ -324,31 +346,34 @@
         <script>
             async function generateFromCourse(courseId) {
                 const loading = document.getElementById('loadingIndicator');
-                const modal = document.getElementById('createModal');
 
                 // Show modal to show loading state
                 openModal();
                 loading.style.display = 'block';
-                loading.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Reading syllabus and generating cards...';
+                loading.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Initializing Course AI...';
 
                 try {
-                    const res = await fetch(`/flashcards/api/generate_from_course/${courseId}/`, {
+                    const formData = new FormData();
+                    formData.append('course_id', courseId);
+                    formData.append('title', 'Course Revision');
+
+                    const res = await fetch(`/flashcards/api/generate-task/`, {
                         method: 'POST',
                         headers: {
                             'X-CSRFToken': getCookie('csrftoken')
-                        }
+                        },
+                        body: formData
                     });
+
                     const data = await res.json();
-                    if (data.status === 'success') {
-                        window.location.href = `/flashcards/study/${data.deck_id}/`;
+                    if (data.status === 'started') {
+                        pollTask(data.task_id);
                     } else {
-                        alert('Error: ' + data.error);
-                        loading.style.display = 'none';
-                        closeModal();
+                        throw new Error(data.error || 'Failed to start task');
                     }
                 } catch (err) {
                     console.error(err);
-                    alert('An error occurred.');
+                    alert('An error occurred: ' + err.message);
                     loading.style.display = 'none';
                     closeModal();
                 }
@@ -465,43 +490,72 @@
         form.onsubmit = async (e) => {
             e.preventDefault();
             loading.style.display = 'block';
-
-            // Show a "still working" message after 10 seconds
-            const longWaitTimeout = setTimeout(() => {
-                loading.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Still generating... AI is thinking hard (this can take up to 60s).';
-            }, 10000);
+            form.querySelector('button[type="submit"]').disabled = true;
 
             const formData = new FormData(form);
 
             try {
-                const res = await fetch("{% url 'flashcard_generator:generate_deck' %}", {
+                const res = await fetch("{% url 'flashcard_generator:start_flashcard_task' %}", {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
                 });
 
-                clearTimeout(longWaitTimeout);
-
-                const contentType = res.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) {
-                    throw new Error("Server returned non-JSON response (possibly an error page).");
-                }
-
                 const data = await res.json();
-
-                if (data.status === 'success') {
-                    // Redirect to the study page for the new deck
-                    window.location.href = `/flashcards/study/${data.deck_id}/`;
+                if (data.status === 'started') {
+                    pollTask(data.task_id);
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error occurred'));
+                    throw new Error(data.error || 'Failed to start generation');
                 }
             } catch (err) {
                 console.error(err);
-                alert('An error occurred: ' + err.message + '. Please check the console.');
-            } finally {
+                alert('An error occurred: ' + err.message);
                 loading.style.display = 'none';
-                loading.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Generating your cards... This may take a moment.'; // Reset text
+                form.querySelector('button[type="submit"]').disabled = false;
             }
         };
+
+        async function pollTask(taskId) {
+            const pollStartTime = Date.now();
+            const POLL_TIMEOUT = 60000; // 60 seconds
+
+            const poller = setInterval(async () => {
+                // Check if we passed the 60s UI limit
+                if (Date.now() - pollStartTime > POLL_TIMEOUT) {
+                    clearInterval(poller);
+                    loading.innerHTML = '<span style="color: #ef4444;"><i class="ph ph-warning"></i> Generation is taking longer than expected. Please check back later.</span>';
+                    setTimeout(() => {
+                        loading.style.display = 'none';
+                        form.querySelector('button[type="submit"]').disabled = false;
+                        closeModal();
+                    }, 5000);
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`/flashcards/api/task-status/${taskId}/`);
+                    const data = await res.json();
+
+                    if (data.status === 'completed') {
+                        clearInterval(poller);
+                        loading.innerHTML = '<i class="ph ph-check-circle"></i> Completed! Redirecting...';
+                        window.location.href = `/flashcards/study/${data.deck_id}/`;
+                    } else if (data.status === 'error') {
+                        clearInterval(poller);
+                        alert("AI Error: " + data.message);
+                        loading.style.display = 'none';
+                        form.querySelector('button[type="submit"]').disabled = false;
+                    } else {
+                        // Still processing
+                        loading.innerHTML = `<i class="ph ph-spinner ph-spin"></i> AI is generating cards... (${Math.round((Date.now() - pollStartTime) / 1000)}s)`;
+                    }
+                } catch (err) {
+                    console.error("Polling error:", err);
+                }
+            }, 3000); // Poll every 3 seconds for snappy feel
+        }
 
         // Close modal on click outside
         modal.addEventListener('click', (e) => {

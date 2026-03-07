@@ -16,6 +16,9 @@ from course.services.state import ActiveCourseManager
 from core.ai.services import CourseContextEngine
 from .services.dynamic_gen import generate_flashcards_dynamic
 import logging
+import threading
+import uuid
+from django.core.cache import cache
 logger = logging.getLogger(__name__)
 
 def flashcard_home(request):
@@ -131,21 +134,9 @@ def get_deck_api(request, deck_id):
     Implements Adaptive Logic: Prioritizes cards due for review.
     """
     deck = get_object_or_404(FlashcardDeck, id=deck_id)
-    
-    # Adaptive Strategy:
-    # 1. Get cards due for review (next_review_date <= now)
-    # 2. Then get new cards (box=1, review_count=0)
-    # 3. Then get others
-    
     now = timezone.now()
     due_cards = deck.cards.filter(next_review_date__lte=now).order_by('next_review_date')
     other_cards = deck.cards.filter(next_review_date__gt=now).order_by('next_review_date')
-    
-    # Combine (Due first)
-    # We serialize them all, frontend can handle the focused session flow, 
-    # but strictly speaking we might want to only send a batch. 
-    # For this app, sending all is fine as decks aren't massive.
-    
     all_cards = list(due_cards) + list(other_cards)
     
     data = [{
@@ -160,6 +151,95 @@ def get_deck_api(request, deck_id):
     } for c in all_cards]
     
     return JsonResponse({"title": deck.title, "cards": data})
+
+@csrf_exempt
+@login_required
+def start_flashcard_deck_task(request):
+    """
+    Starts a background task for flashcard generation.
+    Returns a task_id for polling.
+    """
+    if request.method == "POST":
+        try:
+            title = request.POST.get("title", "New Deck")
+            difficulty = request.POST.get("difficulty", "Medium")
+            text_input = request.POST.get("text_input", "")
+            course_id = request.POST.get("course_id")
+            
+            uploaded_file = request.FILES.get("file")
+            file_path = None
+            if uploaded_file:
+                fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'uploads'))
+                filename = fs.save(uploaded_file.name, uploaded_file)
+                file_path = fs.path(filename)
+
+            task_id = str(uuid.uuid4())
+            cache.set(f"flash_task_{task_id}", {"status": "processing", "progress": 10}, 600)
+
+            def run_gen():
+                try:
+                    # 60s Global Timeout simulation/limit is handled by model constraints + prompt
+                    # but we can wrap it here
+                    cards_data = generate_flashcards(text_input, file_path, difficulty, course_id=course_id)
+                    
+                    if not cards_data:
+                        cache.set(f"flash_task_{task_id}", {
+                            "status": "error", 
+                            "message": "AI could not find enough context or failed to generate cards."
+                        }, 600)
+                        return
+
+                    # Save to DB
+                    deck = FlashcardDeck.objects.create(title=title, difficulty=difficulty)
+                    if course_id:
+                        deck.course_id = course_id
+                        deck.save()
+
+                    count = 0
+                    for card in cards_data:
+                        if 'front' in card and 'back' in card:
+                            Flashcard.objects.create(
+                                deck=deck,
+                                front=card['front'],
+                                back=card['back'],
+                                difficulty=card.get('difficulty', difficulty),
+                                card_type=card.get('type', 'QA'),
+                                exam_tip=card.get('exam_tip', "")
+                            )
+                            count += 1
+                    
+                    if count == 0:
+                        deck.delete()
+                        cache.set(f"flash_task_{task_id}", {"status": "error", "message": "No valid cards parsed."}, 600)
+                    else:
+                        cache.set(f"flash_task_{task_id}", {
+                            "status": "completed", 
+                            "deck_id": deck.id, 
+                            "count": count
+                        }, 600)
+
+                except Exception as ex:
+                    logger.error(f"Task Gen Error: {ex}")
+                    cache.set(f"flash_task_{task_id}", {"status": "error", "message": str(ex)}, 600)
+
+            thread = threading.Thread(target=run_gen)
+            thread.start()
+
+            return JsonResponse({"status": "started", "task_id": task_id})
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+    return JsonResponse({"error": "Invalid method"}, status=405)
+
+def check_flashcard_task_status(request, task_id):
+    """
+    API endpoint to poll for flashcard task status.
+    """
+    status_data = cache.get(f"flash_task_{task_id}")
+    if not status_data:
+        return JsonResponse({"status": "error", "message": "Task not found or expired."}, status=404)
+    
+    return JsonResponse(status_data)
     
 @csrf_exempt
 def update_card_progress(request, card_id):

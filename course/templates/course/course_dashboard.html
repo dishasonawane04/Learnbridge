@@ -22,8 +22,8 @@
             <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data"
                 id="addMoreForm">
                 {% csrf_token %}
-                <input type="file" name="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx"
-                    onchange="this.form.submit()" style="display: none;">
+                <input type="file" name="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
+                    multiple onchange="handleDashboardUpload(this)" style="display: none;">
                 <button type="button" class="btn-add-notes" onclick="document.getElementById('fileInput').click();">
                     <i class="fas fa-plus"></i> Add Notes
                 </button>
@@ -159,15 +159,31 @@
             <h2>Upload Your Study Notes</h2>
             <p>Add PDFs, PPTs or documents. All quizzes and AI answers will be generated from these notes.</p>
 
-            <div class="upload-area" id="dropZone" onclick="document.getElementById('onboardingInput').click();">
-                <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data">
+            <div class="upload-area" id="dropZone" onclick="document.getElementById('onboardingInput').click();"
+                style="min-height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+                <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data"
+                    id="onboardingForm">
                     {% csrf_token %}
-                    <input type="file" name="file" id="onboardingInput" accept=".pdf,.doc,.docx,.ppt,.pptx"
-                        onchange="this.form.submit()" style="display:none;">
-                    <button type="button" class="upload-btn">
-                        <i class="fas fa-cloud-upload-alt"></i> Upload Notes
+                    <input type="file" name="file" id="onboardingInput"
+                        accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" multiple
+                        onchange="handleDashboardUpload(this)" style="display:none;">
+
+                    <div id="uploadPlaceholder">
+                        <i class="fas fa-cloud-upload-alt"
+                            style="font-size: 3rem; color: var(--primary); margin-bottom: 1.5rem;"></i>
+                        <h3 style="color: white; margin-bottom: 0.5rem;">Click or Drag Files Here</h3>
+                        <p class="supported-text">Support: PDF, PPT, Word, JPG, PNG</p>
+                    </div>
+
+                    <!-- Dashboard Preview Grid -->
+                    <div id="dashboardPreview"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 1rem; width: 100%; margin-top: 1rem;">
+                    </div>
+
+                    <button type="submit" id="submitAllBtn" class="btn btn-primary"
+                        style="display: none; margin-top: 2rem; width: 100%; border-radius: 12px; padding: 1rem;">
+                        <i class="fas fa-rocket"></i> Start Processing
                     </button>
-                    <p class="supported-text">Supported formats: PDF, Word, PowerPoint</p>
                 </form>
             </div>
         </div>
@@ -178,18 +194,55 @@
 <script>
 
 
+    function handleDashboardUpload(input) {
+        const preview = document.getElementById('dashboardPreview');
+        const placeholder = document.getElementById('uploadPlaceholder');
+        const submitBtn = document.getElementById('submitAllBtn');
+        const files = input.files;
+
+        if (files.length > 0) {
+            if (placeholder) placeholder.style.display = 'none';
+            if (submitBtn) submitBtn.style.display = 'block';
+            if (preview) {
+                preview.innerHTML = '';
+                [...files].forEach(file => {
+                    const isImage = file.type.startsWith('image/');
+                    const item = document.createElement('div');
+                    item.style.cssText = 'background: rgba(255,255,255,0.05); border-radius: 10px; padding: 0.5rem; position: relative; font-size: 0.75rem; text-align: center;';
+
+                    if (isImage) {
+                        const reader = new FileReader();
+                        reader.onload = e => {
+                            item.innerHTML = `
+                                <img src="${e.target.result}" style="width: 100%; height: 60px; object-fit: cover; border-radius: 6px; margin-bottom: 0.5rem;">
+                                <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-light);">${file.name}</div>
+                            `;
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        item.innerHTML = `
+                            <div style="height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--primary);">
+                                <i class="fas ${file.name.endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-word'}"></i>
+                            </div>
+                            <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-light);">${file.name}</div>
+                        `;
+                    }
+                    preview.appendChild(item);
+                });
+            } else {
+                // If on active workspace (no onboarding card), just submit
+                input.form.submit();
+            }
+        }
+    }
+
     const dropZone = document.getElementById('dropZone');
     const onboardingInput = document.getElementById('onboardingInput');
 
     if (dropZone) {
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
+            dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
         });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
 
         ['dragenter', 'dragover'].forEach(eventName => {
             dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
@@ -199,14 +252,10 @@
             dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
         });
 
-        dropZone.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            onboardingInput.files = files;
-            onboardingInput.form.submit();
-        }
+        dropZone.addEventListener('drop', e => {
+            onboardingInput.files = e.dataTransfer.files;
+            handleDashboardUpload(onboardingInput);
+        }, false);
     }
 </script>
 {% endblock %}

@@ -176,6 +176,27 @@
             margin-bottom: 1.5rem;
         }
 
+        .back-btn-premium {
+            text-decoration: none;
+            color: #94a3b8 !important;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            background: #0f172a !important;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn-premium:hover {
+            background: #1e293b !important;
+            color: white !important;
+            transform: translateX(-3px);
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .container {
@@ -205,8 +226,11 @@
             <i class="ph ph-graduation-cap"></i> LearnBridge
         </a>
         <div class="nav-links">
-            <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}">LOR Dashboard</a>
-            <a href="{% url 'letter_of_recommendation_generator:create_letter' %}">New Letter</a>
+            <a href="{% url 'core:dashboard' %}"><i class="ph ph-house"></i> Main Dashboard</a>
+            <a href="{% url 'letter_of_recommendation_generator:create_letter' %}" class="btn"
+                style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                <i class="ph ph-plus-circle"></i> New Letter
+            </a>
         </div>
     </nav>
 

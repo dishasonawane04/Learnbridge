@@ -8,9 +8,9 @@ def course_context(request):
     if request.user.is_authenticated:
         # Get all courses for the dropdown
         if request.user.is_staff or request.user.is_superuser:
-            all_user_courses = Course.objects.all()
+            all_user_courses = Course.objects.filter(is_deleted=False)
         else:
-            all_user_courses = Course.objects.filter(user=request.user)
+            all_user_courses = Course.objects.filter(user=request.user, is_deleted=False)
             
         # Get active course using centralized manager
         active_course = ActiveCourseManager.get_active_course(request)

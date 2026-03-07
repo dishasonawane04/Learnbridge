@@ -26,18 +26,13 @@ def generate_flashcards_dynamic(user, course_id, count=8):
         logger.info(f"Returning cached flashcards for User {user.id}, Course {course_id}")
         return cached_cards
 
-    # 1. Faster Context Retrieval (Similarity instead of MMR for speed)
-    from ai_engine.retriever import retrieve_context
-    from course.models import Course
-    course = Course.objects.filter(id=course_id).first()
+    from ai_engine.utils.optimization import AIContextOptimizer
     
-    # Fast Path: If material is short, skip RAG and use full text directly
-    if course and course.extracted_text and len(course.extracted_text) < 4000:
-        logger.info(f"Gen: Fast Path triggered for Course {course_id} (short material)")
-        context = course.extracted_text
-    else:
-        logger.info(f"Gen: Using standard similarity retrieval for speed.")
-        context = retrieve_context("key concepts and definitions", course_id, k=5)
+    # 1. Faster Context Retrieval
+    context = AIContextOptimizer.prepare_context(course_id)
+    
+    if not context or len(context.strip()) < 100:
+        return [{"error": "AI could not find enough context. Please ensure your material contains clear academic concepts."}]
     
     # ... Validation remains mostly same ...
     total_text_len = len(course.extracted_text or "") if course else 0
@@ -47,11 +42,12 @@ def generate_flashcards_dynamic(user, course_id, count=8):
 
     # 3. Optimized Prompt & Model Constraints
     prompt = f"""
-    Create 8 educational flashcards based ONLY on this context. 
-    Format: JSON Array of {{"front": "...", "back": "..."}}.
+    Create 8-10 educational flashcards based ONLY on this context. 
+    Format: JSON Array of {{"front": "Term", "back": "Short Definition"}}.
+    Definitions must be 1-2 lines only.
     
     Context:
-    {context[:3000]}
+    {context}
     """
 
     # 4. Call LLM with strict limits for speed

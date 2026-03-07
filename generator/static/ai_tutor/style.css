@@ -773,8 +773,25 @@ body {
 }
 
 /* Typing Cursor Indicator inside bubble */
-.typing-cursor {
-    color: var(--text-muted);
-    font-style: italic;
-    opacity: 0.8;
+
+/* Back to Dashboard Button - Dark Theme */
+.back-btn-premium {
+    text-decoration: none;
+    color: #94a3b8 !important;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    background: #0f172a !important;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    transition: all 0.2s ease;
+}
+
+.back-btn-premium:hover {
+    background: #1e293b !important;
+    color: white !important;
+    transform: translateX(-3px);
+    border-color: rgba(255, 255, 255, 0.2) !important;
 }

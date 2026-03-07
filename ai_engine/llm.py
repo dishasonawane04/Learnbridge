@@ -10,7 +10,8 @@ def ask_llm(prompt, **kwargs):
         options = {"temperature": 0.3}
         options.update(kwargs)
         
-        response = ollama.chat(
+        client = ollama.Client(host=getattr(settings, 'OLLAMA_BASE_URL', 'http://127.0.0.1:11434'))
+        response = client.chat(
             model=settings.OLLAMA_MODEL_TEXT,
             messages=[{"role": "user", "content": prompt}],
             options=options

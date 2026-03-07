@@ -46,7 +46,10 @@ def dashboard(request):
         profile = request.user.account_profile
 
     # 1. Course Stats
-    user_courses = Course.objects.filter(user=request.user).order_by('-created_at')
+    if request.user.is_staff or request.user.is_superuser:
+        user_courses = Course.objects.filter(is_deleted=False).order_by('-created_at')
+    else:
+        user_courses = Course.objects.filter(user=request.user, is_deleted=False).order_by('-created_at')
     
     # Ensure at least one course is active if none is set
     if user_courses.exists() and not user_courses.filter(is_active=True).exists():
@@ -58,16 +61,27 @@ def dashboard(request):
     total_courses = user_courses.count()
     
     # Calculate Total Units and Materials
-    total_units = CourseUnit.objects.filter(course__user=request.user).count()
-    total_materials = CourseMaterial.objects.filter(
-        Q(unit__course__user=request.user) | Q(course__user=request.user)
-    ).distinct().count()
+    if request.user.is_staff or request.user.is_superuser:
+        total_units = CourseUnit.objects.all().count()
+        total_materials = CourseMaterial.objects.all().count()
+    else:
+        total_units = CourseUnit.objects.filter(course__user=request.user).count()
+        total_materials = CourseMaterial.objects.filter(
+            Q(unit__course__user=request.user) | Q(course__user=request.user)
+        ).distinct().count()
 
     # 2. Activity / Analytics (Still relevant for overview, but secondary)
     activities = UserActivity.objects.filter(user=request.user).order_by('-timestamp')
     total_time = activities.aggregate(Sum('time_spent'))['time_spent__sum'] or 0
     
+    # Calculate Topic Distribution for Chart
+    topic_counts = activities.values('topic').annotate(count=Count('topic')).order_by('-count')[:4]
+    topic_dist = list(topic_counts)
+    if not topic_dist:
+        topic_dist = [{'topic': 'General', 'count': 1}]
+
     # 3. Streak Calculation
+    # ... (rest of the calculation remains same)
     streak = 0
     if activities.exists():
         activity_dates = activities.values_list('timestamp__date', flat=True).distinct()
@@ -128,9 +142,6 @@ def dashboard(request):
     # 6. Recent Activity
     recent_activity = activities[:10]
 
-    # 7. Recent Activity (Context processor handles active course)
-    recent_activity = activities[:10]
-
     context = {
         'profile': profile,
         'active_course': user_courses.filter(is_active=True).first(),
@@ -142,6 +153,7 @@ def dashboard(request):
         'course_data': course_data,
         'recommendations': recommendations,
         'recent_activity': recent_activity,
+        'topic_dist': topic_dist,
     }
     
     if profile and profile.role.lower() == 'faculty':
@@ -162,12 +174,12 @@ def active_course_api(request):
     """
     API endpoint to return the current user's active course.
     """
-    active_course = Course.objects.filter(user=request.user, is_active=True).first()
+    active_course = Course.objects.filter(user=request.user, is_active=True, is_deleted=False).first()
     if not active_course:
         # Fallback to session if is_active is not yet set
         course_id = request.session.get('active_course_id')
         if course_id:
-            active_course = Course.objects.filter(user=request.user, id=course_id).first()
+            active_course = Course.objects.filter(user=request.user, id=course_id, is_deleted=False).first()
     
     if active_course:
         return JsonResponse({

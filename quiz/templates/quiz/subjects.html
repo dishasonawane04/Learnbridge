@@ -62,6 +62,13 @@
 
 {% block content %}
 <div class="fade-in" style="max-width: 1000px; margin: 0 auto; padding: 2rem 1rem;">
+    <!-- Back to Dashboard -->
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'core:dashboard' %}" class="back-btn-premium">
+            <i class="fas fa-arrow-left"></i> &larr; Back to Dashboard
+        </a>
+    </div>
+
     <!-- Quiz Header/Logo -->
     <div style="text-align: center; margin-bottom: 4rem;">
         <div

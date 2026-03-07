@@ -29,7 +29,7 @@ def extract_text_from_image(file_path):
             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
         
         response = requests.post(
-            "http://localhost:11434/api/generate",
+            f"{settings.OLLAMA_BASE_URL}/api/generate",
             json={
                 "model": getattr(settings, "OLLAMA_MODEL_VISION", "llava:latest"),
                 "prompt": "Transcribe all text from this image accurately. Only return the transcribed text.",

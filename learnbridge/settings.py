@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+# Force reload to pick up decorator changes
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -218,7 +219,7 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
 LOGIN_URL = '/accounts/login/'
 
 # AI and Ollama Configuration
-OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
+OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://127.0.0.1:11434')
 OLLAMA_MODEL_TEXT = os.getenv('OLLAMA_MODEL_TEXT', 'llama3.2:1b')
 OLLAMA_MODEL_VISION = os.getenv('OLLAMA_MODEL_VISION', 'llava:latest')
 OLLAMA_MODEL_EMBED = os.getenv('OLLAMA_MODEL_EMBED', 'llama3.2:1b')

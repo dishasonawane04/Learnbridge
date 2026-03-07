@@ -33,37 +33,140 @@
     {% if response %}
     <div id="notes-section" class="glass-card fade-in note-preview-container"
         style="padding: 3rem; position: relative; margin-top: 2rem;">
-        <div style="position: absolute; top: 1.5rem; right: 2rem; display: flex; gap: 0.75rem;" class="no-print">
-            <form method="post" style="display: inline;">
-                {% csrf_token %}
+
+        <!-- SAVE FORM WITH IMAGE SUPPORT -->
+        <form method="post" enctype="multipart/form-data" id="saveNoteForm">
+            {% csrf_token %}
+            <div style="position: absolute; top: 1.5rem; right: 2rem; display: flex; gap: 0.75rem;" class="no-print">
                 <input type="hidden" name="action" value="save">
                 <input type="hidden" name="topic" value="{{ topic }}">
                 <input type="hidden" name="content" value="{{ response }}">
+                {% if course_id %}<input type="hidden" name="course_id" value="{{ course_id }}">{% endif %}
+
                 <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">
                     <i class="fas fa-save" style="margin-right: 0.5rem;"></i> Save to Notebook
                 </button>
-            </form>
 
-            <button onclick="window.print()" class="btn btn-secondary"
-                style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">
-                <i class="fas fa-print" style="margin-right: 0.5rem;"></i> Print / PDF
-            </button>
-        </div>
+                <button type="button" onclick="window.print()" class="btn btn-secondary"
+                    style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">
+                    <i class="fas fa-print" style="margin-right: 0.5rem;"></i> Print / PDF
+                </button>
+            </div>
 
-        <div class="note-content">
-            {{ response_html|safe }}
-        </div>
+            <div class="note-content">
+                {{ response_html|safe }}
+            </div>
+
+            <!-- IMAGE UPLOAD SECTION -->
+            <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05);"
+                class="no-print">
+                <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem; color: white;">
+                    <i class="fas fa-images" style="color: var(--primary); margin-right: 0.5rem;"></i>
+                    Attach Study Images / Handwritten Notes
+                </h3>
+
+                <div id="imageDropZone" class="upload-area"
+                    style="background: rgba(15, 23, 42, 0.3); border: 2px dashed rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 2.5rem; text-align: center; cursor: pointer; transition: all 0.3s;">
+                    <input type="file" name="images" id="imageInput" multiple accept="image/*" style="display: none;"
+                        onchange="handleImagePreview(this)">
+                    <div onclick="document.getElementById('imageInput').click()" id="uploadTrigger">
+                        <i class="fas fa-cloud-upload-alt"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 1rem; display: block;"></i>
+                        <p style="margin: 0; color: var(--text-main); font-weight: 500;">Drag & drop images here or
+                            <span style="color: var(--primary);">browse</span>
+                        </p>
+                        <p style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem;">Images will be
+                            processed with AI (OCR)</p>
+                    </div>
+
+                    <!-- Preview Gallery -->
+                    <div id="previewGallery"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+                    </div>
+                </div>
+            </div>
+        </form>
 
         <div style="margin-top: 4rem; text-align: center; display: flex; gap: 1.25rem; justify-content: center;"
             class="no-print">
-            <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="padding: 0.8rem 2.5rem;">
-                Back to Dashboard
+            <a href="{% url 'dashboard' %}" class="back-btn-premium">
+                <i class="fas fa-arrow-left"></i> &larr; Back to Dashboard
             </a>
             <a href="{% url 'notes_list' %}" class="btn btn-secondary" style="padding: 0.8rem 2.5rem;">
                 View My Notes
             </a>
         </div>
     </div>
+
+    <script>
+        function handleImagePreview(input) {
+            const gallery = document.getElementById('previewGallery');
+            const files = input.files;
+
+            if (files.length > 0) {
+                document.getElementById('uploadTrigger').style.display = 'none';
+                gallery.innerHTML = ''; // Clear if needed or append
+
+                [...files].forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const div = document.createElement('div');
+                        div.className = 'preview-item fade-in';
+                        div.style.cssText = 'position: relative; border-radius: 12px; overflow: hidden; height: 120px; border: 1px solid rgba(255,255,255,0.1);';
+                        div.innerHTML = `
+                            <img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">
+                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.3s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
+                                <button type="button" onclick="removeImage(${index})" style="background: none; border: none; color: #ef4444; font-size: 1.2rem; cursor: pointer;">
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            </div>
+                        `;
+                        gallery.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+
+                // Add "Add More" button slot
+                const addMoreDiv = document.createElement('div');
+                addMoreDiv.style.cssText = 'border: 2px dashed rgba(255,255,255,0.05); border-radius: 12px; height: 120px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-light); transition: 0.3s;';
+                addMoreDiv.innerHTML = '<i class="fas fa-plus"></i>';
+                addMoreDiv.onclick = () => document.getElementById('imageInput').click();
+                addMoreDiv.onmouseover = function () { this.style.borderColor = 'var(--primary)'; this.style.color = 'white'; }
+                addMoreDiv.onmouseout = function () { this.style.borderColor = 'rgba(255,255,255,0.05)'; this.style.color = 'var(--text-light)'; }
+                gallery.appendChild(addMoreDiv);
+            }
+        }
+
+        const dropZone = document.getElementById('imageDropZone');
+        const imgInput = document.getElementById('imageInput');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.style.borderColor = 'var(--primary)', false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.style.borderColor = 'rgba(255, 255, 255, 0.1)', false);
+        });
+
+        dropZone.addEventListener('drop', e => {
+            const dt = e.dataTransfer;
+            imgInput.files = dt.files;
+            handleImagePreview(imgInput);
+        }, false);
+
+        function removeImage(index) {
+            // Complex to remove from FileList object, but for preview it's okay
+            // Real implementation would use DataTransfer to rebuild FileList
+            alert("To remove, please re-upload your selection.");
+            document.getElementById('uploadTrigger').style.display = 'block';
+            document.getElementById('previewGallery').innerHTML = '';
+            imgInput.value = '';
+        }
+    </script>
     {% endif %}
 </div>
 

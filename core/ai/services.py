@@ -176,20 +176,37 @@ class CourseContextEngine:
     @staticmethod
     def consolidate_course_notes(course_id: int):
         """
-        Gathers all extracted text from course materials and consolidates 
-        into the CourseNotes model for the course.
+        Gathers all extracted text from course materials, user notes, and images,
+        and consolidates into the CourseNotes model for the course.
         """
         try:
             course = Course.objects.get(id=course_id)
             materials = course.course_materials.all().order_by('created_at')
             
             consolidated_text = []
+            
+            # 1. Base Materials
             for mat in materials:
                 if mat.extracted_text:
                     consolidated_text.append(f"--- Document: {mat.file.name} ---")
                     consolidated_text.append(mat.extracted_text)
                     consolidated_text.append("\n")
             
+            # 2. User Notes & Image OCR
+            from notes.models import Note
+            user_notes = Note.objects.filter(course=course).prefetch_related('images')
+            if user_notes.exists():
+                consolidated_text.append("--- USER ADDED NOTES & HANDWRITTEN CONTENT ---")
+                for note in user_notes:
+                    consolidated_text.append(f"Note Topic: {note.topic}")
+                    consolidated_text.append(note.content)
+                    
+                    # Append OCR text from images
+                    for img in note.images.all():
+                        if img.extracted_text:
+                            consolidated_text.append(f"[Contained in Notebook Image]: {img.extracted_text}")
+                    consolidated_text.append("\n")
+
             from course.models import CourseNotes
             notes, _ = CourseNotes.objects.get_or_create(course=course)
             notes.extracted_text = "\n".join(consolidated_text)
@@ -232,12 +249,13 @@ class CourseContextEngine:
             context_text, system_prompt, is_course_aware = get_hybrid_response_context(prompt, course_id)
         
         # 2. Query Ollama with dynamic model and speed constraints
-        return CourseContextEngine._query_ollama(
-            system_prompt, 
-            f"CONTEXT: {context_text}\n\nQUESTION: {prompt}",
-            num_predict=500 if specialized_mode == 'summary' else 400, # Reduced for speed
-            top_k=20
-        )
+    @staticmethod
+    def ask_course_ai_raw(user_msg: str, system_prompt: str = "You are a helpful assistant.") -> str:
+        """
+        Directly queries the AI without course-specific retrieval.
+        Useful for summarization or simple transformations.
+        """
+        return CourseContextEngine._query_ollama(system_prompt, user_msg)
 
     @staticmethod
     def _query_ollama(system: str, user_msg: str, **kwargs) -> str:
@@ -260,7 +278,7 @@ class CourseContextEngine:
                     "stream": False,
                     "options": options
                 },
-                timeout=120
+                timeout=300
             )
             response.raise_for_status()
             return response.json().get('response', "Error: Empty response from AI.")

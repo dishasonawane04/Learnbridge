@@ -14,9 +14,9 @@ from ai_engine.vector_store import create_vector_db
 @login_required
 def course_list(request):
     if request.user.is_superuser or request.user.is_staff:
-        courses = Course.objects.all()
+        courses = Course.objects.filter(is_deleted=False)
     else:
-        courses = request.user.courses.all()
+        courses = request.user.courses.filter(is_deleted=False)
     
     # Add progress data to each course
     for course in courses:
@@ -67,23 +67,28 @@ def course_dashboard(request, course_id):
     })
 
 @login_required
+@login_required
 def upload_notes(request, course_id):
     course = get_object_or_404(Course, id=course_id, user=request.user)
     if request.method == "POST":
-        file = request.FILES.get("file")
-        if file:
+        files = request.FILES.getlist("file")
+        for file in files:
             ext = file.name.split('.')[-1].lower()
             file_type = 'text'
             if ext in ['pdf']: file_type = 'pdf'
             elif ext in ['ppt', 'pptx']: file_type = 'ppt'
-            elif ext in ['jpg', 'jpeg', 'png', 'webp']: file_type = 'image'
+            elif ext in ['jpg', 'jpeg', 'png', 'webp', 'gif']: file_type = 'image'
             
-            # Create the material - automated processing in models.py handles the rest
+            # Create the material - automated processing in models.py handles the rest (OCR, indexing)
             CourseMaterial.objects.create(
                 course=course,
                 file=file,
                 file_type=file_type
             )
+        
+        # Consolidate context after all new materials are added
+        from core.ai.services import CourseContextEngine
+        CourseContextEngine.consolidate_course_notes(course.id)
                 
     return redirect('course:course_dashboard', course_id=course.id)
 
@@ -456,7 +461,7 @@ def course_summary(request, course_id):
     })
 @login_required
 def course_delete(request, course_id):
-    """Securely delete a course and all its data"""
+    """Securely soft-delete a course and all its data"""
     course = get_object_or_404(Course, id=course_id)
     
     # Ownership verification
@@ -464,8 +469,37 @@ def course_delete(request, course_id):
         return redirect('course:list')
     
     title = course.title
-    course.delete()
+    # Soft Delete
+    course.is_deleted = True
+    course.is_active = False
+    course.save()
+    
+    # Reset active course in session if it was the one deleted
+    if request.session.get('active_course_id') == str(course_id):
+        request.session['active_course_id'] = None
     
     from django.contrib import messages
-    messages.success(request, f"Course '{title}' has been successfully deleted.")
+    messages.success(request, f"Course '{title}' has been successfully removed.")
+    
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+        return JsonResponse({'status': 'success', 'message': f"Course '{title}' deleted."})
+        
     return redirect('course:list')
+
+@login_required
+def user_courses_api(request):
+    """Returns dynamic list of courses for the active user"""
+    if request.user.is_staff or request.user.is_superuser:
+        courses = Course.objects.filter(is_deleted=False)
+    else:
+        courses = Course.objects.filter(user=request.user, is_deleted=False)
+    
+    data = []
+    for c in courses.order_by('title'):
+        data.append({
+            'id': c.id,
+            'title': c.title,
+            'level': c.get_level_display(),
+            'url': f"/course/{c.id}/"
+        })
+    return JsonResponse({'status': 'success', 'courses': data})

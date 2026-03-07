@@ -47,8 +47,8 @@
                     Your personal AI tutor. Chat, ask questions, and get instant explanations.
                 </p>
             </div>
-            <a href="{% url 'ai_tutor:tutor_home' %}" class="btn btn-primary" style="text-align: center;">Open AI
-                Tutor</a>
+            <a href="{% url 'ai_tutor:tutor_home' %}" class="btn btn-primary w-full mt-4"
+                style="text-align: center;">Start AI Tutor</a>
         </div>
 
         <!-- App 2: Learning Support -->
@@ -63,8 +63,8 @@
                     Get guided hints and simplified break-downs to help you solve problems.
                 </p>
             </div>
-            <a href="{% url 'learning_support:support_home' %}" class="btn btn-primary" style="text-align: center;">Open
-                Support</a>
+            <a href="{% url 'learning_support:support_home' %}" class="btn btn-primary w-full mt-4"
+                style="text-align: center;">Get Support</a>
         </div>
 
         <!-- App 3: Flashcard Generator -->
@@ -79,9 +79,8 @@
                     Generate active recall flashcards from your study materials.
                 </p>
             </div>
-            <a href="{% url 'flashcard_generator:flashcard_home' %}" class="btn btn-primary"
-                style="text-align: center;">Go
-                to Flashcards</a>
+            <a href="{% url 'flashcard_generator:flashcard_home' %}" class="btn btn-primary w-full mt-4"
+                style="text-align: center;">Generate Flashcards</a>
         </div>
 
         <!-- App 4: Prerequisite Checker -->
@@ -96,8 +95,8 @@
                     Check your readiness for new topics with quick quizzes.
                 </p>
             </div>
-            <a href="{% url 'prerequisite_checker:home' %}" class="btn btn-primary" style="text-align: center;">Check
-                Readiness</a>
+            <a href="{% url 'prerequisite_checker:home' %}" class="btn btn-primary w-full mt-4"
+                style="text-align: center;">Check Readiness</a>
         </div>
 
         <!-- App 5: LOR Generator -->
@@ -112,8 +111,8 @@
                     Draft professional Letters of Recommendation quickly.
                 </p>
             </div>
-            <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}" class="btn btn-primary"
-                style="text-align: center;">Create LOR</a>
+            <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}"
+                class="btn btn-primary w-full mt-4" style="text-align: center;">Create LOR</a>
         </div>
 
         <!-- App 6: Analytics Dashboard -->
@@ -128,17 +127,9 @@
                     Visualize your learning progress and performance.
                 </p>
             </div>
-            <a href="{% url 'analytics:teacher_dashboard' %}" class="btn btn-primary" style="text-align: center;">View
-                Analytics</a>
+            <a href="{% url 'analytics:teacher_dashboard' %}" class="btn btn-primary w-full mt-4"
+                style="text-align: center;">View Analytics</a>
         </div>
     </div>
-
-    <style>
-        .feature-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(99, 102, 241, 0.5) !important;
-            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
-        }
-    </style>
 </div>
 {% endblock %}

@@ -179,22 +179,22 @@ def generate_flashcards(input_text=None, file_path=None, difficulty="Medium", co
     """
     Generates flashcards using Course-Aware RAG and OpenAI.
     """
-    content = input_text if input_text else ""
+    from ai_engine.utils.optimization import AIContextOptimizer
     
-    # 1. RAG Context Retrieval
-    if course_id:
-        # We use a broad query to get key concepts
-        query = "important definitions key concepts exam questions"
-        if input_text: query = input_text
-        
-        relevant_context = retrieve_context(query, course_id, k=8)
-        if relevant_context:
-            content += f"\n\nContext from Course Material:\nR{relevant_context}"
-
-    # 2. Extract Text from File (if any)
+    # 1. Gather Context
+    content = input_text if input_text else ""
     if file_path:
         file_text = extract_text(file_path)
         if file_text: content += "\n" + file_text
+
+    # 2. Optimized Context Preparation
+    if course_id:
+        optimized_context = AIContextOptimizer.prepare_context(course_id)
+        if optimized_context:
+            content = optimized_context + "\n\nQuery Context: " + content
+    
+    # Final trim
+    content = content[:8000] # Safety cap
 
     if len(content.strip()) < 10:
         return []
@@ -202,8 +202,12 @@ def generate_flashcards(input_text=None, file_path=None, difficulty="Medium", co
     # 3. Call AI (Ollama)
     from langchain_community.chat_models import ChatOllama
     
+    # 3. Call AI (Ollama)
+    from langchain_community.chat_models import ChatOllama
+    
+    model_name = getattr(settings, 'OLLAMA_MODEL_TEXT', 'llama3.2:1b')
     llm = ChatOllama(
-        model=settings.OLLAMA_MODEL_TEXT, # e.g. "mistral" or "llama3"
+        model=model_name,
         temperature=0.3,
         base_url=settings.OLLAMA_BASE_URL,
         format="json" 
@@ -211,21 +215,21 @@ def generate_flashcards(input_text=None, file_path=None, difficulty="Medium", co
     
     prompt = f"""
     You are an expert Flashcard Generator.
-    Task: Generate 10-15 high-quality flashcards based on the provided text.
+    Task: Generate 8-10 high-quality flashcards based on the provided text.
     
     Content:
-    {content[:15000]} 
+    {content} 
 
     Rules:
-    1. Focus on definitions, key concepts, and exam-relevant facts.
-    2. Difficulty: {difficulty}
+    1. Focus on definitions and key concepts.
+    2. Definitions/Back: STRICTLY 1-2 lines only.
     3. JSON Output format:
     {{
         "flashcards": [
             {{
-                "front": "Question or Term",
-                "back": "Answer or Definition",
-                "exam_tip": "One short tip (optional)",
+                "front": "Term",
+                "back": "Short Definition",
+                "exam_tip": "Optional 1-line tip",
                 "difficulty": "{difficulty}"
             }}
         ]
@@ -271,10 +275,11 @@ def explain_card_content(card_front, card_back):
         messages = [{'role': 'user', 'content': prompt}]
         
         # Try a quick model
+        client = ollama.Client(host=getattr(settings, 'OLLAMA_BASE_URL', 'http://127.0.0.1:11434'))
         try:
-            response = ollama.chat(model="llama3.2", messages=messages)
+            response = client.chat(model="llama3.2", messages=messages)
         except:
-            response = ollama.chat(model="llama3", messages=messages)
+            response = client.chat(model="llama3", messages=messages)
 
         return response['message']['content']
     except Exception as e:
@@ -317,19 +322,17 @@ def generate_quiz_from_cards(cards_list):
 
     try:
         # Try prioritized models, prefer faster ones for quiz
-        models_to_try = ["llama3.2:1b", "llama3.2", "llama3"]
-        response = None
-        
+        client = ollama.Client(host=getattr(settings, 'OLLAMA_BASE_URL', 'http://127.0.0.1:11434'))
         for model in models_to_try:
             try:
                 # Try with format='json' first
                 print(f"Attempting quiz gen with {model} (JSON mode)...")
-                response = ollama.chat(model=model, messages=messages, format='json')
+                response = client.chat(model=model, messages=messages, format='json')
                 break
             except Exception as e:
                 print(f"JSON mode failed for {model}: {e}. Retrying standard mode...")
                 try:
-                    response = ollama.chat(model=model, messages=messages)
+                    response = client.chat(model=model, messages=messages)
                     break
                 except:
                     continue

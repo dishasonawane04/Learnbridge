@@ -4,113 +4,202 @@
 
 {% block extra_css %}
 <style>
+    .notebook-sheet {
+        background: rgba(15, 23, 42, 0.4) !important;
+        position: relative;
+        padding: 4rem !important;
+        border-radius: 4px 24px 24px 4px !important;
+        border-left: 8px solid var(--primary) !important;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    }
+
+    .notebook-sheet::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 40px;
+        bottom: 0;
+        width: 1px;
+        background: rgba(239, 68, 68, 0.2);
+    }
+
+    .note-content {
+        line-height: 2.2;
+        font-family: 'Inter', sans-serif;
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.85);
+    }
+
     .note-content h1,
     .note-content h2,
     .note-content h3 {
         color: white;
-        margin-top: 1.5rem;
-    }
-
-    .note-content p {
-        color: var(--text-light);
-        line-height: 1.7;
+        margin-top: 2rem;
         margin-bottom: 1rem;
+        font-weight: 700;
     }
 
-    .note-content ul,
-    .note-content ol {
-        color: var(--text-light);
-        padding-left: 1.5rem;
-        margin-bottom: 1rem;
+    .image-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-top: 4rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .note-content li {
-        margin-bottom: 0.5rem;
+    .gallery-item {
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        aspect-ratio: 4/3;
+        cursor: pointer;
+        transition: transform 0.3s, box-shadow 0.3s;
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .note-content code {
-        background: rgba(0, 0, 0, 0.3);
-        padding: 0.2rem 0.4rem;
-        border-radius: 4px;
-        font-family: 'JetBrains Mono', monospace;
-        color: #e2e8f0;
+    .gallery-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+        border-color: var(--primary);
     }
 
-    .note-content pre {
-        background: rgba(15, 23, 42, 0.6);
-        padding: 1rem;
+    .gallery-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .ocr-badge {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        color: #10b981;
+        backdrop-filter: blur(4px);
+    }
+
+    /* Modal Styling */
+    .image-modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.95);
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+
+    .modal-content {
+        max-width: 90%;
+        max-height: 90%;
+        object-fit: contain;
         border-radius: 8px;
-        overflow-x: auto;
-        border: 1px solid var(--glass-border);
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .close-modal {
+        position: absolute;
+        top: 2rem;
+        right: 3rem;
+        color: white;
+        font-size: 2.5rem;
+        cursor: pointer;
+        transition: 0.3s;
     }
 
     @media print {
-        body * {
-            visibility: hidden;
+        .no-print {
+            display: none !important;
         }
 
-        .note-container,
-        .note-container * {
-            visibility: visible;
-        }
-
-        .note-container {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            background: white;
-            color: black;
-        }
-
-        .glass-card {
-            background: none;
-            border: none;
-            backdrop-filter: none;
-        }
-
-        .btn,
-        .main-nav,
-        footer {
-            display: none;
+        .notebook-sheet {
+            background: white !important;
+            color: black !important;
+            border-left: 2px solid #ccc !important;
+            box-shadow: none !important;
         }
 
         .note-content h1,
         .note-content h2,
-        .note-content h3,
-        .note-content p,
-        .note-content li {
+        .note-content p {
             color: black !important;
+        }
+
+        .notebook-sheet::before {
+            left: 20px;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container note-container" style="padding: 2rem 0;">
-    <div style="margin-bottom: 2rem;">
+<div class="container note-container" style="padding: 2rem 0; max-width: 900px;">
+    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;"
+        class="no-print">
         <a href="{% url 'notes:notes_list' %}" class="btn btn-secondary"
-            style="display: inline-flex; align-items: center; gap: 0.5rem;">
-            <i class="fas fa-arrow-left"></i> Back to Notes
+            style="display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 12px;">
+            <i class="fas fa-arrow-left"></i> Back to Notebook
         </a>
+        <div style="display: flex; gap: 0.75rem;">
+            {% if note.course %}
+            <a href="{% url 'course:course_dashboard' note.course.id %}" class="btn btn-secondary"
+                style="border-radius: 12px;">
+                <i class="fas fa-book"></i> {{ note.course.title }}
+            </a>
+            {% endif %}
+            <button onclick="window.print()" class="btn btn-primary" style="border-radius: 12px;">
+                <i class="fas fa-print"></i> Export
+            </button>
+        </div>
     </div>
 
-    <div class="glass-card fade-in" style="padding: 3rem;">
-        <div
-            style="border-bottom: 1px solid var(--glass-border); padding-bottom: 2rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: start;">
+    <div class="glass-card fade-in notebook-sheet" style="padding: 3rem;">
+        <div style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2rem; margin-bottom: 2rem;">
             <div>
-                <span class="badge badge-primary" style="margin-bottom: 1rem;">Topic</span>
-                <h1 style="margin: 0.5rem 0; font-size: 2.5rem;">{{ note.topic }}</h1>
-                <p style="color: var(--text-muted);">Generated on {{ note.created_at|date:"F j, Y" }}</p>
+                <span class="badge badge-primary" style="margin-bottom: 1rem; opacity: 0.6;">SMART STUDY NOTE</span>
+                <h1 style="margin: 0.5rem 0; font-size: 2.8rem; font-weight: 800; color: white;">{{ note.topic }}</h1>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">Created on {{ note.created_at|date:"F j, Y" }}
+                </p>
             </div>
-            <button onclick="window.print()" class="btn btn-primary">
-                <i class="fas fa-download"></i> Download / Print PDF
-            </button>
         </div>
 
         <div class="note-content">
             {{ html_content|safe }}
         </div>
+
+        {% if note.images.exists %}
+        <div class="image-gallery no-print">
+            {% for img in note.images.all %}
+            <div class="gallery-item" onclick="openModal('{{ img.image.url }}')">
+                <img src="{{ img.image.url }}" alt="Note Image">
+                {% if img.extracted_text %}
+                <span class="ocr-badge"><i class="fas fa-check-circle"></i> AI Indexed</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 </div>
+
+<!-- Modal -->
+<div id="imageModal" class="image-modal" onclick="this.style.display='none'">
+    <span class="close-modal">&times;</span>
+    <img class="modal-content" id="modalImg">
+</div>
+
+<script>
+    function openModal(src) {
+        document.getElementById('imageModal').style.display = 'flex';
+        document.getElementById('modalImg').src = src;
+    }
+</script>
 {% endblock %}

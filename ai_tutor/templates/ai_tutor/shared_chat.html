@@ -8,7 +8,7 @@
     <title>{{ chat.title }} | Shared Chat</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link rel="stylesheet" href="{% static 'ai_tutor/style.css' %}">
+    <link rel="stylesheet" href="{% static 'ai_tutor/style.css' %}?v=5.0">
     <style>
         body {
             margin: 0;
@@ -38,15 +38,36 @@
         .message {
             margin-bottom: 1.5rem;
         }
+
+        .back-btn-premium {
+            text-decoration: none;
+            color: #94a3b8 !important;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            background: #0f172a !important;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn-premium:hover {
+            background: #1e293b !important;
+            color: white !important;
+            transform: translateX(-3px);
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
     </style>
 </head>
 
 <body>
     <div class="shared-header">
         <h2 style="margin:0; font-size:1.2rem;">{{ chat.title }}</h2>
-        <a href="/"
-            style="padding: 0.5rem 1rem; background: var(--primary-color); color: white; text-decoration: none; border-radius: 8px; font-size: 0.9rem;">Try
-            AI Tutor</a>
+        <a href="{% url 'core:dashboard' %}" class="back-btn-premium">
+            <i class="ph ph-arrow-left"></i> Back to Dashboard
+        </a>
     </div>
 
     <div class="shared-container">

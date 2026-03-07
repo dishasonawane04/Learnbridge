@@ -1,0 +1,1954 @@
+﻿diff --git a/ai_engine/llm.py b/ai_engine/llm.py
+index 1c8b783..1c2f1b3 100644
+--- a/ai_engine/llm.py
++++ b/ai_engine/llm.py
+@@ -10,7 +10,8 @@ def ask_llm(prompt, **kwargs):
+         options = {"temperature": 0.3}
+         options.update(kwargs)
+         
+-        response = ollama.chat(
++        client = ollama.Client(host=getattr(settings, 'OLLAMA_BASE_URL', 'http://127.0.0.1:11434'))
++        response = client.chat(
+             model=settings.OLLAMA_MODEL_TEXT,
+             messages=[{"role": "user", "content": prompt}],
+             options=options
+diff --git a/ai_engine/quiz_generator.py b/ai_engine/quiz_generator.py
+index c9fa541..2c0444a 100644
+--- a/ai_engine/quiz_generator.py
++++ b/ai_engine/quiz_generator.py
+@@ -5,41 +5,50 @@ from django.conf import settings
+ from langchain_community.chat_models import ChatOllama
+ from ai_engine.retriever import retrieve_distributed_context
+ from quiz.models import StudentQuestionHistory
++from asgiref.sync import sync_to_async
++import re
+ 
+ def generate_quiz(course_id, user=None, num_questions=5):
+     """
+-    Generates a unique quiz using Distributed RAG and repetition prevention.
++    Generates a unique quiz using Optimized Context and repetition prevention.
+     """
+-    # 1. Retrieve Distributed Context (Full Syllabus Coverage)
+-    context = retrieve_distributed_context(course_id, k=4)
++    from ai_engine.utils.optimization import AIContextOptimizer
++    
++    # 1. Retrieve Optimized Context
++    # Limit num_questions to 10
++    num_questions = min(int(num_questions or 5), 10)
++    
++    context = AIContextOptimizer.prepare_context(course_id)
+     
+     if not context:
+-        return []
++        # Fallback to distributed if optimizer fails
++        context = retrieve_distributed_context(course_id, k=4)
++        if not context:
++            return []
+ 
+-    import time
+     seed = uuid.uuid4().hex[:8]
+-    
+     from langchain_core.messages import SystemMessage, HumanMessage
+     
+-    # 2. Setup LLM
++    # 2. Setup LLM (Using lightweight model for speed)
++    model_name = getattr(settings, 'OLLAMA_MODEL_TEXT', 'llama3.2:1b')
+     llm = ChatOllama(
+-        model=settings.OLLAMA_MODEL_TEXT, 
+-        temperature=0.9, # Maximize variety and novelty
++        model=model_name, 
++        temperature=0.7,
+         base_url=settings.OLLAMA_BASE_URL,
+         format="json"
+     )
+     
+     system_instruction = """You are a specialized Educational MCQ Generator. 
+-    Your task is to create high-quality, diverse multiple choice questions based on provided text.
++    Task: Create high-quality, diverse multiple choice questions.
+     STRICT REQUIREMENTS:
+-    1. Output ONLY a JSON object.
+-    2. 'question' MUST be a complete interrogative sentence (min 10 words). DO NOT skip the question.
+-    3. 'options' MUST be a list of EXACTLY 4 distinct, plausible choices.
+-    4. 'correct_answer' MUST be one of the strings in the 'options' list.
+-    5. Avoid repeating the same basic definitions; focus on application and deep concepts."""
++    1. Output ONLY a valid JSON object.
++    2. Max 10 questions.
++    3. Each question: EXACTLY 4 options.
++    4. Explanations: STRICTLY 1 line only.
++    5. Avoid long essays or complex formatting."""
+ 
+-    user_prompt = f"""Generate {num_questions} NEW and UNIQUE MCQs from this text.
+-    Instruction Seed: {seed}
++    user_prompt = f"""Generate {num_questions} NEW and UNIQUE MCQs from the provided text.
++    Seed: {seed}
+ 
+     TEXT:
+     {context}
+@@ -48,10 +57,10 @@ def generate_quiz(course_id, user=None, num_questions=5):
+     {{
+       "questions": [
+         {{
+-          "question": "What specifically happens when...?",
+-          "options": ["...", "...", "...", "..."],
+-          "correct_answer": "...",
+-          "explanation": "...",
++          "question": "Interrogative sentence?",
++          "options": ["A", "B", "C", "D"],
++          "correct_answer": "D",
++          "explanation": "Short 1-2 line explanation.",
+           "difficulty": "Medium"
+         }}
+       ]
+@@ -63,55 +72,125 @@ def generate_quiz(course_id, user=None, num_questions=5):
+             HumanMessage(content=user_prompt)
+         ]
+         response = llm.invoke(messages)
+-        content = response.content
+-        
+-        # Robust Parsing
+-        try:
+-            data = json.loads(content)
+-        except json.JSONDecodeError:
+-            import re
+-            cleaned = re.sub(r'```json\s*', '', content)
+-            cleaned = re.sub(r'```\s*', '', cleaned)
+-            data = json.loads(cleaned)
++        return _process_quiz_response(response.content, course_id, user)
++
++    except Exception as e:
++        print(f"Quiz Generation Error: {e}")
++        return []
++
++def generate_quiz_stream(course_id, user=None, num_questions=5):
++    """
++    Streaming version of quiz generation.
++    Yields questions one by one as they are parsed from the stream.
++    """
++    from ai_engine.utils.optimization import AIContextOptimizer
++    from langchain_community.chat_models import ChatOllama
++    from langchain_core.messages import SystemMessage, HumanMessage
++    
++    num_questions = min(int(num_questions or 5), 10)
++    context = AIContextOptimizer.prepare_context(course_id)
++    
++    model_name = getattr(settings, 'OLLAMA_MODEL_TEXT', 'llama3.2:1b')
++    llm = ChatOllama(
++        model=model_name,
++        temperature=0.7,
++        base_url=settings.OLLAMA_BASE_URL,
++        format="json",
++        timeout=300
++    )
+ 
+-        questions = data.get("questions", [])
++    system_instruction = """You are a specialized Educational MCQ Generator. 
++    1. Output ONLY a valid JSON object.
++    2. Max 10 questions.
++    3. Each question: EXACTLY 4 options.
++    4. Explanations: STRICTLY 1 line only.
++    5. Avoid long essays or complex formatting.
++    6. JSON must have a 'questions' list."""
++    
++    user_prompt = f"""Generate {num_questions} NEW and UNIQUE MCQs from the provided text.
++    TEXT: {context[:4000]}
++    Format: JSON"""
++
++    messages = [SystemMessage(content=system_instruction), HumanMessage(content=user_prompt)]
++    
++    full_content = ""
++    found_questions = []
++
++    for chunk in llm.stream(messages):
++        full_content += chunk.content
+         
+-        formatted_questions = []
+-        for q in questions:
+-            q_text = q.get("question", "").strip()
+-            opts = q.get("options", [])
+-            
+-            # VALIDATION: Discard incomplete or broken questions
+-            if not q_text or len(q_text) < 15: continue 
+-            if len(opts) < 4: continue
++        # Simple extraction strategy for streaming:
++        # Check if we have a complete question object within the 'questions' array
++        try:
++            # Clean up potential markdown blocks
++            clean_json = full_content.strip()
++            if clean_json.startswith("```json"):
++                clean_json = clean_json[7:]
++            if clean_json.endswith("```"):
++                clean_json = clean_json[:-3]
+             
+-            # Hashing for repetition prevention
+-            q_hash = hashlib.sha256(q_text.lower().encode()).hexdigest()
++            # Robust parsing for partial questions
++            # We look for the pattern of a finished object in the list
++            # ijson is good for this, but let's try a simpler approach if we can find a closed object
+             
+-            # Check history if user is provided
+-            if user and StudentQuestionHistory.objects.filter(user=user, course_id=course_id, question_hash=q_hash).exists():
+-                continue
+-
+-            correct = q.get("correct_answer") or q.get("answer")
++            # Extract questions list content
++            start_idx = clean_json.find('"questions": [')
++            if start_idx == -1: continue
+             
+-            try:
+-                correct_index = opts.index(correct)
+-            except (ValueError, TypeError):
+-                correct_index = 0
++            questions_part = clean_json[start_idx + 14:]
+             
+-            formatted_questions.append({
+-                "id": str(uuid.uuid4()),
+-                "question": q_text,
+-                "options": opts[:4], # Ensure exactly 4
+-                "correct_answer": correct,
+-                "correct_index": correct_index, 
+-                "explanation": q.get("explanation", "Based on course material analysis."),
+-                "difficulty": q.get("difficulty", "Medium"),
+-                "hash": q_hash
+-            })
++            # Find complete { ... } blocks
++            matches = re.findall(r'\{[^{}]*\}', questions_part)
+             
+-        return formatted_questions
++            for match in matches:
++                try:
++                    q_data = json.loads(match)
++                    q_text = q_data.get("question")
++                    if q_text and q_text not in [q['question'] for q in found_questions]:
++                        processed = _process_quiz_response(json.dumps({"questions": [q_data]}), course_id, user)
++                        if processed:
++                            found_questions.append(processed[0])
++                            yield processed[0]
++                except:
++                    continue
++        except:
++            continue
+ 
+-    except Exception as e:
+-        print(f"Quiz Generation Error: {e}")
+-        return []
++def _process_quiz_response(content, course_id, user):
++    """Helper to parse and validate quiz JSON"""
++    try:
++        data = json.loads(content)
++    except json.JSONDecodeError:
++        cleaned = re.sub(r'```json\s*', '', content)
++        cleaned = re.sub(r'```\s*', '', cleaned)
++        data = json.loads(cleaned)
++
++    questions = data.get("questions", [])
++    formatted_questions = []
++    
++    for q in questions:
++        q_text = q.get("question", "").strip()
++        opts = q.get("options", [])
++        if not q_text or len(opts) < 4: continue
++        
++        q_hash = hashlib.sha256(q_text.lower().encode()).hexdigest()
++        if user and StudentQuestionHistory.objects.filter(user=user, course_id=course_id, question_hash=q_hash).exists():
++            continue
++
++        correct = q.get("correct_answer") or q.get("answer")
++        try:
++            correct_index = opts.index(correct)
++        except (ValueError, TypeError):
++            correct_index = 0
++        
++        formatted_questions.append({
++            "id": str(uuid.uuid4()),
++            "question": q_text,
++            "options": opts[:4],
++            "correct_answer": correct,
++            "correct_index": correct_index, 
++            "explanation": q.get("explanation", "Short explanation based on material."),
++            "difficulty": q.get("difficulty", "Medium"),
++            "hash": q_hash
++        })
++    return formatted_questions
+diff --git a/core/ai/services.py b/core/ai/services.py
+index d7d1b4d..bd273a3 100644
+--- a/core/ai/services.py
++++ b/core/ai/services.py
+@@ -176,20 +176,37 @@ class CourseContextEngine:
+     @staticmethod
+     def consolidate_course_notes(course_id: int):
+         """
+-        Gathers all extracted text from course materials and consolidates 
+-        into the CourseNotes model for the course.
++        Gathers all extracted text from course materials, user notes, and images,
++        and consolidates into the CourseNotes model for the course.
+         """
+         try:
+             course = Course.objects.get(id=course_id)
+             materials = course.course_materials.all().order_by('created_at')
+             
+             consolidated_text = []
++            
++            # 1. Base Materials
+             for mat in materials:
+                 if mat.extracted_text:
+                     consolidated_text.append(f"--- Document: {mat.file.name} ---")
+                     consolidated_text.append(mat.extracted_text)
+                     consolidated_text.append("\n")
+             
++            # 2. User Notes & Image OCR
++            from notes.models import Note
++            user_notes = Note.objects.filter(course=course).prefetch_related('images')
++            if user_notes.exists():
++                consolidated_text.append("--- USER ADDED NOTES & HANDWRITTEN CONTENT ---")
++                for note in user_notes:
++                    consolidated_text.append(f"Note Topic: {note.topic}")
++                    consolidated_text.append(note.content)
++                    
++                    # Append OCR text from images
++                    for img in note.images.all():
++                        if img.extracted_text:
++                            consolidated_text.append(f"[Contained in Notebook Image]: {img.extracted_text}")
++                    consolidated_text.append("\n")
++
+             from course.models import CourseNotes
+             notes, _ = CourseNotes.objects.get_or_create(course=course)
+             notes.extracted_text = "\n".join(consolidated_text)
+@@ -232,12 +249,13 @@ class CourseContextEngine:
+             context_text, system_prompt, is_course_aware = get_hybrid_response_context(prompt, course_id)
+         
+         # 2. Query Ollama with dynamic model and speed constraints
+-        return CourseContextEngine._query_ollama(
+-            system_prompt, 
+-            f"CONTEXT: {context_text}\n\nQUESTION: {prompt}",
+-            num_predict=500 if specialized_mode == 'summary' else 400, # Reduced for speed
+-            top_k=20
+-        )
++    @staticmethod
++    def ask_course_ai_raw(user_msg: str, system_prompt: str = "You are a helpful assistant.") -> str:
++        """
++        Directly queries the AI without course-specific retrieval.
++        Useful for summarization or simple transformations.
++        """
++        return CourseContextEngine._query_ollama(system_prompt, user_msg)
+ 
+     @staticmethod
+     def _query_ollama(system: str, user_msg: str, **kwargs) -> str:
+@@ -260,7 +278,7 @@ class CourseContextEngine:
+                     "stream": False,
+                     "options": options
+                 },
+-                timeout=120
++                timeout=300
+             )
+             response.raise_for_status()
+             return response.json().get('response', "Error: Empty response from AI.")
+diff --git a/core/context_processors.py b/core/context_processors.py
+index e4f8c80..0e74d00 100644
+--- a/core/context_processors.py
++++ b/core/context_processors.py
+@@ -8,9 +8,9 @@ def course_context(request):
+     if request.user.is_authenticated:
+         # Get all courses for the dropdown
+         if request.user.is_staff or request.user.is_superuser:
+-            all_user_courses = Course.objects.all()
++            all_user_courses = Course.objects.filter(is_deleted=False)
+         else:
+-            all_user_courses = Course.objects.filter(user=request.user)
++            all_user_courses = Course.objects.filter(user=request.user, is_deleted=False)
+             
+         # Get active course using centralized manager
+         active_course = ActiveCourseManager.get_active_course(request)
+diff --git a/course/models.py b/course/models.py
+index a703363..e325704 100644
+--- a/course/models.py
++++ b/course/models.py
+@@ -29,6 +29,7 @@ class Course(models.Model):
+     
+     page_count = models.PositiveIntegerField(default=0)
+     is_active = models.BooleanField(default=False)
++    is_deleted = models.BooleanField(default=False)
+     created_at = models.DateTimeField(auto_now_add=True)
+     updated_at = models.DateTimeField(auto_now=True)
+ 
+diff --git a/course/templates/course/course_dashboard.html b/course/templates/course/course_dashboard.html
+index 336961e..f39ea40 100644
+--- a/course/templates/course/course_dashboard.html
++++ b/course/templates/course/course_dashboard.html
+@@ -22,8 +22,8 @@
+             <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data"
+                 id="addMoreForm">
+                 {% csrf_token %}
+-                <input type="file" name="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx"
+-                    onchange="this.form.submit()" style="display: none;">
++                <input type="file" name="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
++                    multiple onchange="handleDashboardUpload(this)" style="display: none;">
+                 <button type="button" class="btn-add-notes" onclick="document.getElementById('fileInput').click();">
+                     <i class="fas fa-plus"></i> Add Notes
+                 </button>
+@@ -159,15 +159,31 @@
+             <h2>Upload Your Study Notes</h2>
+             <p>Add PDFs, PPTs or documents. All quizzes and AI answers will be generated from these notes.</p>
+ 
+-            <div class="upload-area" id="dropZone" onclick="document.getElementById('onboardingInput').click();">
+-                <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data">
++            <div class="upload-area" id="dropZone" onclick="document.getElementById('onboardingInput').click();"
++                style="min-height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
++                <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data"
++                    id="onboardingForm">
+                     {% csrf_token %}
+-                    <input type="file" name="file" id="onboardingInput" accept=".pdf,.doc,.docx,.ppt,.pptx"
+-                        onchange="this.form.submit()" style="display:none;">
+-                    <button type="button" class="upload-btn">
+-                        <i class="fas fa-cloud-upload-alt"></i> Upload Notes
++                    <input type="file" name="file" id="onboardingInput"
++                        accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" multiple
++                        onchange="handleDashboardUpload(this)" style="display:none;">
++
++                    <div id="uploadPlaceholder">
++                        <i class="fas fa-cloud-upload-alt"
++                            style="font-size: 3rem; color: var(--primary); margin-bottom: 1.5rem;"></i>
++                        <h3 style="color: white; margin-bottom: 0.5rem;">Click or Drag Files Here</h3>
++                        <p class="supported-text">Support: PDF, PPT, Word, JPG, PNG</p>
++                    </div>
++
++                    <!-- Dashboard Preview Grid -->
++                    <div id="dashboardPreview"
++                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 1rem; width: 100%; margin-top: 1rem;">
++                    </div>
++
++                    <button type="submit" id="submitAllBtn" class="btn btn-primary"
++                        style="display: none; margin-top: 2rem; width: 100%; border-radius: 12px; padding: 1rem;">
++                        <i class="fas fa-rocket"></i> Start Processing
+                     </button>
+-                    <p class="supported-text">Supported formats: PDF, Word, PowerPoint</p>
+                 </form>
+             </div>
+         </div>
+@@ -178,19 +194,56 @@
+ <script>
+ 
+ 
++    function handleDashboardUpload(input) {
++        const preview = document.getElementById('dashboardPreview');
++        const placeholder = document.getElementById('uploadPlaceholder');
++        const submitBtn = document.getElementById('submitAllBtn');
++        const files = input.files;
++
++        if (files.length > 0) {
++            if (placeholder) placeholder.style.display = 'none';
++            if (submitBtn) submitBtn.style.display = 'block';
++            if (preview) {
++                preview.innerHTML = '';
++                [...files].forEach(file => {
++                    const isImage = file.type.startsWith('image/');
++                    const item = document.createElement('div');
++                    item.style.cssText = 'background: rgba(255,255,255,0.05); border-radius: 10px; padding: 0.5rem; position: relative; font-size: 0.75rem; text-align: center;';
++
++                    if (isImage) {
++                        const reader = new FileReader();
++                        reader.onload = e => {
++                            item.innerHTML = `
++                                <img src="${e.target.result}" style="width: 100%; height: 60px; object-fit: cover; border-radius: 6px; margin-bottom: 0.5rem;">
++                                <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-light);">${file.name}</div>
++                            `;
++                        };
++                        reader.readAsDataURL(file);
++                    } else {
++                        item.innerHTML = `
++                            <div style="height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--primary);">
++                                <i class="fas ${file.name.endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-word'}"></i>
++                            </div>
++                            <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-light);">${file.name}</div>
++                        `;
++                    }
++                    preview.appendChild(item);
++                });
++            } else {
++                // If on active workspace (no onboarding card), just submit
++                input.form.submit();
++            }
++        }
++    }
++
+     const dropZone = document.getElementById('dropZone');
+     const onboardingInput = document.getElementById('onboardingInput');
+ 
+     if (dropZone) {
+         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+-            dropZone.addEventListener(eventName, preventDefaults, false);
++            dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+         });
+ 
+-        function preventDefaults(e) {
+-            e.preventDefault();
+-            e.stopPropagation();
+-        }
+-
+         ['dragenter', 'dragover'].forEach(eventName => {
+             dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
+         });
+@@ -199,14 +252,10 @@
+             dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
+         });
+ 
+-        dropZone.addEventListener('drop', handleDrop, false);
+-
+-        function handleDrop(e) {
+-            const dt = e.dataTransfer;
+-            const files = dt.files;
+-            onboardingInput.files = files;
+-            onboardingInput.form.submit();
+-        }
++        dropZone.addEventListener('drop', e => {
++            onboardingInput.files = e.dataTransfer.files;
++            handleDashboardUpload(onboardingInput);
++        }, false);
+     }
+ </script>
+ {% endblock %}
+\ No newline at end of file
+diff --git a/course/templates/course/course_list.html b/course/templates/course/course_list.html
+index 3c7877b..3fa75b7 100644
+--- a/course/templates/course/course_list.html
++++ b/course/templates/course/course_list.html
+@@ -26,7 +26,8 @@
+         <!-- Course Grid -->
+         <div class="course-grid">
+             {% for course in courses %}
+-            <div class="course-card-premium" onclick="window.location='{% url 'course:course_dashboard' course.id %}'">
++            <div class="course-card-premium" data-id="{{ course.id }}"
++                onclick="window.location='{% url 'course:course_dashboard' course.id %}'">
+                 <div class="card-body">
+                     <div class="card-top">
+                         <div class="course-icon-badge">
+@@ -74,8 +75,8 @@
+                     </div>
+ 
+                     <!-- Delete Action (Absolute) -->
+-                    <a href="{% url 'course:delete' course.id %}" class="btn-delete-card"
+-                        onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this course?')">
++                    <a href="javascript:void(0)" class="btn-delete-card"
++                        onclick="event.stopPropagation(); window.handleCourseDeletion('{{ course.id }}', '{{ course.title|escapejs }}')">
+                         <i class="fas fa-trash-can"></i>
+                     </a>
+                 </div>
+diff --git a/course/urls.py b/course/urls.py
+index 358bcf9..60c9643 100644
+--- a/course/urls.py
++++ b/course/urls.py
+@@ -22,4 +22,5 @@ urlpatterns = [
+     path('unit/<int:unit_id>/toggle-completion/', views.toggle_unit_completion, name='toggle_unit_completion'),
+     path('unit/<int:unit_id>/chat/', views.unit_ai_chat, name='unit_ai_chat'),
+     path('api/search/', views.unit_search_api, name='search_api'),
++    path('api/user/courses/', views.user_courses_api, name='user_courses_api'),
+ ]
+diff --git a/course/utils/extraction.py b/course/utils/extraction.py
+index a639ee9..f6b38ac 100644
+--- a/course/utils/extraction.py
++++ b/course/utils/extraction.py
+@@ -29,7 +29,7 @@ def extract_text_from_image(file_path):
+             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+         
+         response = requests.post(
+-            "http://localhost:11434/api/generate",
++            f"{settings.OLLAMA_BASE_URL}/api/generate",
+             json={
+                 "model": getattr(settings, "OLLAMA_MODEL_VISION", "llava:latest"),
+                 "prompt": "Transcribe all text from this image accurately. Only return the transcribed text.",
+diff --git a/course/views.py b/course/views.py
+index 51f7164..1e6642c 100644
+--- a/course/views.py
++++ b/course/views.py
+@@ -14,9 +14,9 @@ from ai_engine.vector_store import create_vector_db
+ @login_required
+ def course_list(request):
+     if request.user.is_superuser or request.user.is_staff:
+-        courses = Course.objects.all()
++        courses = Course.objects.filter(is_deleted=False)
+     else:
+-        courses = request.user.courses.all()
++        courses = request.user.courses.filter(is_deleted=False)
+     
+     # Add progress data to each course
+     for course in courses:
+@@ -66,24 +66,29 @@ def course_dashboard(request, course_id):
+         'has_knowledge': has_knowledge
+     })
+ 
++@login_required
+ @login_required
+ def upload_notes(request, course_id):
+     course = get_object_or_404(Course, id=course_id, user=request.user)
+     if request.method == "POST":
+-        file = request.FILES.get("file")
+-        if file:
++        files = request.FILES.getlist("file")
++        for file in files:
+             ext = file.name.split('.')[-1].lower()
+             file_type = 'text'
+             if ext in ['pdf']: file_type = 'pdf'
+             elif ext in ['ppt', 'pptx']: file_type = 'ppt'
+-            elif ext in ['jpg', 'jpeg', 'png', 'webp']: file_type = 'image'
++            elif ext in ['jpg', 'jpeg', 'png', 'webp', 'gif']: file_type = 'image'
+             
+-            # Create the material - automated processing in models.py handles the rest
++            # Create the material - automated processing in models.py handles the rest (OCR, indexing)
+             CourseMaterial.objects.create(
+                 course=course,
+                 file=file,
+                 file_type=file_type
+             )
++        
++        # Consolidate context after all new materials are added
++        from core.ai.services import CourseContextEngine
++        CourseContextEngine.consolidate_course_notes(course.id)
+                 
+     return redirect('course:course_dashboard', course_id=course.id)
+ 
+@@ -456,7 +461,7 @@ def course_summary(request, course_id):
+     })
+ @login_required
+ def course_delete(request, course_id):
+-    """Securely delete a course and all its data"""
++    """Securely soft-delete a course and all its data"""
+     course = get_object_or_404(Course, id=course_id)
+     
+     # Ownership verification
+@@ -464,8 +469,37 @@ def course_delete(request, course_id):
+         return redirect('course:list')
+     
+     title = course.title
+-    course.delete()
++    # Soft Delete
++    course.is_deleted = True
++    course.is_active = False
++    course.save()
++    
++    # Reset active course in session if it was the one deleted
++    if request.session.get('active_course_id') == str(course_id):
++        request.session['active_course_id'] = None
+     
+     from django.contrib import messages
+-    messages.success(request, f"Course '{title}' has been successfully deleted.")
++    messages.success(request, f"Course '{title}' has been successfully removed.")
++    
++    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
++        return JsonResponse({'status': 'success', 'message': f"Course '{title}' deleted."})
++        
+     return redirect('course:list')
++
++@login_required
++def user_courses_api(request):
++    """Returns dynamic list of courses for the active user"""
++    if request.user.is_staff or request.user.is_superuser:
++        courses = Course.objects.filter(is_deleted=False)
++    else:
++        courses = Course.objects.filter(user=request.user, is_deleted=False)
++    
++    data = []
++    for c in courses.order_by('title'):
++        data.append({
++            'id': c.id,
++            'title': c.title,
++            'level': c.get_level_display(),
++            'url': f"/course/{c.id}/"
++        })
++    return JsonResponse({'status': 'success', 'courses': data})
+diff --git a/flashcard_generator/services/dynamic_gen.py b/flashcard_generator/services/dynamic_gen.py
+index 3915e1f..73ea373 100644
+--- a/flashcard_generator/services/dynamic_gen.py
++++ b/flashcard_generator/services/dynamic_gen.py
+@@ -26,18 +26,13 @@ def generate_flashcards_dynamic(user, course_id, count=8):
+         logger.info(f"Returning cached flashcards for User {user.id}, Course {course_id}")
+         return cached_cards
+ 
+-    # 1. Faster Context Retrieval (Similarity instead of MMR for speed)
+-    from ai_engine.retriever import retrieve_context
+-    from course.models import Course
+-    course = Course.objects.filter(id=course_id).first()
++    from ai_engine.utils.optimization import AIContextOptimizer
+     
+-    # Fast Path: If material is short, skip RAG and use full text directly
+-    if course and course.extracted_text and len(course.extracted_text) < 4000:
+-        logger.info(f"Gen: Fast Path triggered for Course {course_id} (short material)")
+-        context = course.extracted_text
+-    else:
+-        logger.info(f"Gen: Using standard similarity retrieval for speed.")
+-        context = retrieve_context("key concepts and definitions", course_id, k=5)
++    # 1. Faster Context Retrieval
++    context = AIContextOptimizer.prepare_context(course_id)
++    
++    if not context or len(context.strip()) < 100:
++        return [{"error": "AI could not find enough context. Please ensure your material contains clear academic concepts."}]
+     
+     # ... Validation remains mostly same ...
+     total_text_len = len(course.extracted_text or "") if course else 0
+@@ -47,11 +42,12 @@ def generate_flashcards_dynamic(user, course_id, count=8):
+ 
+     # 3. Optimized Prompt & Model Constraints
+     prompt = f"""
+-    Create 8 educational flashcards based ONLY on this context. 
+-    Format: JSON Array of {{"front": "...", "back": "..."}}.
++    Create 8-10 educational flashcards based ONLY on this context. 
++    Format: JSON Array of {{"front": "Term", "back": "Short Definition"}}.
++    Definitions must be 1-2 lines only.
+     
+     Context:
+-    {context[:3000]}
++    {context}
+     """
+ 
+     # 4. Call LLM with strict limits for speed
+diff --git a/flashcard_generator/services/flashcard_ai.py b/flashcard_generator/services/flashcard_ai.py
+index ad4f519..1651b79 100644
+--- a/flashcard_generator/services/flashcard_ai.py
++++ b/flashcard_generator/services/flashcard_ai.py
+@@ -179,31 +179,35 @@ def generate_flashcards(input_text=None, file_path=None, difficulty="Medium", co
+     """
+     Generates flashcards using Course-Aware RAG and OpenAI.
+     """
+-    content = input_text if input_text else ""
++    from ai_engine.utils.optimization import AIContextOptimizer
+     
+-    # 1. RAG Context Retrieval
+-    if course_id:
+-        # We use a broad query to get key concepts
+-        query = "important definitions key concepts exam questions"
+-        if input_text: query = input_text
+-        
+-        relevant_context = retrieve_context(query, course_id, k=8)
+-        if relevant_context:
+-            content += f"\n\nContext from Course Material:\nR{relevant_context}"
+-
+-    # 2. Extract Text from File (if any)
++    # 1. Gather Context
++    content = input_text if input_text else ""
+     if file_path:
+         file_text = extract_text(file_path)
+         if file_text: content += "\n" + file_text
+ 
++    # 2. Optimized Context Preparation
++    if course_id:
++        optimized_context = AIContextOptimizer.prepare_context(course_id)
++        if optimized_context:
++            content = optimized_context + "\n\nQuery Context: " + content
++    
++    # Final trim
++    content = content[:8000] # Safety cap
++
+     if len(content.strip()) < 10:
+         return []
+ 
+     # 3. Call AI (Ollama)
+     from langchain_community.chat_models import ChatOllama
+     
++    # 3. Call AI (Ollama)
++    from langchain_community.chat_models import ChatOllama
++    
++    model_name = getattr(settings, 'OLLAMA_MODEL_TEXT', 'llama3.2:1b')
+     llm = ChatOllama(
+-        model=settings.OLLAMA_MODEL_TEXT, # e.g. "mistral" or "llama3"
++        model=model_name,
+         temperature=0.3,
+         base_url=settings.OLLAMA_BASE_URL,
+         format="json" 
+@@ -211,21 +215,21 @@ def generate_flashcards(input_text=None, file_path=None, difficulty="Medium", co
+     
+     prompt = f"""
+     You are an expert Flashcard Generator.
+-    Task: Generate 10-15 high-quality flashcards based on the provided text.
++    Task: Generate 8-10 high-quality flashcards based on the provided text.
+     
+     Content:
+-    {content[:15000]} 
++    {content} 
+ 
+     Rules:
+-    1. Focus on definitions, key concepts, and exam-relevant facts.
+-    2. Difficulty: {difficulty}
++    1. Focus on definitions and key concepts.
++    2. Definitions/Back: STRICTLY 1-2 lines only.
+     3. JSON Output format:
+     {{
+         "flashcards": [
+             {{
+-                "front": "Question or Term",
+-                "back": "Answer or Definition",
+-                "exam_tip": "One short tip (optional)",
++                "front": "Term",
++                "back": "Short Definition",
++                "exam_tip": "Optional 1-line tip",
+                 "difficulty": "{difficulty}"
+             }}
+         ]
+@@ -271,10 +275,11 @@ def explain_card_content(card_front, card_back):
+         messages = [{'role': 'user', 'content': prompt}]
+         
+         # Try a quick model
++        client = ollama.Client(host=getattr(settings, 'OLLAMA_BASE_URL', 'http://127.0.0.1:11434'))
+         try:
+-            response = ollama.chat(model="llama3.2", messages=messages)
++            response = client.chat(model="llama3.2", messages=messages)
+         except:
+-            response = ollama.chat(model="llama3", messages=messages)
++            response = client.chat(model="llama3", messages=messages)
+ 
+         return response['message']['content']
+     except Exception as e:
+@@ -317,19 +322,17 @@ def generate_quiz_from_cards(cards_list):
+ 
+     try:
+         # Try prioritized models, prefer faster ones for quiz
+-        models_to_try = ["llama3.2:1b", "llama3.2", "llama3"]
+-        response = None
+-        
++        client = ollama.Client(host=getattr(settings, 'OLLAMA_BASE_URL', 'http://127.0.0.1:11434'))
+         for model in models_to_try:
+             try:
+                 # Try with format='json' first
+                 print(f"Attempting quiz gen with {model} (JSON mode)...")
+-                response = ollama.chat(model=model, messages=messages, format='json')
++                response = client.chat(model=model, messages=messages, format='json')
+                 break
+             except Exception as e:
+                 print(f"JSON mode failed for {model}: {e}. Retrying standard mode...")
+                 try:
+-                    response = ollama.chat(model=model, messages=messages)
++                    response = client.chat(model=model, messages=messages)
+                     break
+                 except:
+                     continue
+diff --git a/flashcard_generator/templates/flashcard_generator/index.html b/flashcard_generator/templates/flashcard_generator/index.html
+index 41b0562..ca207db 100644
+--- a/flashcard_generator/templates/flashcard_generator/index.html
++++ b/flashcard_generator/templates/flashcard_generator/index.html
+@@ -324,31 +324,34 @@
+         <script>
+             async function generateFromCourse(courseId) {
+                 const loading = document.getElementById('loadingIndicator');
+-                const modal = document.getElementById('createModal');
+ 
+                 // Show modal to show loading state
+                 openModal();
+                 loading.style.display = 'block';
+-                loading.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Reading syllabus and generating cards...';
++                loading.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Initializing Course AI...';
+ 
+                 try {
+-                    const res = await fetch(`/flashcards/api/generate_from_course/${courseId}/`, {
++                    const formData = new FormData();
++                    formData.append('course_id', courseId);
++                    formData.append('title', 'Course Revision');
++
++                    const res = await fetch(`/flashcards/api/generate-task/`, {
+                         method: 'POST',
+                         headers: {
+                             'X-CSRFToken': getCookie('csrftoken')
+-                        }
++                        },
++                        body: formData
+                     });
++
+                     const data = await res.json();
+-                    if (data.status === 'success') {
+-                        window.location.href = `/flashcards/study/${data.deck_id}/`;
++                    if (data.status === 'started') {
++                        pollTask(data.task_id);
+                     } else {
+-                        alert('Error: ' + data.error);
+-                        loading.style.display = 'none';
+-                        closeModal();
++                        throw new Error(data.error || 'Failed to start task');
+                     }
+                 } catch (err) {
+                     console.error(err);
+-                    alert('An error occurred.');
++                    alert('An error occurred: ' + err.message);
+                     loading.style.display = 'none';
+                     closeModal();
+                 }
+@@ -465,44 +468,73 @@
+         form.onsubmit = async (e) => {
+             e.preventDefault();
+             loading.style.display = 'block';
+-
+-            // Show a "still working" message after 10 seconds
+-            const longWaitTimeout = setTimeout(() => {
+-                loading.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Still generating... AI is thinking hard (this can take up to 60s).';
+-            }, 10000);
++            form.querySelector('button[type="submit"]').disabled = true;
+ 
+             const formData = new FormData(form);
+ 
+             try {
+-                const res = await fetch("{% url 'flashcard_generator:generate_deck' %}", {
++                const res = await fetch("{% url 'flashcard_generator:start_flashcard_task' %}", {
+                     method: 'POST',
+-                    body: formData
++                    body: formData,
++                    headers: {
++                        'X-CSRFToken': getCookie('csrftoken')
++                    }
+                 });
+ 
+-                clearTimeout(longWaitTimeout);
+-
+-                const contentType = res.headers.get("content-type");
+-                if (!contentType || !contentType.includes("application/json")) {
+-                    throw new Error("Server returned non-JSON response (possibly an error page).");
+-                }
+-
+                 const data = await res.json();
+-
+-                if (data.status === 'success') {
+-                    // Redirect to the study page for the new deck
+-                    window.location.href = `/flashcards/study/${data.deck_id}/`;
++                if (data.status === 'started') {
++                    pollTask(data.task_id);
+                 } else {
+-                    alert('Error: ' + (data.error || 'Unknown error occurred'));
++                    throw new Error(data.error || 'Failed to start generation');
+                 }
+             } catch (err) {
+                 console.error(err);
+-                alert('An error occurred: ' + err.message + '. Please check the console.');
+-            } finally {
++                alert('An error occurred: ' + err.message);
+                 loading.style.display = 'none';
+-                loading.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Generating your cards... This may take a moment.'; // Reset text
++                form.querySelector('button[type="submit"]').disabled = false;
+             }
+         };
+ 
++        async function pollTask(taskId) {
++            const pollStartTime = Date.now();
++            const POLL_TIMEOUT = 60000; // 60 seconds
++
++            const poller = setInterval(async () => {
++                // Check if we passed the 60s UI limit
++                if (Date.now() - pollStartTime > POLL_TIMEOUT) {
++                    clearInterval(poller);
++                    loading.innerHTML = '<span style="color: #ef4444;"><i class="ph ph-warning"></i> Generation is taking longer than expected. Please check back later.</span>';
++                    setTimeout(() => {
++                        loading.style.display = 'none';
++                        form.querySelector('button[type="submit"]').disabled = false;
++                        closeModal();
++                    }, 5000);
++                    return;
++                }
++
++                try {
++                    const res = await fetch(`/flashcards/api/task-status/${taskId}/`);
++                    const data = await res.json();
++
++                    if (data.status === 'completed') {
++                        clearInterval(poller);
++                        loading.innerHTML = '<i class="ph ph-check-circle"></i> Completed! Redirecting...';
++                        window.location.href = `/flashcards/study/${data.deck_id}/`;
++                    } else if (data.status === 'error') {
++                        clearInterval(poller);
++                        alert("AI Error: " + data.message);
++                        loading.style.display = 'none';
++                        form.querySelector('button[type="submit"]').disabled = false;
++                    } else {
++                        // Still processing
++                        loading.innerHTML = `<i class="ph ph-spinner ph-spin"></i> AI is generating cards... (${Math.round((Date.now() - pollStartTime) / 1000)}s)`;
++                    }
++                } catch (err) {
++                    console.error("Polling error:", err);
++                }
++            }, 3000); // Poll every 3 seconds for snappy feel
++        }
++
+         // Close modal on click outside
+         modal.addEventListener('click', (e) => {
+             if (e.target === modal) closeModal();
+diff --git a/flashcard_generator/urls.py b/flashcard_generator/urls.py
+index b720fd3..31cddc9 100644
+--- a/flashcard_generator/urls.py
++++ b/flashcard_generator/urls.py
+@@ -7,7 +7,8 @@ urlpatterns = [
+     path('', views.flashcard_home, name='flashcard_home'),
+     path('study/<int:deck_id>/', views.study_deck_view, name='study_deck'),
+     path('api/generate/', views.generate_deck_api, name='generate_deck'),
+-    path('api/generate/', views.generate_deck_api, name='generate_deck_api'),
++    path('api/generate-task/', views.start_flashcard_deck_task, name='start_flashcard_task'),
++    path('api/task-status/<str:task_id>/', views.check_flashcard_task_status, name='check_flashcard_task_status'),
+     path('api/deck/<int:deck_id>/', views.get_deck_api, name='get_deck_api'),
+     path('api/card/<int:card_id>/progress/', views.update_card_progress, name='update_card_progress'),
+     path('api/card/<int:card_id>/explain/', views.explain_card_api, name='explain_card'),
+diff --git a/flashcard_generator/views.py b/flashcard_generator/views.py
+index b0103a0..de4cf4a 100644
+--- a/flashcard_generator/views.py
++++ b/flashcard_generator/views.py
+@@ -16,6 +16,9 @@ from course.services.state import ActiveCourseManager
+ from core.ai.services import CourseContextEngine
+ from .services.dynamic_gen import generate_flashcards_dynamic
+ import logging
++import threading
++import uuid
++from django.core.cache import cache
+ logger = logging.getLogger(__name__)
+ 
+ def flashcard_home(request):
+@@ -131,21 +134,9 @@ def get_deck_api(request, deck_id):
+     Implements Adaptive Logic: Prioritizes cards due for review.
+     """
+     deck = get_object_or_404(FlashcardDeck, id=deck_id)
+-    
+-    # Adaptive Strategy:
+-    # 1. Get cards due for review (next_review_date <= now)
+-    # 2. Then get new cards (box=1, review_count=0)
+-    # 3. Then get others
+-    
+     now = timezone.now()
+     due_cards = deck.cards.filter(next_review_date__lte=now).order_by('next_review_date')
+     other_cards = deck.cards.filter(next_review_date__gt=now).order_by('next_review_date')
+-    
+-    # Combine (Due first)
+-    # We serialize them all, frontend can handle the focused session flow, 
+-    # but strictly speaking we might want to only send a batch. 
+-    # For this app, sending all is fine as decks aren't massive.
+-    
+     all_cards = list(due_cards) + list(other_cards)
+     
+     data = [{
+@@ -160,6 +151,95 @@ def get_deck_api(request, deck_id):
+     } for c in all_cards]
+     
+     return JsonResponse({"title": deck.title, "cards": data})
++
++@csrf_exempt
++@login_required
++def start_flashcard_deck_task(request):
++    """
++    Starts a background task for flashcard generation.
++    Returns a task_id for polling.
++    """
++    if request.method == "POST":
++        try:
++            title = request.POST.get("title", "New Deck")
++            difficulty = request.POST.get("difficulty", "Medium")
++            text_input = request.POST.get("text_input", "")
++            course_id = request.POST.get("course_id")
++            
++            uploaded_file = request.FILES.get("file")
++            file_path = None
++            if uploaded_file:
++                fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'uploads'))
++                filename = fs.save(uploaded_file.name, uploaded_file)
++                file_path = fs.path(filename)
++
++            task_id = str(uuid.uuid4())
++            cache.set(f"flash_task_{task_id}", {"status": "processing", "progress": 10}, 600)
++
++            def run_gen():
++                try:
++                    # 60s Global Timeout simulation/limit is handled by model constraints + prompt
++                    # but we can wrap it here
++                    cards_data = generate_flashcards(text_input, file_path, difficulty, course_id=course_id)
++                    
++                    if not cards_data:
++                        cache.set(f"flash_task_{task_id}", {
++                            "status": "error", 
++                            "message": "AI could not find enough context or failed to generate cards."
++                        }, 600)
++                        return
++
++                    # Save to DB
++                    deck = FlashcardDeck.objects.create(title=title, difficulty=difficulty)
++                    if course_id:
++                        deck.course_id = course_id
++                        deck.save()
++
++                    count = 0
++                    for card in cards_data:
++                        if 'front' in card and 'back' in card:
++                            Flashcard.objects.create(
++                                deck=deck,
++                                front=card['front'],
++                                back=card['back'],
++                                difficulty=card.get('difficulty', difficulty),
++                                card_type=card.get('type', 'QA'),
++                                exam_tip=card.get('exam_tip', "")
++                            )
++                            count += 1
++                    
++                    if count == 0:
++                        deck.delete()
++                        cache.set(f"flash_task_{task_id}", {"status": "error", "message": "No valid cards parsed."}, 600)
++                    else:
++                        cache.set(f"flash_task_{task_id}", {
++                            "status": "completed", 
++                            "deck_id": deck.id, 
++                            "count": count
++                        }, 600)
++
++                except Exception as ex:
++                    logger.error(f"Task Gen Error: {ex}")
++                    cache.set(f"flash_task_{task_id}", {"status": "error", "message": str(ex)}, 600)
++
++            thread = threading.Thread(target=run_gen)
++            thread.start()
++
++            return JsonResponse({"status": "started", "task_id": task_id})
++
++        except Exception as e:
++            return JsonResponse({"error": str(e)}, status=500)
++    return JsonResponse({"error": "Invalid method"}, status=405)
++
++def check_flashcard_task_status(request, task_id):
++    """
++    API endpoint to poll for flashcard task status.
++    """
++    status_data = cache.get(f"flash_task_{task_id}")
++    if not status_data:
++        return JsonResponse({"status": "error", "message": "Task not found or expired."}, status=404)
++    
++    return JsonResponse(status_data)
+     
+ @csrf_exempt
+ def update_card_progress(request, card_id):
+diff --git a/learnbridge/settings.py b/learnbridge/settings.py
+index 52f665e..2dfa094 100644
+--- a/learnbridge/settings.py
++++ b/learnbridge/settings.py
+@@ -218,7 +218,7 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
+ LOGIN_URL = '/accounts/login/'
+ 
+ # AI and Ollama Configuration
+-OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
++OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://127.0.0.1:11434')
+ OLLAMA_MODEL_TEXT = os.getenv('OLLAMA_MODEL_TEXT', 'llama3.2:1b')
+ OLLAMA_MODEL_VISION = os.getenv('OLLAMA_MODEL_VISION', 'llava:latest')
+ OLLAMA_MODEL_EMBED = os.getenv('OLLAMA_MODEL_EMBED', 'llama3.2:1b')
+diff --git a/notes/models.py b/notes/models.py
+index 7c30468..ecba1c0 100644
+--- a/notes/models.py
++++ b/notes/models.py
+@@ -1,8 +1,10 @@
+ from django.db import models
+ from django.contrib.auth.models import User
++import os
+ 
+ class Note(models.Model):
+     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notes')
++    course = models.ForeignKey('course.Course', on_delete=models.CASCADE, related_name='user_notes', null=True, blank=True)
+     topic = models.CharField(max_length=200)
+     content = models.TextField()
+     is_ai_generated = models.BooleanField(default=True)
+@@ -14,3 +16,22 @@ class Note(models.Model):
+ 
+     def __str__(self):
+         return f"{self.topic} - {self.user.username}"
++
++class NoteImage(models.Model):
++    note = models.ForeignKey(Note, related_name='images', on_delete=models.CASCADE)
++    image = models.ImageField(upload_to='note_images/')
++    extracted_text = models.TextField(blank=True)
++    uploaded_at = models.DateTimeField(auto_now_add=True)
++
++    def save(self, *args, **kwargs):
++        is_new = self.pk is None
++        super().save(*args, **kwargs)
++        
++        if is_new and self.image:
++            try:
++                from course.utils.extraction import extract_text_from_image
++                text = extract_text_from_image(self.image.path)
++                if text:
++                    NoteImage.objects.filter(pk=self.pk).update(extracted_text=text)
++            except Exception as e:
++                print(f"OCR Failed for NoteImage {self.id}: {e}")
+diff --git a/notes/templates/notes/detail.html b/notes/templates/notes/detail.html
+index 959fb7a..7e1c4ab 100644
+--- a/notes/templates/notes/detail.html
++++ b/notes/templates/notes/detail.html
+@@ -4,113 +4,202 @@
+ 
+ {% block extra_css %}
+ <style>
++    .notebook-sheet {
++        background: rgba(15, 23, 42, 0.4) !important;
++        position: relative;
++        padding: 4rem !important;
++        border-radius: 4px 24px 24px 4px !important;
++        border-left: 8px solid var(--primary) !important;
++        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
++    }
++
++    .notebook-sheet::before {
++        content: '';
++        position: absolute;
++        top: 0;
++        left: 40px;
++        bottom: 0;
++        width: 1px;
++        background: rgba(239, 68, 68, 0.2);
++    }
++
++    .note-content {
++        line-height: 2.2;
++        font-family: 'Inter', sans-serif;
++        font-size: 1.1rem;
++        color: rgba(255, 255, 255, 0.85);
++    }
++
+     .note-content h1,
+     .note-content h2,
+     .note-content h3 {
+         color: white;
+-        margin-top: 1.5rem;
++        margin-top: 2rem;
++        margin-bottom: 1rem;
++        font-weight: 700;
+     }
+ 
+-    .note-content p {
+-        color: var(--text-light);
+-        line-height: 1.7;
+-        margin-bottom: 1rem;
++    .image-gallery {
++        display: grid;
++        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
++        gap: 1.5rem;
++        margin-top: 4rem;
++        padding-top: 2rem;
++        border-top: 1px solid rgba(255, 255, 255, 0.05);
+     }
+ 
+-    .note-content ul,
+-    .note-content ol {
+-        color: var(--text-light);
+-        padding-left: 1.5rem;
+-        margin-bottom: 1rem;
++    .gallery-item {
++        position: relative;
++        border-radius: 12px;
++        overflow: hidden;
++        aspect-ratio: 4/3;
++        cursor: pointer;
++        transition: transform 0.3s, box-shadow 0.3s;
++        border: 1px solid rgba(255, 255, 255, 0.1);
+     }
+ 
+-    .note-content li {
+-        margin-bottom: 0.5rem;
++    .gallery-item:hover {
++        transform: translateY(-5px);
++        box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
++        border-color: var(--primary);
+     }
+ 
+-    .note-content code {
+-        background: rgba(0, 0, 0, 0.3);
+-        padding: 0.2rem 0.4rem;
+-        border-radius: 4px;
+-        font-family: 'JetBrains Mono', monospace;
+-        color: #e2e8f0;
++    .gallery-item img {
++        width: 100%;
++        height: 100%;
++        object-fit: cover;
+     }
+ 
+-    .note-content pre {
+-        background: rgba(15, 23, 42, 0.6);
+-        padding: 1rem;
+-        border-radius: 8px;
+-        overflow-x: auto;
+-        border: 1px solid var(--glass-border);
++    .ocr-badge {
++        position: absolute;
++        bottom: 10px;
++        right: 10px;
++        background: rgba(0, 0, 0, 0.7);
++        padding: 4px 8px;
++        border-radius: 6px;
++        font-size: 0.7rem;
++        color: #10b981;
++        backdrop-filter: blur(4px);
+     }
+ 
+-    @media print {
+-        body * {
+-            visibility: hidden;
+-        }
++    /* Modal Styling */
++    .image-modal {
++        display: none;
++        position: fixed;
++        z-index: 9999;
++        top: 0;
++        left: 0;
++        width: 100%;
++        height: 100%;
++        background: rgba(0, 0, 0, 0.95);
++        align-items: center;
++        justify-content: center;
++        padding: 2rem;
++    }
+ 
+-        .note-container,
+-        .note-container * {
+-            visibility: visible;
+-        }
++    .modal-content {
++        max-width: 90%;
++        max-height: 90%;
++        object-fit: contain;
++        border-radius: 8px;
++        box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
++    }
+ 
+-        .note-container {
+-            position: absolute;
+-            left: 0;
+-            top: 0;
+-            width: 100%;
+-            background: white;
+-            color: black;
+-        }
++    .close-modal {
++        position: absolute;
++        top: 2rem;
++        right: 3rem;
++        color: white;
++        font-size: 2.5rem;
++        cursor: pointer;
++        transition: 0.3s;
++    }
+ 
+-        .glass-card {
+-            background: none;
+-            border: none;
+-            backdrop-filter: none;
++    @media print {
++        .no-print {
++            display: none !important;
+         }
+ 
+-        .btn,
+-        .main-nav,
+-        footer {
+-            display: none;
++        .notebook-sheet {
++            background: white !important;
++            color: black !important;
++            border-left: 2px solid #ccc !important;
++            box-shadow: none !important;
+         }
+ 
+         .note-content h1,
+         .note-content h2,
+-        .note-content h3,
+-        .note-content p,
+-        .note-content li {
++        .note-content p {
+             color: black !important;
+         }
++
++        .notebook-sheet::before {
++            left: 20px;
++        }
+     }
+ </style>
+ {% endblock %}
+ 
+ {% block content %}
+-<div class="container note-container" style="padding: 2rem 0;">
+-    <div style="margin-bottom: 2rem;">
++<div class="container note-container" style="padding: 2rem 0; max-width: 900px;">
++    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;"
++        class="no-print">
+         <a href="{% url 'notes:notes_list' %}" class="btn btn-secondary"
+-            style="display: inline-flex; align-items: center; gap: 0.5rem;">
+-            <i class="fas fa-arrow-left"></i> Back to Notes
++            style="display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 12px;">
++            <i class="fas fa-arrow-left"></i> Back to Notebook
+         </a>
++        <div style="display: flex; gap: 0.75rem;">
++            {% if note.course %}
++            <a href="{% url 'course:course_dashboard' note.course.id %}" class="btn btn-secondary"
++                style="border-radius: 12px;">
++                <i class="fas fa-book"></i> {{ note.course.title }}
++            </a>
++            {% endif %}
++            <button onclick="window.print()" class="btn btn-primary" style="border-radius: 12px;">
++                <i class="fas fa-print"></i> Export
++            </button>
++        </div>
+     </div>
+ 
+-    <div class="glass-card fade-in" style="padding: 3rem;">
+-        <div
+-            style="border-bottom: 1px solid var(--glass-border); padding-bottom: 2rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: start;">
++    <div class="glass-card fade-in notebook-sheet" style="padding: 3rem;">
++        <div style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2rem; margin-bottom: 2rem;">
+             <div>
+-                <span class="badge badge-primary" style="margin-bottom: 1rem;">Topic</span>
+-                <h1 style="margin: 0.5rem 0; font-size: 2.5rem;">{{ note.topic }}</h1>
+-                <p style="color: var(--text-muted);">Generated on {{ note.created_at|date:"F j, Y" }}</p>
++                <span class="badge badge-primary" style="margin-bottom: 1rem; opacity: 0.6;">SMART STUDY NOTE</span>
++                <h1 style="margin: 0.5rem 0; font-size: 2.8rem; font-weight: 800; color: white;">{{ note.topic }}</h1>
++                <p style="color: var(--text-muted); font-size: 0.95rem;">Created on {{ note.created_at|date:"F j, Y" }}
++                </p>
+             </div>
+-            <button onclick="window.print()" class="btn btn-primary">
+-                <i class="fas fa-download"></i> Download / Print PDF
+-            </button>
+         </div>
+ 
+         <div class="note-content">
+             {{ html_content|safe }}
+         </div>
++
++        {% if note.images.exists %}
++        <div class="image-gallery no-print">
++            {% for img in note.images.all %}
++            <div class="gallery-item" onclick="openModal('{{ img.image.url }}')">
++                <img src="{{ img.image.url }}" alt="Note Image">
++                {% if img.extracted_text %}
++                <span class="ocr-badge"><i class="fas fa-check-circle"></i> AI Indexed</span>
++                {% endif %}
++            </div>
++            {% endfor %}
++        </div>
++        {% endif %}
+     </div>
+ </div>
++
++<!-- Modal -->
++<div id="imageModal" class="image-modal" onclick="this.style.display='none'">
++    <span class="close-modal">&times;</span>
++    <img class="modal-content" id="modalImg">
++</div>
++
++<script>
++    function openModal(src) {
++        document.getElementById('imageModal').style.display = 'flex';
++        document.getElementById('modalImg').src = src;
++    }
++</script>
+ {% endblock %}
+\ No newline at end of file
+diff --git a/notes/templates/notes/generate.html b/notes/templates/notes/generate.html
+index 3317706..6065d57 100644
+--- a/notes/templates/notes/generate.html
++++ b/notes/templates/notes/generate.html
+@@ -33,26 +33,58 @@
+     {% if response %}
+     <div id="notes-section" class="glass-card fade-in note-preview-container"
+         style="padding: 3rem; position: relative; margin-top: 2rem;">
+-        <div style="position: absolute; top: 1.5rem; right: 2rem; display: flex; gap: 0.75rem;" class="no-print">
+-            <form method="post" style="display: inline;">
+-                {% csrf_token %}
++
++        <!-- SAVE FORM WITH IMAGE SUPPORT -->
++        <form method="post" enctype="multipart/form-data" id="saveNoteForm">
++            {% csrf_token %}
++            <div style="position: absolute; top: 1.5rem; right: 2rem; display: flex; gap: 0.75rem;" class="no-print">
+                 <input type="hidden" name="action" value="save">
+                 <input type="hidden" name="topic" value="{{ topic }}">
+                 <input type="hidden" name="content" value="{{ response }}">
++                {% if course_id %}<input type="hidden" name="course_id" value="{{ course_id }}">{% endif %}
++
+                 <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">
+                     <i class="fas fa-save" style="margin-right: 0.5rem;"></i> Save to Notebook
+                 </button>
+-            </form>
+ 
+-            <button onclick="window.print()" class="btn btn-secondary"
+-                style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">
+-                <i class="fas fa-print" style="margin-right: 0.5rem;"></i> Print / PDF
+-            </button>
+-        </div>
++                <button type="button" onclick="window.print()" class="btn btn-secondary"
++                    style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">
++                    <i class="fas fa-print" style="margin-right: 0.5rem;"></i> Print / PDF
++                </button>
++            </div>
+ 
+-        <div class="note-content">
+-            {{ response_html|safe }}
+-        </div>
++            <div class="note-content">
++                {{ response_html|safe }}
++            </div>
++
++            <!-- IMAGE UPLOAD SECTION -->
++            <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05);"
++                class="no-print">
++                <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem; color: white;">
++                    <i class="fas fa-images" style="color: var(--primary); margin-right: 0.5rem;"></i>
++                    Attach Study Images / Handwritten Notes
++                </h3>
++
++                <div id="imageDropZone" class="upload-area"
++                    style="background: rgba(15, 23, 42, 0.3); border: 2px dashed rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 2.5rem; text-align: center; cursor: pointer; transition: all 0.3s;">
++                    <input type="file" name="images" id="imageInput" multiple accept="image/*" style="display: none;"
++                        onchange="handleImagePreview(this)">
++                    <div onclick="document.getElementById('imageInput').click()" id="uploadTrigger">
++                        <i class="fas fa-cloud-upload-alt"
++                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 1rem; display: block;"></i>
++                        <p style="margin: 0; color: var(--text-main); font-weight: 500;">Drag & drop images here or
++                            <span style="color: var(--primary);">browse</span></p>
++                        <p style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem;">Images will be
++                            processed with AI (OCR)</p>
++                    </div>
++
++                    <!-- Preview Gallery -->
++                    <div id="previewGallery"
++                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
++                    </div>
++                </div>
++            </div>
++        </form>
+ 
+         <div style="margin-top: 4rem; text-align: center; display: flex; gap: 1.25rem; justify-content: center;"
+             class="no-print">
+@@ -64,6 +96,76 @@
+             </a>
+         </div>
+     </div>
++
++    <script>
++        function handleImagePreview(input) {
++            const gallery = document.getElementById('previewGallery');
++            const files = input.files;
++
++            if (files.length > 0) {
++                document.getElementById('uploadTrigger').style.display = 'none';
++                gallery.innerHTML = ''; // Clear if needed or append
++
++                [...files].forEach((file, index) => {
++                    const reader = new FileReader();
++                    reader.onload = function (e) {
++                        const div = document.createElement('div');
++                        div.className = 'preview-item fade-in';
++                        div.style.cssText = 'position: relative; border-radius: 12px; overflow: hidden; height: 120px; border: 1px solid rgba(255,255,255,0.1);';
++                        div.innerHTML = `
++                            <img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">
++                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.3s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
++                                <button type="button" onclick="removeImage(${index})" style="background: none; border: none; color: #ef4444; font-size: 1.2rem; cursor: pointer;">
++                                    <i class="fas fa-trash-can"></i>
++                                </button>
++                            </div>
++                        `;
++                        gallery.appendChild(div);
++                    };
++                    reader.readAsDataURL(file);
++                });
++
++                // Add "Add More" button slot
++                const addMoreDiv = document.createElement('div');
++                addMoreDiv.style.cssText = 'border: 2px dashed rgba(255,255,255,0.05); border-radius: 12px; height: 120px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-light); transition: 0.3s;';
++                addMoreDiv.innerHTML = '<i class="fas fa-plus"></i>';
++                addMoreDiv.onclick = () => document.getElementById('imageInput').click();
++                addMoreDiv.onmouseover = function () { this.style.borderColor = 'var(--primary)'; this.style.color = 'white'; }
++                addMoreDiv.onmouseout = function () { this.style.borderColor = 'rgba(255,255,255,0.05)'; this.style.color = 'var(--text-light)'; }
++                gallery.appendChild(addMoreDiv);
++            }
++        }
++
++        const dropZone = document.getElementById('imageDropZone');
++        const imgInput = document.getElementById('imageInput');
++
++        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
++            dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
++        });
++
++        ['dragenter', 'dragover'].forEach(eventName => {
++            dropZone.addEventListener(eventName, () => dropZone.style.borderColor = 'var(--primary)', false);
++        });
++
++        ['dragleave', 'drop'].forEach(eventName => {
++            dropZone.addEventListener(eventName, () => dropZone.style.borderColor = 'rgba(255, 255, 255, 0.1)', false);
++        });
++
++        dropZone.addEventListener('drop', e => {
++            const dt = e.dataTransfer;
++            imgInput.files = dt.files;
++            handleImagePreview(imgInput);
++        }, false);
++
++        function removeImage(index) {
++            // Complex to remove from FileList object, but for preview it's okay
++            // Real implementation would use DataTransfer to rebuild FileList
++            alert("To remove, please re-upload your selection.");
++            document.getElementById('uploadTrigger').style.display = 'block';
++            document.getElementById('previewGallery').innerHTML = '';
++            imgInput.value = '';
++        }
++    </script>
+     {% endif %}
+ </div>
+ 
+diff --git a/notes/views.py b/notes/views.py
+index 92dc6da..00fcfe0 100644
+--- a/notes/views.py
++++ b/notes/views.py
+@@ -2,9 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
+ from django.urls import reverse
+ from django.conf import settings
+ from django.contrib.auth.decorators import login_required
+-from .models import Note
++from .models import Note, NoteImage
+ from core.utils import log_activity
+ from asgiref.sync import sync_to_async
++from django.core.files.base import ContentFile
+ import ollama
+ import markdown
+ 
+@@ -41,12 +42,31 @@ async def generate_notes(request):
+ 
+         if action == "save":
+             content = request.POST.get("content")
++            course_id = request.POST.get("course_id")
++            images = request.FILES.getlist("images")
++            
+             if content:
+-                await sync_to_async(Note.objects.create)(
++                # Create the Note
++                note = await sync_to_async(Note.objects.create)(
+                     user=request.user,
++                    course_id=course_id if course_id else None,
+                     topic=topic,
+-                    content=content
++                    content=content,
++                    is_ai_generated=True
+                 )
++                
++                # Save Images
++                for img in images:
++                    await sync_to_async(NoteImage.objects.create)(
++                        note=note,
++                        image=img
++                    )
++                
++                # Trigger context consolidation if linked to course
++                if course_id:
++                    from core.ai.services import CourseContextEngine
++                    await sync_to_async(CourseContextEngine.consolidate_course_notes)(course_id)
++                
+                 return redirect('notes_list')
+ 
+         # --- CENTRALIZED CONTEXT INJECTION ---
+diff --git a/quiz/urls.py b/quiz/urls.py
+index dc0ca1f..07fa7a4 100644
+--- a/quiz/urls.py
++++ b/quiz/urls.py
+@@ -8,6 +8,8 @@ urlpatterns = [
+     path('start/', views.quiz_view, name='quiz_start'),
+     path('start-unit/<int:unit_id>/', views.start_unit_quiz, name='start_unit_quiz'),
+     path('start-unit/<int:unit_id>/', views.start_unit_quiz, name='start_unit_quiz'),
+-    path('submit/', views.submit_quiz, name='submit_quiz'),
++    path('api/user/courses/', views.user_courses_api, name='user_courses_api'),
++    path('api/generate-stream/<int:course_id>/', views.quiz_stream_api, name='quiz_stream_api'),
++    path('api/save-streamed-questions/', views.save_streamed_questions, name='save_streamed_questions'),
+     path('create-manual/<int:course_id>/', views.create_quiz_manual, name='create_quiz_manual'),
+ ]
+diff --git a/quiz/views.py b/quiz/views.py
+index bde3df6..502905a 100644
+--- a/quiz/views.py
++++ b/quiz/views.py
+@@ -1,4 +1,5 @@
+ from django.shortcuts import render, redirect, get_object_or_404
++import logging
+ from django.urls import reverse
+ from django.conf import settings
+ from .models import QuizAttempt
+@@ -12,11 +13,14 @@ import uuid
+ from django.http import JsonResponse
+ from django.views.decorators.csrf import csrf_exempt
+ from django.contrib.auth.decorators import login_required
+-from ai_engine.quiz_generator import generate_quiz
+-from .models import Quiz, Question, Option
+-from .forms import ManualQuestionForm
+ from .utils.document_reader import get_course_text
+ from .utils.ollama_quiz import generate_mcq
++from ai_engine.quiz_generator import generate_quiz, generate_quiz_stream
++from django.http import StreamingHttpResponse
++import asyncio
++from asgiref.sync import sync_to_async
++
++logger = logging.getLogger(__name__)
+ 
+ SUBJECTS = [
+     {"key": "Python", "name": "Python Programming", "icon": "fab fa-python"},
+@@ -107,31 +111,22 @@ def quiz_view(request):
+     questions = request.session.get('questions', [])
+     session_course_id = request.session.get('quiz_course_id')
+     
+-    # If course_id or subject is provided, it's likely a fresh click - clear old session questions
+-    if request.GET.get('course_id') or request.GET.get('subject') or (active_course and session_course_id != active_course.id):
+-        if 'questions' in request.session:
+-            del request.session['questions']
+-        questions = []
++    # Only clear if it's a "fresher" click from a different course or if we explicitly want a new one
++    # If questions already exist (e.g. from stream), Don't clear them!
++    if not questions:
++        if request.GET.get('course_id') or request.GET.get('subject') or (active_course and session_course_id != active_course.id):
++            if 'questions' in request.session:
++                del request.session['questions']
++            questions = []
+     
+     # Generate fresh questions for new attempt
+     if not questions:
+         if active_course:
+-            # DYNAMIC GENERATION: Always generate fresh questions for students
+-            # Pass user to ensure repetition prevention (Question Hashing)
+-            ai_questions = generate_quiz(active_course.id, user=request.user, num_questions=5)
+-            
+-            if ai_questions:
+-                # Store questions as dicts in session for dynamic attempt
+-                # No permanent Quiz object created here; it's specific to this attempt session
+-                questions = ai_questions
+-                request.session['questions'] = questions
+-                request.session['quiz_course_id'] = active_course.id
+-            else:
+-                return render(request, 'quiz/quiz.html', {
+-                    'subject': subject,
+-                    'error_message': "No questions generated. Please ensure you have uploaded course material and it has been processed.",
+-                    'course': active_course
+-                })
++            # Render loading state first for streaming
++            return render(request, 'quiz/quiz_loading.html', {
++                'subject': subject,
++                'course': active_course
++            })
+         else:
+             return redirect('quiz:quiz_subjects')
+     
+@@ -141,6 +136,68 @@ def quiz_view(request):
+         'course': active_course
+     })
+ 
++def quiz_stream_api(request, course_id):
++    """
++    Server-Sent Events (SSE) endpoint for streaming quiz questions.
++    """
++    course = get_object_or_404(Course, id=course_id)
++    
++    def stream_generator():
++        try:
++            questions = []
++            try:
++                gen = generate_quiz_stream(course_id, user=request.user, num_questions=8)
++                for q in gen:
++                    questions.append(q)
++                    yield f"data: {json.dumps(q)}\n\n"
++                
++                yield "data: [DONE]\n\n"
++            except Exception as e:
++                logger.warning(f"Quiz Stream Timeout or Error for Course {course_id}: {e}")
++                if "timeout" in str(e).lower():
++                    yield "data: {\"status\": \"timeout\", \"message\": \"Generation is taking longer than expected.\", \"partial_count\": " + str(len(questions)) + "}\n\n"
++                else:
++                    raise e
++            
++        except Exception as e:
++            logger.error(f"Quiz Stream Error: {e}")
++            yield f"data: {{\"status\": \"error\", \"message\": \"{str(e)}\"}}\n\n"
++
++    response = StreamingHttpResponse(stream_generator(), content_type='text/event-stream')
++    response['Cache-Control'] = 'no-cache'
++    return response
++
++@csrf_exempt
++def save_streamed_questions(request):
++    """
++    Saves questions collected by the frontend stream into the session.
++    """
++    if request.method == 'POST':
++        try:
++            data = json.loads(request.body)
++            questions = data.get('questions', [])
++            course_id = data.get('course_id')
++            
++            if questions and course_id:
++                request.session['questions'] = questions
++                request.session['quiz_course_id'] = course_id
++                return JsonResponse({"status": "success"})
++        except Exception as e:
++            return JsonResponse({"status": "error", "message": str(e)}, status=400)
++    return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
++
++@login_required
++def user_courses_api(request):
++    """
++    Returns a list of courses for the current user.
++    """
++    courses = Course.objects.filter(user=request.user)
++    data = [
++        {"id": c.id, "title": c.title, "code": c.course_code, "category": c.category}
++        for c in courses
++    ]
++    return JsonResponse(data, safe=False)
++
+ 
+ # Legacy explanation logic removed in favor of Step 8 (pre-generated reveal)
+ 
+diff --git a/templates/base.html b/templates/base.html
+index ef88de8..e271070 100644
+--- a/templates/base.html
++++ b/templates/base.html
+@@ -319,13 +319,13 @@
+                 <div class="nav-dropdown">
+                     <a href="#" class="nav-link" style="color: var(--primary); font-weight: 600;">
+                         <i class="fas fa-book-open"></i>
+-                        
++
+                         {% if active_course %}
+-                            {{ active_course.title|truncatechars:15 }}
++                        {{ active_course.title|truncatechars:15 }}
+                         {% else %}
+-                            Select Course
++                        Select Course
+                         {% endif %}
+-                    
++
+                         <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                     </a>
+                     <div class="dropdown-content" style="min-width: 280px;">
+@@ -335,7 +335,7 @@
+                                 style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">AI
+                                 Knowledge Source</span>
+                         </div>
+-                        <div style="max-height: 300px; overflow-y: auto;">
++                        <div id="nav-course-list" style="max-height: 300px; overflow-y: auto;">
+                             {% for c in all_user_courses %}
+                             <form action="{% url 'core:set_active_course' %}" method="post" style="margin: 0;">
+                                 {% csrf_token %}
+@@ -343,10 +343,14 @@
+                                 <button type="submit"
+                                     class="dropdown-item {% if active_course.id == c.id %}active-item{% endif %}"
+                                     style="width: 100%; border: none; background: none; text-align: left; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
+-                                    <span style="color: white; font-weight: 500;">{{ c.title }}</span>
++                                    <span style="color: white; font-weight: 500;">{{ c.title|truncatechars:30 }}</span>
+                                     <span style="font-size: 0.75rem; opacity: 0.6;">{{ c.get_level_display }}</span>
+                                 </button>
+                             </form>
++                            {% empty %}
++                            <div
++                                style="padding: 1rem; color: var(--text-muted); font-size: 0.85rem; text-align: center;">
++                                No courses available</div>
+                             {% endfor %}
+                         </div>
+                         <div style="padding: 0.75rem; border-top: 1px solid var(--glass-border); margin-top: 0.5rem;">
+@@ -371,13 +375,13 @@
+                     <a href="#" class="nav-link">AI Tools <i class="fas fa-chevron-down"
+                             style="font-size: 0.7rem;"></i></a>
+                     <div class="dropdown-content">
+-                        
++
+                         {% if active_course %}
+-                            {{ active_course.title|truncatechars:15 }}
++                        {{ active_course.title|truncatechars:15 }}
+                         {% else %}
+-                            Select Course
++                        Select Course
+                         {% endif %}
+-                    
++
+ 
+                         <div
+                             style="padding: 0.5rem 1rem; border-top: 1px solid var(--glass-border); margin-top: 0.5rem;">
+@@ -594,8 +598,95 @@
+                 </a>
+             `).join('');
+         }
++
++        // --- Dynamic Navbar & Course State ---
++        window.activeCourseId = "{{ active_course.id|default:'' }}";
++
++        async function refreshNavbarCourses() {
++            try {
++                const response = await fetch('/course/api/user/courses/', {
++                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
++                });
++                const data = await response.json();
++                const container = document.getElementById('nav-course-list');
++                if (!container) return;
++
++                if (data.courses && data.courses.length > 0) {
++                    container.innerHTML = data.courses.map(c => `
++                        <form action="/core/set-active-course/" method="post" style="margin: 0;">
++                            <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
++                            <input type="hidden" name="course_id" value="${c.id}">
++                            <button type="submit"
++                                class="dropdown-item ${window.activeCourseId == c.id ? 'active-item' : ''}"
++                                style="width: 100%; border: none; background: none; text-align: left; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
++                                <span style="color: white; font-weight: 500;">${c.title}</span>
++                                <span style="font-size: 0.75rem; opacity: 0.6;">${c.level}</span>
++                            </button>
++                        </form>
++                    `).join('');
++                } else {
++                    container.innerHTML = '<div style="padding: 1rem; color: var(--text-muted); font-size: 0.85rem; text-align: center;">No courses available</div>';
++                }
++
++                // Also update the active course display name in the trigger button
++                const triggerText = document.querySelector('.nav-dropdown .nav-link').childNodes[2];
++                const activeCourse = data.courses ? data.courses.find(c => c.id == window.activeCourseId) : null;
++                if (triggerText) {
++                    triggerText.textContent = activeCourse ? ` ${activeCourse.title.substring(0, 15)}${activeCourse.title.length > 15 ? '...' : ''} ` : ' Select Course ';
++                }
++
++                // If active course was deleted, refresh page to clear context
++                const activeStillExists = data.courses ? data.courses.some(c => c.id == window.activeCourseId) : false;
++                if (window.activeCourseId && !activeStillExists) {
++                    window.location.reload();
++                }
++            } catch (err) {
++                console.error('Navbar refresh failed:', err);
++            }
++        }
++
++        function getCookie(name) {
++            let cookieValue = null;
++            if (document.cookie && document.cookie !== '') {
++                const cookies = document.cookie.split(';');
++                for (let i = 0; i < cookies.length; i++) {
++                    const cookie = cookies[i].trim();
++                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
++                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
++                        break;
++                    }
++                }
++            }
++            return cookieValue;
++        }
++
++        // Global Delete Handler for AJAX support
++        window.handleCourseDeletion = async function (courseId, title) {
++            if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
++
++            try {
++                const response = await fetch(`/course/${courseId}/delete/?format=json`, {
++                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
++                });
++                const result = await response.json();
++                if (result.status === 'success') {
++                    // Update UI components
++                    refreshNavbarCourses();
++                    if (typeof loadQuickHub === 'function') loadQuickHub();
++
++                    // If on course list page, remove the card
++                    const card = document.querySelector(`.course-card-premium[data-id="${courseId}"]`);
++                    if (card) {
++                        card.style.opacity = '0';
++                        setTimeout(() => card.remove(), 300);
++                    }
++                }
++            } catch (err) {
++                console.error('Deletion failed:', err);
++            }
++        };
+     </script>
+     {% block extra_js %}{% endblock %}
+ </body>
+ 
+-</html>
++</html>
+\ No newline at end of file

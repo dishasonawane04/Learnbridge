@@ -17,15 +17,14 @@ from docx import Document
 from docx.shared import Pt
 import datetime
 
-@teacher_required
 def letter_dashboard(request):
     """
     Displays the dashboard for the LOR Generator, including history and a 'Create New' button.
     """
+    print(f"DEBUG LOR: Reached letter_dashboard view for user {request.user.username}")
     letters = LetterRequest.objects.all().order_by('-created_at')
     return render(request, 'letter_of_recommendation_generator/dashboard.html', {'letters': letters})
 
-@teacher_required
 def create_letter(request):
     """
     Handles the multi-step form submission. (Currently simplified to one page for MVP, can be split with JS).
@@ -81,7 +80,6 @@ def create_letter(request):
     
     return render(request, 'letter_of_recommendation_generator/form.html', {'form': form})
 
-@teacher_required
 def preview_letter(request, pk):
     """
     Allows the user to view and edit the generated letter.
@@ -99,7 +97,6 @@ def preview_letter(request, pk):
             
     return render(request, 'letter_of_recommendation_generator/preview.html', {'letter': letter})
 
-@teacher_required
 def delete_letter(request, pk):
     letter = get_object_or_404(LetterRequest, pk=pk)
     letter.delete()

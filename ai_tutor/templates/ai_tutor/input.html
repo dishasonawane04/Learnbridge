@@ -3,13 +3,24 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>LearnBridge AI</title>
-
+    <title>LearnBridge AI - Tutor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #8b5cf6;
+            --border-color: #334155;
+        }
+
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6fb;
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
         }
 
         .app {
@@ -20,40 +31,57 @@
         /* SIDEBAR */
         .sidebar {
             width: 260px;
-            background: #111827;
-            color: white;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
         }
 
         .sidebar h2 {
-            padding: 15px;
+            padding: 1.5rem;
             margin: 0;
-            border-bottom: 1px solid #374151;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 1.5rem;
+            color: var(--accent);
         }
 
         .new-chat {
-            margin: 10px;
-            padding: 10px;
-            background: #1f2937;
-            border: 1px solid #374151;
+            margin: 1rem;
+            padding: 0.8rem;
+            background: var(--accent);
+            border: none;
             color: white;
             cursor: pointer;
-            border-radius: 6px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .new-chat:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
         }
 
         .chat-history {
             flex: 1;
-            padding: 10px;
+            padding: 1rem;
             overflow-y: auto;
         }
 
         .chat-item {
-            padding: 8px;
-            background: #1f2937;
-            margin-bottom: 6px;
-            border-radius: 6px;
-            font-size: 14px;
+            padding: 0.8rem;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+            transition: 0.2s;
+        }
+
+        .chat-item:hover {
+            border-color: var(--accent);
+            color: var(--text-main);
         }
 
         /* CHAT AREA */
@@ -61,86 +89,130 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: white;
+            background: var(--bg-dark);
         }
 
         .chat-header {
-            padding: 15px;
-            border-bottom: 1px solid #ddd;
-            font-weight: bold;
+            padding: 1.2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-btn-premium {
+            text-decoration: none;
+            color: #94a3b8 !important;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            background: #1e293b !important;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn-premium:hover {
+            background: #334155 !important;
+            color: white !important;
+            transform: translateX(-3px);
         }
 
         .chat-box {
             flex: 1;
-            padding: 15px;
+            padding: 2rem;
             overflow-y: auto;
         }
 
         .message {
-            max-width: 70%;
-            padding: 10px 14px;
-            border-radius: 10px;
-            margin-bottom: 10px;
+            max-width: 80%;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            line-height: 1.5;
         }
 
         .user {
-            background: #4f46e5;
+            background: var(--accent);
             color: white;
             margin-left: auto;
         }
 
         .assistant {
-            background: #e5e7eb;
-            color: black;
+            background: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
         }
 
         /* INPUT */
         .chat-input {
             display: flex;
-            gap: 8px;
-            padding: 12px;
-            border-top: 1px solid #ddd;
+            gap: 1rem;
+            padding: 2rem;
+            border-top: 1px solid var(--border-color);
             position: relative;
         }
 
         .plus {
-            font-size: 22px;
+            font-size: 1.5rem;
             cursor: pointer;
+            color: var(--text-muted);
+            transition: 0.2s;
+        }
+
+        .plus:hover {
+            color: var(--text-main);
         }
 
         .media-menu {
             position: absolute;
-            bottom: 55px;
-            left: 10px;
-            background: white;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            padding: 8px;
+            bottom: 85px;
+            left: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
             display: none;
-            gap: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            gap: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
         .media-icon {
             cursor: pointer;
-            font-size: 20px;
+            font-size: 1.5rem;
         }
 
         textarea {
             flex: 1;
             resize: none;
-            padding: 8px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
+            padding: 1rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: white;
+            font-family: inherit;
+            outline: none;
         }
 
-        button {
-            background: #4f46e5;
+        textarea:focus {
+            border-color: var(--accent);
+        }
+
+        button[type="submit"] {
+            background: var(--accent);
             color: white;
             border: none;
-            padding: 8px 14px;
-            border-radius: 6px;
+            padding: 0 1.5rem;
+            border-radius: 8px;
             cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        button[type="submit"]:hover {
+            opacity: 0.9;
         }
     </style>
 </head>
@@ -152,26 +224,27 @@
         <!-- LEFT -->
         <div class="sidebar">
             <h2>LearnBridge</h2>
-            <a href="?new=1">
+            <a href="?new=1" style="text-decoration: none;">
                 <button class="new-chat">+ New Chat</button>
             </a>
 
-
             <div class="chat-history">
-
                 {% for chat in all_chats %}
                 <div class="chat-item">
                     {{ chat.0.text|truncatechars:25 }}
                 </div>
                 {% endfor %}
-
             </div>
-
         </div>
 
         <!-- RIGHT -->
         <div class="chat-area">
-            <div class="chat-header">AI Tutor</div>
+            <div class="chat-header">
+                <span>AI Tutor</span>
+                <a href="{% url 'core:dashboard' %}" class="back-btn-premium">
+                    <i class="ph ph-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
 
             <div class="chat-box" id="chatBox">
                 {% for chat in chat_history %}
@@ -181,31 +254,21 @@
 
             <form method="POST" enctype="multipart/form-data" class="chat-input">
                 {% csrf_token %}
+                <span class="plus" id="plusBtn"><i class="ph ph-plus-circle"></i></span>
 
-                <!-- Plus -->
-                <span class="plus" id="plusBtn">+</span>
-
-                <!-- Media Options -->
                 <div class="media-menu" id="mediaMenu">
-                    <label class="media-icon">📷
-                        <input type="file" name="image" hidden accept="image/*">
-                    </label>
-                    <label class="media-icon">🎥
-                        <input type="file" name="video" hidden accept="video/*">
-                    </label>
-                    <label class="media-icon">📄
-                        <input type="file" name="document" hidden accept=".pdf,.doc,.docx">
-                    </label>
-                    <label class="media-icon">🎧
-                        <input type="file" name="audio" hidden accept="audio/*">
-                    </label>
+                    <label class="media-icon" title="Image">🖼️<input type="file" name="image" hidden
+                            accept="image/*"></label>
+                    <label class="media-icon" title="Document">📄<input type="file" name="document" hidden
+                            accept=".pdf,.doc,.docx"></label>
+                    <label class="media-icon" title="Audio">🎧<input type="file" name="audio" hidden
+                            accept="audio/*"></label>
                 </div>
 
-                <textarea name="message" placeholder="Ask a question based on the file..."></textarea>
+                <textarea name="message" placeholder="Ask a question..."></textarea>
                 <button type="submit">Send</button>
             </form>
         </div>
-
     </div>
 
     <script>
@@ -224,7 +287,6 @@
             };
         });
     </script>
-
 </body>
 
 </html>

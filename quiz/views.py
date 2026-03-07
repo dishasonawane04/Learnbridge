@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+import logging
 from django.urls import reverse
 from django.conf import settings
 from .models import QuizAttempt
@@ -12,11 +13,14 @@ import uuid
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
-from ai_engine.quiz_generator import generate_quiz
-from .models import Quiz, Question, Option
-from .forms import ManualQuestionForm
 from .utils.document_reader import get_course_text
 from .utils.ollama_quiz import generate_mcq
+from ai_engine.quiz_generator import generate_quiz, generate_quiz_stream
+from django.http import StreamingHttpResponse
+import asyncio
+from asgiref.sync import sync_to_async
+
+logger = logging.getLogger(__name__)
 
 SUBJECTS = [
     {"key": "Python", "name": "Python Programming", "icon": "fab fa-python"},
@@ -107,31 +111,22 @@ def quiz_view(request):
     questions = request.session.get('questions', [])
     session_course_id = request.session.get('quiz_course_id')
     
-    # If course_id or subject is provided, it's likely a fresh click - clear old session questions
-    if request.GET.get('course_id') or request.GET.get('subject') or (active_course and session_course_id != active_course.id):
-        if 'questions' in request.session:
-            del request.session['questions']
-        questions = []
+    # Only clear if it's a "fresher" click from a different course or if we explicitly want a new one
+    # If questions already exist (e.g. from stream), Don't clear them!
+    if not questions:
+        if request.GET.get('course_id') or request.GET.get('subject') or (active_course and session_course_id != active_course.id):
+            if 'questions' in request.session:
+                del request.session['questions']
+            questions = []
     
     # Generate fresh questions for new attempt
     if not questions:
         if active_course:
-            # DYNAMIC GENERATION: Always generate fresh questions for students
-            # Pass user to ensure repetition prevention (Question Hashing)
-            ai_questions = generate_quiz(active_course.id, user=request.user, num_questions=5)
-            
-            if ai_questions:
-                # Store questions as dicts in session for dynamic attempt
-                # No permanent Quiz object created here; it's specific to this attempt session
-                questions = ai_questions
-                request.session['questions'] = questions
-                request.session['quiz_course_id'] = active_course.id
-            else:
-                return render(request, 'quiz/quiz.html', {
-                    'subject': subject,
-                    'error_message': "No questions generated. Please ensure you have uploaded course material and it has been processed.",
-                    'course': active_course
-                })
+            # Render loading state first for streaming
+            return render(request, 'quiz/quiz_loading.html', {
+                'subject': subject,
+                'course': active_course
+            })
         else:
             return redirect('quiz:quiz_subjects')
     
@@ -140,6 +135,68 @@ def quiz_view(request):
         'questions': questions,
         'course': active_course
     })
+
+def quiz_stream_api(request, course_id):
+    """
+    Server-Sent Events (SSE) endpoint for streaming quiz questions.
+    """
+    course = get_object_or_404(Course, id=course_id)
+    
+    def stream_generator():
+        try:
+            questions = []
+            try:
+                gen = generate_quiz_stream(course_id, user=request.user, num_questions=8)
+                for q in gen:
+                    questions.append(q)
+                    yield f"data: {json.dumps(q)}\n\n"
+                
+                yield "data: [DONE]\n\n"
+            except Exception as e:
+                logger.warning(f"Quiz Stream Timeout or Error for Course {course_id}: {e}")
+                if "timeout" in str(e).lower():
+                    yield "data: {\"status\": \"timeout\", \"message\": \"Generation is taking longer than expected.\", \"partial_count\": " + str(len(questions)) + "}\n\n"
+                else:
+                    raise e
+            
+        except Exception as e:
+            logger.error(f"Quiz Stream Error: {e}")
+            yield f"data: {{\"status\": \"error\", \"message\": \"{str(e)}\"}}\n\n"
+
+    response = StreamingHttpResponse(stream_generator(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    return response
+
+@csrf_exempt
+def save_streamed_questions(request):
+    """
+    Saves questions collected by the frontend stream into the session.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            questions = data.get('questions', [])
+            course_id = data.get('course_id')
+            
+            if questions and course_id:
+                request.session['questions'] = questions
+                request.session['quiz_course_id'] = course_id
+                return JsonResponse({"status": "success"})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+    return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
+
+@login_required
+def user_courses_api(request):
+    """
+    Returns a list of courses for the current user.
+    """
+    courses = Course.objects.filter(user=request.user)
+    data = [
+        {"id": c.id, "title": c.title, "code": c.course_code, "category": c.category}
+        for c in courses
+    ]
+    return JsonResponse(data, safe=False)
 
 
 # Legacy explanation logic removed in favor of Step 8 (pre-generated reveal)

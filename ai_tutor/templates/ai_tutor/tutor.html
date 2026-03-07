@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LearnBridge AI Tutor</title>
-    <link rel="stylesheet" href="{% static 'ai_tutor/style.css' %}?v=2.0">
+    <link rel="stylesheet" href="{% static 'ai_tutor/style.css' %}?v=5.0">
     <!-- Google Fonts for Premium Feel -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <!-- Phosphor Icons for clean icons -->
@@ -129,15 +129,22 @@
                     </div>
                 </div>
                 <div class="header-actions" style="margin-left: auto; display: flex; gap: 1rem; align-items: center;">
+                    <a href="{% url 'core:dashboard' %}" class="back-btn-premium">
+                        <i class="ph ph-arrow-left"></i> &larr; Back to Dashboard
+                    </a>
                     {% if active_course %}
-                    <a href="{% url 'course:course_dashboard' active_course.id %}" class="back-link-saas" 
-                       style="text-decoration: none; color: var(--text-muted); font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;">
+                    <a href="{% url 'course:course_dashboard' active_course.id %}" class="back-link-saas"
+                        style="text-decoration: none; color: var(--text-muted); font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;">
                         <i class="ph ph-arrow-left"></i> Back to Course
                     </a>
-                    <style>
-                        .back-link-saas:hover { background: rgba(255,255,255,0.1) !important; color: white !important; transform: translateX(-2px); }
-                    </style>
                     {% endif %}
+                    <style>
+                        .back-link-saas:hover {
+                            background: rgba(255, 255, 255, 0.1) !important;
+                            color: white !important;
+                            transform: translateX(-2px);
+                        }
+                    </style>
                 </div>
             </header>
 

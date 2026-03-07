@@ -345,8 +345,9 @@
                 </p>
             </div>
             <a href="{% if active_course %}{% url 'ai_tutor:start_course_chat' active_course.id %}{% else %}{% url 'ai_tutor:tutor_home' %}{% endif %}"
-                class="btn btn-primary" style="text-align: center;">{% if active_course %}Chat with Course AI{% else
-                %}Open AI Tutor{% endif %}</a>
+                class="btn btn-primary w-full mt-4" style="text-align: center;">
+                {% if active_course %}Chat with Course AI{% else %}Start AI Tutor{% endif %}
+            </a>
         </div>
 
         <!-- App 2: Learning Support -->
@@ -362,8 +363,9 @@
                 </p>
             </div>
             <a href="{% if active_course %}{% url 'learning_support:start_course_support' active_course.id %}{% else %}{% url 'learning_support:support_home' %}{% endif %}"
-                class="btn btn-primary" style="text-align: center;">{% if active_course %}Start Course Support{% else
-                %}Open Support{% endif %}</a>
+                class="btn btn-primary w-full mt-4" style="text-align: center;">
+                Get Support
+            </a>
         </div>
 
         <!-- App 3: Flashcard Generator -->
@@ -379,8 +381,9 @@
                 </p>
             </div>
             <a href="{% if active_course %}{% url 'flashcard_generator:generate_from_course' active_course.id %}{% else %}{% url 'flashcard_generator:flashcard_home' %}{% endif %}"
-                class="btn btn-primary" style="text-align: center;">{% if active_course %}Generate for Course{% else
-                %}Go to Flashcards{% endif %}</a>
+                class="btn btn-primary w-full mt-4" style="text-align: center;">
+                Generate Flashcards
+            </a>
         </div>
 
         <!-- App 4: Prerequisite Checker -->
@@ -395,8 +398,10 @@
                     Check your readiness for new topics with quick quizzes.
                 </p>
             </div>
-            <a href="{% url 'prerequisite_checker:home' %}" class="btn btn-primary" style="text-align: center;">Check
-                Readiness</a>
+            <a href="{% url 'prerequisite_checker:home' %}" class="btn btn-primary w-full mt-4"
+                style="text-align: center;">
+                Check Readiness
+            </a>
         </div>
 
         <!-- App 5: LOR Generator -->
@@ -411,8 +416,8 @@
                     Draft professional Letters of Recommendation quickly.
                 </p>
             </div>
-            <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}" class="btn btn-primary"
-                style="text-align: center;">Create LOR</a>
+            <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}"
+                class="btn btn-primary w-full mt-4" style="text-align: center;">Create LOR</a>
         </div>
 
         <!-- App 6: Analytics Dashboard -->
@@ -427,72 +432,85 @@
                     Visualize your learning progress and performance.
                 </p>
             </div>
-            <a href="{% url 'analytics:student_dashboard' %}" class="btn btn-primary" style="text-align: center;">View
-                Analytics</a>
+            <a href="{% url 'analytics:student_dashboard' %}" class="btn btn-primary w-full mt-4"
+                style="text-align: center;">View Analytics</a>
         </div>
     </div>
+</div>
 
-    <!-- AI Recommendations Row -->
-    <div style="margin-bottom: 3rem;">
-        <h3 style="margin-bottom: 1.5rem;"><i class="fas fa-sparkles gradient-text"></i> AI-Powered Recommendations</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-            {% for rec in recommendations %}
-            <div class="glass-card" style="padding: 1.5rem; border-top: 4px solid var(--primary);">
+<!-- AI Recommendations Row -->
+<div style="margin-bottom: 3rem;">
+    <h3 style="margin-bottom: 1.5rem; text-align: center;"><i class="fas fa-sparkles"
+            style="color: var(--primary);"></i>
+        AI-Powered Recommendations</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+        {% for rec in recommendations %}
+        <div class="glass-card" style="padding: 1.5rem; border-top: 4px solid var(--primary);">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                <h4 style="font-size: 1.1rem; margin: 0;">{{ rec.topic }}</h4>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">{{ rec.reason }}</p>
+            <a href="#" class="btn btn-primary" style="width: 100%;">{{ rec.action }}</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Course Progress Section -->
+<div style="margin-bottom: 3rem;">
+    <h3 style="font-size: 1.25rem; margin-bottom: 1.5rem; text-align: center;">Enrolled Courses Progress</h3>
+
+    {% if course_data %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
+        {% for course_item in course_data %}
+        <div class="glass-card"
+            style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+            <div>
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                    <h4 style="font-size: 1.1rem; margin: 0;">{{ rec.topic }}</h4>
-                    <span class="badge badge-primary">AI Peak</span>
+                    <h4 style="font-size: 1.15rem; margin: 0; color: white;">{{ course_item.title }}</h4>
+                    <span class="badge"
+                        style="background: rgba(255,255,255,0.05); color: var(--text-light); border: 1px solid rgba(255,255,255,0.1);">{{
+                        course_item.level }}</span>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">{{ rec.reason }}</p>
-                <a href="#" class="btn btn-primary" style="width: 100%; border-radius: 8px;">{{ rec.action }}</a>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
 
-    <!-- Course Progress Grid -->
-    <div style="margin-bottom: 3rem;">
-        <h3 style="font-size: 1.25rem; margin-bottom: 1.5rem;">Enrolled Courses Progress</h3>
-        <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
-            <div class="glass-card">
-                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-                    {% for course_item in course_data %}
-                    <div class="course-card">
-                        <div class="course-header">
-                            <div>
-                                <h4 class="course-title">{{ course_item.title }}</h4>
-                                <span class="badge course-badge">{{ course_item.level }}</span>
-                            </div>
-                            <div class="course-stats">
-                                <span class="course-progress-val">{{ course_item.progress }}%</span>
-                                <p class="course-units-text">{{ course_item.units_count }} Units</p>
-                            </div>
-                        </div>
-                        <div class="progress-track">
-                            <div class="progress-bar" style="width: {{ course_item.progress }}%;"></div>
-                        </div>
-                        <div class="view-syllabus-btn">
-                            <a href="{% url 'course:course_dashboard' course_item.id %}" class="btn btn-primary"
-                                style="padding: 0.6rem 1.5rem; font-size: 0.9rem; border-radius: 8px;">
-                                <i class="fas fa-desktop" style="margin-right: 0.5rem;"></i> Enter Study Hub
-                            </a>
-                        </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem;">
+                        <span style="color: var(--text-muted);">{{ course_item.units_count }} Units</span>
+                        <span style="color: var(--primary); font-weight: 600;">{{ course_item.progress }}%</span>
                     </div>
-                    {% empty %}
-                    <div style="text-align: center; padding: 3rem;">
+                    <div style="height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden;">
                         <div
-                            style="width: 64px; height: 64px; background: rgba(255,255,255,0.03); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
-                            <i class="fas fa-book-open" style="color: var(--text-muted); font-size: 1.5rem;"></i>
+                            style="height: 100%; width: {{ course_item.progress }}%; background: var(--primary); border-radius: 4px; transition: width 0.5s ease;">
                         </div>
-                        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 1.1rem;">You haven't
-                            enrolled in any courses yet.</p>
-                        <a href="{% url 'course:list' %}" class="btn btn-primary" style="padding: 0.8rem 2rem;">Browse
-                            Courses</a>
                     </div>
-                    {% endfor %}
                 </div>
             </div>
+
+            <a href="{% url 'course:course_dashboard' course_item.id %}" class="btn btn-primary w-full"
+                style="padding: 0.7rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <i class="fas fa-play-circle"></i> Resume Course
+            </a>
         </div>
+        {% endfor %}
     </div>
+    {% else %}
+    <div class="glass-card" style="padding: 4rem 2rem; text-align: center; max-width: 600px; margin: 0 auto;">
+        <div
+            style="width: 80px; height: 80px; background: rgba(99, 102, 241, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+            <i class="fas fa-book" style="color: var(--primary); font-size: 2rem;"></i>
+        </div>
+        <h3 style="color: white; margin-bottom: 1rem;">No Enrolled Courses</h3>
+        <p style="color: var(--text-muted); margin-bottom: 2rem; line-height: 1.6;">
+            You haven't enrolled in any courses yet. Start your learning journey by exploring our available courses.
+        </p>
+        <a href="{% url 'course:list' %}" class="btn btn-primary"
+            style="padding: 0.8rem 2.5rem; border-radius: 12px; font-weight: 600;">
+            Browse Courses
+        </a>
+    </div>
+    {% endif %}
+</div>
 </div>
 
 {{ topic_dist|json_script:"topic-data" }}
@@ -545,11 +563,4 @@
     });
 </script>
 
-<style>
-    .feature-card:hover {
-        transform: translateY(-5px);
-        border-color: rgba(99, 102, 241, 0.5) !important;
-        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
-    }
-</style>
 {% endblock %}

@@ -7,14 +7,14 @@ from django.shortcuts import redirect
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('ai/', include('ai_tutor.urls', namespace='ai_tutor')),
+    path('ai-tutor/', include('ai_tutor.urls', namespace='ai_tutor')),
     path('support/', include('learning_support.urls', namespace='learning_support')),
     path('flashcards/', include('flashcard_generator.urls', namespace='flashcard_generator')),
     path('quiz/', include('quiz.urls', namespace='quiz')),
     path('assessment/', include('assessment.urls', namespace='assessment')),
     path('lor/', include('letter_of_recommendation_generator.urls', namespace='letter_of_recommendation_generator')),
     path('analytics/', include('analytics.urls', namespace='analytics')),
-    path('check-readiness/', include('prerequisite_checker.urls', namespace='prerequisite_checker')),
+    path('readiness/', include('prerequisite_checker.urls', namespace='prerequisite_checker')),
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('core/', include('core.urls', namespace='core')),
     path('plan/', include('generator.urls', namespace='generator')),
