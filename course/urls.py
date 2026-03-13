@@ -19,9 +19,11 @@ urlpatterns = [
     path('career/<int:course_id>/', views.course_career, name='career'),
     path('summary/<int:course_id>/', views.course_summary, name='summary'),
     path('<int:course_id>/delete/', views.course_delete, name='delete'),
+    path('<int:course_id>/rename/', views.course_rename, name='rename'),
     path('unit/<int:unit_id>/toggle-completion/', views.toggle_unit_completion, name='toggle_unit_completion'),
     path('unit/<int:unit_id>/chat/', views.unit_ai_chat, name='unit_ai_chat'),
     path('api/search/', views.unit_search_api, name='search_api'),
     path('api/user/courses/', views.user_courses_api, name='user_courses_api'),
     path('api/user/enrolled-courses/', views.user_courses_api, name='enrolled_courses_api'),
+    path('<int:course_id>/concept-map/', views.course_concept_map_api, name='concept_map_api'),
 ]

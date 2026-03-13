@@ -105,6 +105,12 @@
 
 <div style="max-width: 880px; margin: 0 auto; padding: 2.5rem 1rem;">
 
+    <!-- Back Link -->
+    <a href="{% url 'course:list' %}" class="back-nav-link hover-bright"
+        style="display: inline-flex; align-items: center; gap: 10px; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.95rem; margin-bottom: 2rem; transition: color 0.2s ease;">
+        <i class="fas fa-arrow-left"></i> Back to Courses
+    </a>
+
     <!-- Header -->
     <div style="text-align: center; margin-bottom: 3rem;">
         <h1
@@ -122,24 +128,34 @@
         <form method="post" id="planForm" onsubmit="showLoading()">
             {% csrf_token %}
 
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
-                <div>
+            <input type="hidden" name="course_id" value="{{ request.GET.course_id|default:'' }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 1.5rem;">
+                <div style="flex: 2 1 250px;">
                     <label
                         style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.75rem;">
                         Target Subject or Topic
                     </label>
                     <input type="text" name="topic" value="{{ topic|default:'' }}"
                         placeholder="e.g. Quantum Physics, Machine Learning Fundamentals..." required class="chat-input"
-                        id="topicInput">
+                        id="topicInput" style="width: 100%; box-sizing: border-box;">
                 </div>
 
-                <div>
+                <div style="flex: 1 1 150px;">
                     <label
                         style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.75rem;">
-                        Study Hours / Week
+                        Exam Date
                     </label>
-                    <input type="number" name="hours" min="1" max="40" value="{{ hours|default:5 }}" required
-                        class="chat-input">
+                    <input type="date" name="exam_date" value="{{ exam_date|default:'' }}" required class="chat-input"
+                        id="examDateInput" min="{% now 'Y-m-d' %}" style="width: 100%; box-sizing: border-box;">
+                </div>
+
+                <div style="flex: 1 1 150px;">
+                    <label
+                        style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.75rem;">
+                        Daily Study Hours
+                    </label>
+                    <input type="number" name="hours" min="1" max="24" value="{{ hours|default:2 }}" required
+                        class="chat-input" id="hoursInput" style="width: 100%; box-sizing: border-box;">
                 </div>
             </div>
 
@@ -179,15 +195,15 @@
             <p style="color: var(--text-light); text-align: center;">Ready to start? Accelerate your learning with these
                 AI tools:</p>
             <div style="display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center;">
-                <a href="{% url 'quiz_subjects' %}" class="glass-card"
+                <a href="{% url 'quiz:quiz_subjects' %}" class="glass-card"
                     style="padding: 1rem 1.5rem; text-decoration: none; color: white; display: flex; align-items: center; gap: 0.75rem; transition: all 0.2s;">
                     <i class="fas fa-question-circle" style="color: var(--primary);"></i> Practice Quiz
                 </a>
-                <a href="{% url 'notes' %}" class="glass-card"
+                <a href="{% url 'notes:notes_list' %}" class="glass-card"
                     style="padding: 1rem 1.5rem; text-decoration: none; color: white; display: flex; align-items: center; gap: 0.75rem; transition: all 0.2s;">
                     <i class="fas fa-sticky-note" style="color: var(--accent);"></i> Smart Notes
                 </a>
-                <a href="{% url 'sentence_explain' %}" class="glass-card"
+                <a href="{% url 'sentence_explain:sentence_explain' %}" class="glass-card"
                     style="padding: 1rem 1.5rem; text-decoration: none; color: white; display: flex; align-items: center; gap: 0.75rem; transition: all 0.2s;">
                     <i class="fas fa-robot" style="color: var(--success);"></i> AI Assistant
                 </a>

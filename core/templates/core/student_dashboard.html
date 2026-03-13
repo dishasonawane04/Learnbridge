@@ -66,6 +66,242 @@
         margin-top: 1.5rem;
         text-align: right;
     }
+
+    /* 💎 Premium AI Tool Cards */
+    .premium-tool-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+        margin-bottom: 4rem;
+    }
+
+    .premium-tool-card {
+        background: rgba(20, 25, 45, 0.6);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+        overflow: hidden;
+        min-height: 340px;
+    }
+
+    .premium-tool-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 24px;
+        padding: 1px;
+        background: linear-gradient(135deg, rgba(124, 108, 255, 0.3), transparent, rgba(91, 140, 255, 0.3));
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+    }
+
+    .premium-tool-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        background: rgba(20, 25, 45, 0.8);
+        border-color: rgba(124, 108, 255, 0.3);
+        box-shadow:
+            0 20px 40px -12px rgba(0, 0, 0, 0.5),
+            0 0 20px rgba(124, 108, 255, 0.15);
+    }
+
+    .premium-tool-card:hover::before {
+        opacity: 1;
+    }
+
+    /* Icon Container Overhaul */
+    .tool-icon-wrapper {
+        width: 52px;
+        height: 52px;
+        background: linear-gradient(135deg, #7c6cff, #5b8cff);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.4rem;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 16px rgba(124, 108, 255, 0.3);
+        transition: transform 0.3s ease;
+    }
+
+    .premium-tool-card:hover .tool-icon-wrapper {
+        transform: scale(1.1) rotate(-5deg);
+    }
+
+    /* Tool Typography */
+    .tool-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #f8fafc;
+        margin-bottom: 12px;
+        letter-spacing: -0.01em;
+    }
+
+    .tool-description {
+        color: #94a3b8;
+        line-height: 1.7;
+        font-size: 0.95rem;
+        margin-bottom: 28px;
+    }
+
+    /* Premium Button Stylings */
+    .btn-tool-premium {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: linear-gradient(135deg, rgba(124, 108, 255, 0.1), rgba(91, 140, 255, 0.1));
+        border: 1px solid rgba(124, 108, 255, 0.2);
+        color: #e2e8f0;
+        padding: 14px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        text-decoration: none !important;
+        transition: all 0.3s ease;
+        margin-top: auto;
+    }
+
+    .btn-tool-premium:hover {
+        background: linear-gradient(135deg, #7c6cff, #5b8cff);
+        color: white;
+        border-color: transparent;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(124, 108, 255, 0.3);
+    }
+
+    /* 🎬 Staggered Entrance Animations */
+    .reveal-item {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal-item.active {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* 🚀 Premium Quick Study Hub */
+    .premium-hub-card {
+        background: linear-gradient(135deg, rgba(80, 60, 200, 0.25), rgba(20, 30, 80, 0.6));
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 28px;
+        padding: 3rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(124, 108, 255, 0.1);
+        margin-top: 50px;
+        margin-bottom: 3.5rem;
+    }
+
+    @media (max-width: 992px) {
+        .premium-hub-card {
+            margin-top: 40px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .premium-hub-card {
+            margin-top: 30px;
+        }
+    }
+
+    .hub-glow-orb {
+        position: absolute;
+        top: -100px;
+        right: -100px;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(124, 108, 255, 0.2), transparent);
+        filter: blur(60px);
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    .gradient-text-blue {
+        background: linear-gradient(90deg, #7c6cff, #5b8cff);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+    }
+
+    .hub-action-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .hub-action-card {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        text-decoration: none !important;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hub-action-card:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(124, 108, 255, 0.4);
+        transform: translateY(-6px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3), 0 0 15px rgba(124, 108, 255, 0.2);
+    }
+
+    .hub-icon-container {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        background: linear-gradient(135deg, #7c6cff, #5b8cff);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.25rem;
+        box-shadow: 0 8px 16px rgba(124, 108, 255, 0.25);
+        transition: transform 0.3s ease;
+    }
+
+    .hub-action-card:hover .hub-icon-container {
+        transform: scale(1.1) rotate(-5deg);
+    }
+
+    .hub-info h4 {
+        color: white;
+        font-weight: 600;
+        font-size: 1.15rem;
+        margin-bottom: 4px;
+    }
+
+    .hub-info p {
+        color: #94a3b8;
+        font-size: 0.9rem;
+        margin: 0;
+    }
 </style>
 {% endblock %}
 
@@ -75,7 +311,13 @@
     <div class="glass-card fade-in"
         style="margin-bottom: 3rem; position: relative; overflow: hidden; padding: 3rem; background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);">
         <div style="position: relative; z-index: 1;">
-            <span class="badge badge-primary" style="margin-bottom: 1.5rem;">Student Dashboard</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <span class="badge badge-primary">Student Dashboard</span>
+                <a href="{% url 'home' %}" class="btn btn-secondary"
+                    style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 10px;">
+                    <i class="fas fa-home"></i> Back to Home
+                </a>
+            </div>
             <h1 style="margin-top: 0.5rem;">Welcome back,
                 <span class="gradient-text">
                     {{ request.user.first_name|default:request.user.username }}
@@ -213,45 +455,53 @@
                 if (data && data.status === 'success') {
                     // Show Active Course Hub
                     container.innerHTML = `
-                        <div class="glass-card fade-in" 
-                             style="margin-bottom: 3rem; padding: 2.5rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 24px; position: relative; overflow: hidden;">
-                            <div style="position: absolute; top: -100px; right: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(99, 102, 241, 0.2), transparent); filter: blur(60px); z-index: 0;"></div>
+                        <div class="premium-hub-card reveal-item" style="opacity: 1; transform: translateY(0);">
+                            <div class="hub-glow-orb"></div>
                             <div style="position: relative; z-index: 1;">
-                                <div class="d-flex justify-content-between align-items-start mb-4">
-                                    <div>
-                                        <span class="badge badge-primary mb-2" style="background: var(--primary);"><i class="fas fa-bolt"></i> Quick Study Hub</span>
-                                        <h2 style="font-size: 2rem; font-weight: 800; margin: 0;">Continue: <span class="active-course-gradient">${data.title}</span></h2>
-                                    </div>
-                                    <a href="${data.url}" class="btn btn-secondary" style="border-radius: 12px; padding: 0.75rem 1.5rem;">
-                                        <i class="fas fa-external-link-alt"></i> Full Dashboard
-                                    </a>
+                                <div class="mb-5">
+                                    <span class="badge badge-primary mb-3" style="background: var(--primary); padding: 0.5rem 1rem; border-radius: 8px;"><i class="fas fa-bolt me-1"></i> Quick Study Hub</span>
+                                    <h2 style="font-size: 2.2rem; font-weight: 800; margin: 0; line-height: 1.2;">
+                                        <span style="color: rgba(255,255,255,0.6); font-weight: 600;">Continue:</span> 
+                                        <span class="gradient-text-blue">${data.title}</span>
+                                    </h2>
                                 </div>
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-                                    <a href="/ai-tutor/chat/${data.id}/" class="btn btn-glass-ai p-3 text-start d-flex align-items-center gap-3">
-                                        <div class="ai-icon bg-primary"><i class="fas fa-robot"></i></div>
-                                        <div>
-                                            <div class="fw-bold text-white small">AI Tutor</div>
-                                            <div class="x-small text-muted">Course-linked chat</div>
+                                <div class="hub-action-grid">
+                                    <a href="/ai-tutor/chat/${data.id}/" class="hub-action-card reveal-item" style="transition-delay: 0.1s;">
+                                        <div class="hub-icon-container" style="background: linear-gradient(135deg, #7c6cff, #5b8cff);">
+                                            <i class="fas fa-robot"></i>
+                                        </div>
+                                        <div class="hub-info">
+                                            <h4>AI Tutor</h4>
+                                            <p>Course-linked chat</p>
                                         </div>
                                     </a>
-                                    <a href="/quiz/start/?subject=${encodeURIComponent(data.title)}" class="btn btn-glass-ai p-3 text-start d-flex align-items-center gap-3">
-                                        <div class="ai-icon bg-success"><i class="fas fa-vial"></i></div>
-                                        <div>
-                                            <div class="fw-bold text-white small">Take Quiz</div>
-                                            <div class="x-small text-muted">Test knowledge</div>
+                                    <a href="/quiz/start/?subject=${encodeURIComponent(data.title)}" class="hub-action-card reveal-item" style="transition-delay: 0.2s;">
+                                        <div class="hub-icon-container" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                            <i class="fas fa-vial"></i>
+                                        </div>
+                                        <div class="hub-info">
+                                            <h4>Take Quiz</h4>
+                                            <p>Test knowledge</p>
                                         </div>
                                     </a>
-                                    <a href="/course/${data.id}/summary/" class="btn btn-glass-ai p-3 text-start d-flex align-items-center gap-3">
-                                        <div class="ai-icon bg-secondary"><i class="fas fa-file-invoice"></i></div>
-                                        <div>
-                                            <div class="fw-bold text-white small">Summarize</div>
-                                            <div class="x-small text-muted">Core concepts</div>
+                                    <a href="/course/${data.id}/summary/" class="hub-action-card reveal-item" style="transition-delay: 0.3s;">
+                                        <div class="hub-icon-container" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </div>
+                                        <div class="hub-info">
+                                            <h4>Summarize</h4>
+                                            <p>Core concepts</p>
                                         </div>
                                     </a>
                                 </div>
                             </div>
                         </div>
                     `;
+
+                    // Manually trigger reveal for dynamically added items
+                    setTimeout(() => {
+                        container.querySelectorAll('.reveal-item').forEach(el => el.classList.add('active'));
+                    }, 50);
                 } else {
                     // Show Empty State / Start a Course
                     container.innerHTML = `
@@ -275,7 +525,17 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', loadQuickHub);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadQuickHub();
+
+            // Staggered Reveal Animation
+            const reveals = document.querySelectorAll('.reveal-item');
+            reveals.forEach((el, index) => {
+                setTimeout(() => {
+                    el.classList.add('active');
+                }, 100 + (index * 120));
+            });
+        });
     </script>
 
     <!-- Course Stats Grid -->
@@ -330,122 +590,122 @@
     </div>
 
     <!-- My Apps Grid -->
-    <div
-        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+    <div class="premium-tool-grid">
         <!-- App 1: AI Tutor -->
-        <div class="glass-card feature-card"
-            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
+        <div class="premium-tool-card reveal-item" data-id="ai-tutor">
             <div>
-                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary);">
+                <div class="tool-icon-wrapper">
                     <i class="fas fa-robot"></i>
                 </div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--text-main);">🤖 AI Tutor</h3>
-                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                <h3 class="tool-title">🤖 AI Tutor</h3>
+                <p class="tool-description">
                     Your personal AI tutor. Chat, ask questions, and get instant explanations.
                 </p>
             </div>
             <a href="{% if active_course %}{% url 'ai_tutor:start_course_chat' active_course.id %}{% else %}{% url 'ai_tutor:tutor_home' %}{% endif %}"
-                class="btn btn-primary w-full mt-4" style="text-align: center;">
-                {% if active_course %}Chat with Course AI{% else %}Start AI Tutor{% endif %}
+                class="btn-tool-premium">
+                <span>{% if active_course %}Chat with Course AI{% else %}Start AI Tutor{% endif %}</span>
+                <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
             </a>
         </div>
 
         <!-- App 2: Learning Support -->
-        <div class="glass-card feature-card"
-            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
+        <div class="premium-tool-card reveal-item" data-id="support">
             <div>
-                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--success);">
+                <div class="tool-icon-wrapper" style="background: linear-gradient(135deg, #34d399, #10b981);">
                     <i class="fas fa-life-ring"></i>
                 </div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--text-main);">🤝 Support</h3>
-                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                <h3 class="tool-title">🤝 Support</h3>
+                <p class="tool-description">
                     Get guided hints and simplified break-downs to help you solve problems.
                 </p>
             </div>
             <a href="{% if active_course %}{% url 'learning_support:start_course_support' active_course.id %}{% else %}{% url 'learning_support:support_home' %}{% endif %}"
-                class="btn btn-primary w-full mt-4" style="text-align: center;">
-                Get Support
+                class="btn-tool-premium">
+                <span>Get Support</span>
+                <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
             </a>
         </div>
 
         <!-- App 3: Flashcard Generator -->
-        <div class="glass-card feature-card"
-            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
+        <div class="premium-tool-card reveal-item" data-id="flashcards">
             <div>
-                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--accent);">
+                <div class="tool-icon-wrapper" style="background: linear-gradient(135deg, #ec4899, #d946ef);">
                     <i class="fas fa-layer-group"></i>
                 </div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--text-main);">🗂️ Flashcards</h3>
-                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                <h3 class="tool-title">🗂️ Flashcards</h3>
+                <p class="tool-description">
                     Generate active recall flashcards from your study materials.
                 </p>
             </div>
             <a href="{% if active_course %}{% url 'flashcard_generator:generate_from_course' active_course.id %}{% else %}{% url 'flashcard_generator:flashcard_home' %}{% endif %}"
-                class="btn btn-primary w-full mt-4" style="text-align: center;">
-                Generate Flashcards
+                class="btn-tool-premium">
+                <span>Generate Flashcards</span>
+                <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
             </a>
         </div>
 
         <!-- App 4: Prerequisite Checker -->
-        <div class="glass-card feature-card"
-            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
+        <div class="premium-tool-card reveal-item" data-id="readiness">
             <div>
-                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary);">
+                <div class="tool-icon-wrapper" style="background: linear-gradient(135deg, #6366f1, #3b82f6);">
                     <i class="fas fa-tasks"></i>
                 </div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--text-main);">✅ Readiness</h3>
-                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                <h3 class="tool-title">✅ Readiness</h3>
+                <p class="tool-description">
                     Check your readiness for new topics with quick quizzes.
                 </p>
             </div>
-            <a href="{% url 'prerequisite_checker:home' %}" class="btn btn-primary w-full mt-4"
-                style="text-align: center;">
-                Check Readiness
+            <a href="{% url 'prerequisite_checker:home' %}" class="btn-tool-premium">
+                <span>Check Readiness</span>
+                <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
             </a>
         </div>
 
         <!-- App 5: LOR Generator -->
-        <div class="glass-card feature-card"
-            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
+        <div class="premium-tool-card reveal-item" data-id="lor">
             <div>
-                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--success);">
+                <div class="tool-icon-wrapper" style="background: linear-gradient(135deg, #10b981, #059669);">
                     <i class="fas fa-file-signature"></i>
                 </div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--text-main);">✍️ LOR Gen</h3>
-                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                <h3 class="tool-title">✍️ LOR Gen</h3>
+                <p class="tool-description">
                     Draft professional Letters of Recommendation quickly.
                 </p>
             </div>
-            <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}"
-                class="btn btn-primary w-full mt-4" style="text-align: center;">Create LOR</a>
+            <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}" class="btn-tool-premium">
+                <span>Create LOR</span>
+                <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
+            </a>
         </div>
 
         <!-- App 6: Analytics Dashboard -->
-        <div class="glass-card feature-card"
-            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
+        <div class="premium-tool-card reveal-item" data-id="analytics">
             <div>
-                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--accent);">
+                <div class="tool-icon-wrapper" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
                     <i class="fas fa-chart-pie"></i>
                 </div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--text-main);">📊 Analytics</h3>
-                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                <h3 class="tool-title">📊 Analytics</h3>
+                <p class="tool-description">
                     Visualize your learning progress and performance.
                 </p>
             </div>
-            <a href="{% url 'analytics:student_dashboard' %}" class="btn btn-primary w-full mt-4"
-                style="text-align: center;">View Analytics</a>
+            <a href="{% url 'analytics:student_dashboard' %}" class="btn-tool-premium">
+                <span>View Analytics</span>
+                <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
+            </a>
         </div>
     </div>
 </div>
 
 <!-- AI Recommendations Row -->
-<div style="margin-bottom: 3rem;">
+<div style="max-width: 800px; margin: 0 auto 3rem auto;">
     <h3 style="margin-bottom: 1.5rem; text-align: center;"><i class="fas fa-sparkles"
             style="color: var(--primary);"></i>
         AI-Powered Recommendations</h3>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
         {% for rec in recommendations %}
-        <div class="glass-card" style="padding: 1.5rem; border-top: 4px solid var(--primary);">
+        <div class="glass-card" style="padding: 4rem; border-top: 4px solid var(--primary);">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
                 <h4 style="font-size: 1.1rem; margin: 0;">{{ rec.topic }}</h4>
             </div>
@@ -456,61 +716,7 @@
     </div>
 </div>
 
-<!-- Course Progress Section -->
-<div style="margin-bottom: 3rem;">
-    <h3 style="font-size: 1.25rem; margin-bottom: 1.5rem; text-align: center;">Enrolled Courses Progress</h3>
 
-    {% if course_data %}
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
-        {% for course_item in course_data %}
-        <div class="glass-card"
-            style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-            <div>
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                    <h4 style="font-size: 1.15rem; margin: 0; color: white;">{{ course_item.title }}</h4>
-                    <span class="badge"
-                        style="background: rgba(255,255,255,0.05); color: var(--text-light); border: 1px solid rgba(255,255,255,0.1);">{{
-                        course_item.level }}</span>
-                </div>
-
-                <div style="margin-bottom: 1.5rem;">
-                    <div
-                        style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem;">
-                        <span style="color: var(--text-muted);">{{ course_item.units_count }} Units</span>
-                        <span style="color: var(--primary); font-weight: 600;">{{ course_item.progress }}%</span>
-                    </div>
-                    <div style="height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden;">
-                        <div
-                            style="height: 100%; width: {{ course_item.progress }}%; background: var(--primary); border-radius: 4px; transition: width 0.5s ease;">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <a href="{% url 'course:course_dashboard' course_item.id %}" class="btn btn-primary w-full"
-                style="padding: 0.7rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                <i class="fas fa-play-circle"></i> Resume Course
-            </a>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div class="glass-card" style="padding: 4rem 2rem; text-align: center; max-width: 600px; margin: 0 auto;">
-        <div
-            style="width: 80px; height: 80px; background: rgba(99, 102, 241, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
-            <i class="fas fa-book" style="color: var(--primary); font-size: 2rem;"></i>
-        </div>
-        <h3 style="color: white; margin-bottom: 1rem;">No Enrolled Courses</h3>
-        <p style="color: var(--text-muted); margin-bottom: 2rem; line-height: 1.6;">
-            You haven't enrolled in any courses yet. Start your learning journey by exploring our available courses.
-        </p>
-        <a href="{% url 'course:list' %}" class="btn btn-primary"
-            style="padding: 0.8rem 2.5rem; border-radius: 12px; font-weight: 600;">
-            Browse Courses
-        </a>
-    </div>
-    {% endif %}
-</div>
 </div>
 
 {{ topic_dist|json_script:"topic-data" }}

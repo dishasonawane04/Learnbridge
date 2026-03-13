@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container fade-in" style="max-width: 1100px; margin: 2rem auto; padding: 0 1rem;">
+    <div class="dashboard-header">
+        <h1>Practice Results</h1>
+        <p>Course: {{ attempt.course.title }}</p>
+    </div>
+
+    <div class="dashboard-grid" style="margin-bottom: 3rem;">
+        <!-- Score Card -->
+        <div class="glass-card stat-card fade-in"
+            style="animation-delay: 0.1s; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem;">
+            <div class="stat-icon"
+                style="background: rgba(16, 185, 129, 0.2); color: var(--success); margin-bottom: 1rem;">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <div class="stat-value" style="font-size: 3rem;">{{ percentage }}%</div>
+            <div class="stat-label">Overall Score</div>
+            <p style="color: var(--text-dim); margin-top: 0.5rem;">
+                {{ attempt.score|floatformat:1 }} / {{ attempt.total_questions }} Points
+            </p>
+        </div>
+
+        <!-- Weak Areas -->
+        <div class="glass-card fade-in" style="animation-delay: 0.2s; padding: 2rem;">
+            <h3 style="color: white; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <i class="fas fa-bullseye" style="color: var(--danger);"></i>
+                Focus Areas
+            </h3>
+            {% if attempt.weak_areas %}
+            <p style="color: var(--text-light); margin-bottom: 1rem;">You should focus more on:</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                {% for area in attempt.weak_areas %}
+                <span class="badge"
+                    style="background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
+                    <i class="fas fa-minus-circle" style="margin-right: 0.4rem;"></i> {{ area }}
+                </span>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color: var(--success);">Great job! No specific weak areas detected.</p>
+            {% endif %}
+        </div>
+
+        <!-- Recommendations -->
+        <div class="glass-card fade-in" style="animation-delay: 0.3s; padding: 2rem;">
+            <h3 style="color: white; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <i class="fas fa-lightbulb" style="color: var(--accent);"></i>
+                Next Steps
+            </h3>
+            <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 1rem;">
+                {% for rec in attempt.recommendations %}
+                <li
+                    style="display: flex; align-items: start; gap: 1rem; color: var(--text-light); background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--accent);">
+                    {{ rec }}
+                </li>
+                {% endfor %}
+            </ul>
+            <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                <a href="{% url 'course:course_dashboard' attempt.course.id %}" class="btn btn-primary"
+                    style="flex: 1; text-align: center;">Return to Course</a>
+                <a href="{% url 'quiz:quiz_subjects' %}" class="btn glass-card"
+                    style="flex: 1; text-align: center; border: 1px solid rgba(255,255,255,0.1);">Take Quiz</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Review -->
+    <h2 class="section-title fade-in" style="margin-bottom: 2rem;">Detailed Feedback</h2>
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        {% for ans in answers %}
+
+        <div class="glass-card fade-in"
+            style="padding: 1.5rem 2rem; border-left: 4px solid {% if ans.is_correct %}var(--success){% elif ans.score_awarded > 0 %}var(--accent){% else %}var(--danger){% endif %};">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                <span class="badge" style="background: rgba(255,255,255,0.1); color: var(--text-light);">
+                    Topic: {{ ans.question.topic|default:"General" }}
+                </span>
+
+                <span
+                    style="font-weight: 600; font-size: 1.1rem; color: {% if ans.is_correct %}var(--success){% elif ans.score_awarded > 0 %}var(--accent){% else %}var(--danger){% endif %};">
+                    {{ ans.score_awarded|floatformat:1 }} / 1.0
+                </span>
+            </div>
+
+            <p style="color: var(--text-dim); margin-bottom: 0.25rem; font-size: 0.85rem; text-transform: uppercase;">
+                Question
+            </p>
+            <p style="color: white; font-size: 1.1rem; margin-bottom: 1.25rem;">
+                {{ ans.question.question_text|default:"Unavailable" }}
+            </p>
+
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div
+                    style="background: rgba(255,255,255,0.02); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div
+                        style="color: var(--text-dim); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem;">
+                        Your Answer
+                    </div>
+                    <div
+                        style="color: {% if ans.is_correct %}var(--success){% else %}white{% endif %}; word-break: break-word;">
+                        {{ ans.user_answer|default:"No answer provided" }}
+                    </div>
+                </div>
+
+                <div
+                    style="background: rgba(16, 185, 129, 0.05); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div
+                        style="color: var(--success); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem;">
+                        Correct Answer
+                    </div>
+                    <div style="color: white; word-break: break-word;">
+                        {{ ans.question.correct_answer|default:"Not available" }}
+                    </div>
+                </div>
+            </div>
+
+            {% if ans.ai_explanation %}
+            <div
+                style="background: rgba(99, 102, 241, 0.05); padding: 1.25rem; border-radius: 12px; border-left: 3px solid var(--primary);">
+                <div
+                    style="color: var(--primary); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem;">
+                    <i class="fas fa-robot"></i> AI Feedback
+                </div>
+                <div style="color: var(--text-light); line-height: 1.5;">
+                    {{ ans.ai_explanation|default:"No feedback provided." }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

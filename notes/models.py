@@ -35,3 +35,16 @@ class NoteImage(models.Model):
                     NoteImage.objects.filter(pk=self.pk).update(extracted_text=text)
             except Exception as e:
                 print(f"OCR Failed for NoteImage {self.id}: {e}")
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=Note)
+def trigger_concept_map_update(sender, instance, created, **kwargs):
+    """Triggers concept map generation when a note is saved."""
+    if instance.course:
+        try:
+            from course.services.concept_map import ConceptMapService
+            ConceptMapService.generate_for_note(instance.id)
+        except Exception as e:
+            print(f"Failed to trigger concept map update: {e}")

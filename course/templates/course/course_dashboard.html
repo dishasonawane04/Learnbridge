@@ -1,84 +1,238 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 🚀 High-Impact Professional Background */
+.course-workspace {
+    background-color: #020617 !important;
+    background-image: 
+        radial-gradient(at 20% 20%, rgba(99, 102, 241, 0.18) 0px, transparent 40%),
+        radial-gradient(at 80% 10%, rgba(139, 92, 246, 0.18) 0px, transparent 40%),
+        url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h1v1H0V0zm20 20h1v1H20v-1z' fill='rgba(255,255,255,0.06)' fill-opacity='1' fill-rule='evenodd'%3E%3C/path%3E%3C/svg%3E") !important;
+    background-attachment: fixed !important;
+    position: relative;
+    overflow-x: hidden;
+    z-index: 1;
+}
+
+/* Animated Vibrant Blobs */
+.course-workspace::before, .course-workspace::after {
+    content: "";
+    position: fixed;
+    width: 800px;
+    height: 800px;
+    border-radius: 50%;
+    filter: blur(120px);
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.course-workspace::before {
+    top: -200px;
+    left: -200px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+    animation: blobFloat 12s infinite ease-in-out;
+}
+
+.course-workspace::after {
+    bottom: -300px;
+    right: -200px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+    animation: blobFloat 18s infinite ease-in-out reverse;
+}
+
+@keyframes blobFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(100px, 80px) scale(1.2); }
+}
+
+/* ✨ Premium Title Shine */
+.workspace-title-section h1 {
+    background: linear-gradient(120deg, #fff 0%, #fff 40%, #818cf8 50%, #fff 60%, #fff 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+    animation: shine 5s linear infinite;
+    font-weight: 800;
+}
+
+@keyframes shine {
+    to { background-position: 200% center; }
+}
+
+/* 📦 Staggered Reveal Logic (JS Triggered) */
+.reveal-section {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: simpleReveal 1s ease forwards;
+}
+
+.reveal-section.active {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    animation: none !important;
+}
+
+@keyframes simpleReveal {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 🖱️ Hover Effects - Refined & Impactful */
+.compact-tool-card, .material-row {
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Glossy Shine on Hover */
+.compact-tool-card::after, .material-row::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    transition: left 0.6s ease;
+    z-index: 1;
+}
+
+.compact-tool-card:hover::after, .material-row:hover::after {
+    left: 150%;
+}
+
+.compact-tool-card:hover, .material-row:hover {
+    transform: translateY(-8px) scale(1.01) !important;
+    border-color: rgba(99, 102, 241, 0.4) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.1) !important;
+}
+
+.tool-arrow {
+    transition: transform 0.3s ease !important;
+}
+
+.compact-tool-card:hover .tool-arrow {
+    transform: translateX(8px) !important;
+    color: #818cf8 !important;
+}
+
+/* Add Notes Button */
+.btn-add-notes {
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.btn-add-notes:hover {
+    transform: scale(1.08) rotate(1deg) !important;
+    box-shadow: 0 0 25px rgba(99, 102, 241, 0.5) !important;
+}
+
+/* Actions Fade-in */
+.material-actions {
+    opacity: 0 !important;
+    transition: opacity 0.3s ease, transform 0.3s ease !important;
+    transform: translateX(10px);
+}
+
+.material-row:hover .material-actions {
+    opacity: 1 !important;
+    transform: translateX(0);
+}
+</style>
+{% endblock %}
 
 {% block content %}
-
 <div class="course-workspace">
-    {% if materials.exists %}
+    {% if has_content %}
     <!-- HEADER AREA -->
-    <div class="workspace-header-area fade-in">
+    <div class="workspace-header-area reveal-section" id="section-1">
         <div class="workspace-title-section">
-            <h1>{{ course.title }}</h1>
-            <p class="description">{{ course.description|default:"Workspace for your personalized AI course" }}</p>
+            <h1 class="fade-in">{{ course.title }}</h1>
+            <p class="description">{{ course.description|default:"Your personalized AI-powered study workspace" }}</p>
         </div>
 
         <div class="header-actions">
-            {% if has_knowledge %}
-            <span class="status-badge">
-                <i class="fas fa-sparkles"></i> AI Personalized
-            </span>
-            {% endif %}
+            <!-- Back Button -->
+            <a href="{% url 'course:list' %}" class="back-btn-premium" style="margin-right: 15px;">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Courses</span>
+            </a>
 
-            <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data"
-                id="addMoreForm">
-                {% csrf_token %}
-                <input type="file" name="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
-                    multiple onchange="handleDashboardUpload(this)" style="display: none;">
-                <button type="button" class="btn-add-notes" onclick="document.getElementById('fileInput').click();">
-                    <i class="fas fa-plus"></i> Add Notes
-                </button>
-            </form>
+            <div class="status-badge">
+                <i class="fas fa-sparkles"></i>
+                <span>AI Personalized</span>
+            </div>
+            
+            <button class="btn-add-notes" onclick="window.location.href='{% url 'course:upload_notes' course.id %}'">
+                <i class="fas fa-plus"></i>
+                <span>Add Notes</span>
+            </button>
         </div>
     </div>
 
-    <!-- MAIN TWO-COLUMN WORKSPACE -->
-    <div class="workspace-grid fade-in">
-
-        <!-- PRIMARY COLUMN: Materials (65%) -->
-        <div class="materials-column">
-            <span class="section-label" style="margin-bottom: 24px;">Your Materials</span>
+    <!-- MAIN GRID -->
+    <div class="workspace-grid">
+        <!-- LEFT: MATERIALS -->
+        <div class="materials-column reveal-section" id="section-2">
+            <span class="section-label">Your Materials</span>
+            
             <div class="materials-list">
-                {% for mat in materials %}
+                {% for material in materials %}
                 <div class="material-row">
                     <div class="material-info">
                         <div class="file-icon">
-                            <i
-                                class="fas {% if mat.file_type == 'pdf' %}fa-file-pdf{% elif mat.file_type == 'ppt' %}fa-file-powerpoint{% elif mat.file_type == 'image' %}fa-file-image{% else %}fa-file-lines{% endif %}"></i>
+                            {% if material.file_type == 'pdf' %}
+                                <i class="fas fa-file-pdf"></i>
+                            {% elif material.file_type == 'image' %}
+                                <i class="fas fa-file-image"></i>
+                            {% else %}
+                                <i class="fas fa-file-lines"></i>
+                            {% endif %}
                         </div>
-                        <div class="file-details">
-                            <span class="file-name">{{ mat.file.name|cut:"course_materials/" }}</span>
-                            <span class="upload-date">Uploaded on {{ mat.created_at|date:"M d, Y" }}</span>
+                        <div class="file-meta">
+                            <span class="file-name">{{ material.file.name|slice:"15:" }}</span>
+                            <span class="upload-date">Uploaded on {{ material.uploaded_at|date:"M d, Y" }}</span>
                         </div>
                     </div>
+                    
                     <div class="material-actions">
-                        <a href="{{ mat.file.url }}" target="_blank" class="action-btn" title="View"><i
-                                class="fas fa-eye"></i></a>
-                        <a href="{% url 'course:material_delete' mat.id %}" class="action-btn text-danger"
-                            onclick="return confirm('Delete this document? AI knowledge will be updated.')"
-                            title="Delete">
-                            <i class="fas fa-trash-can"></i>
+                        <a href="{{ material.file.url }}" target="_blank" class="action-btn" title="View">
+                            <i class="far fa-eye"></i>
+                        </a>
+                        <a href="{% url 'course:material_delete' material.id %}" class="action-btn text-danger" title="Delete">
+                            <i class="far fa-trash-can"></i>
                         </a>
                     </div>
                 </div>
                 {% empty %}
-                <p
-                    style="color: #64748b; font-size: 0.9rem; padding: 20px; text-align: center; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.05);">
-                    No materials uploaded yet.</p>
+                <div class="empty-materials-card">
+                    <p>No materials uploaded yet. Add some notes to start learning!</p>
+                </div>
                 {% endfor %}
             </div>
         </div>
 
-        <!-- UTILITY COLUMN: Sticky AI Tools (35%) -->
-        <div class="tools-sidebar">
+        <!-- RIGHT: TOOLS SIDEBAR -->
+        <div class="tools-sidebar reveal-section" id="section-3">
             <div class="sidebar-header">
                 <span class="sidebar-label">AI Study Assistant</span>
                 <div class="sidebar-divider"></div>
             </div>
 
             <div class="tools-list">
+                <!-- AI Tutor -->
                 <a href="{% url 'ai_tutor:start_course_chat' course.id %}" class="compact-tool-card">
                     <div class="tool-left-group">
-                        <div class="tool-icon-sm"><i class="fas fa-brain"></i></div>
+                        <div class="tool-icon-sm">
+                            <i class="fas fa-brain"></i>
+                        </div>
                         <div class="tool-info-compact">
                             <span class="tool-title-sm">AI Tutor</span>
                             <span class="tool-subtitle-sm">Interactive course-based assistant</span>
@@ -87,10 +241,12 @@
                     <i class="fas fa-chevron-right tool-arrow"></i>
                 </a>
 
-                <a href="{% url 'quiz:quiz_start' %}?course_id={{ course.id }}" class="compact-tool-card"
-                    onclick="showQuizLoading()">
+                <!-- Quiz Generator -->
+                <a href="{% url 'quiz:quiz_start' %}?course_id={{ course.id }}" class="compact-tool-card">
                     <div class="tool-left-group">
-                        <div class="tool-icon-sm"><i class="fas fa-graduation-cap"></i></div>
+                        <div class="tool-icon-sm">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
                         <div class="tool-info-compact">
                             <span class="tool-title-sm">Quiz Generator</span>
                             <span class="tool-subtitle-sm">Dynamic questions from syllabus</span>
@@ -99,10 +255,12 @@
                     <i class="fas fa-chevron-right tool-arrow"></i>
                 </a>
 
-                <a href="{% url 'flashcard_generator:dynamic_flashcards' course.id %}" class="compact-tool-card"
-                    onclick="showAIProcessing('Generating Flashcards', 'Mining concepts and creating active recall cards...')">
+                <!-- Flashcards -->
+                <a href="{% url 'flashcard_generator:dynamic_flashcards' course.id %}" class="compact-tool-card">
                     <div class="tool-left-group">
-                        <div class="tool-icon-sm"><i class="fas fa-layer-group"></i></div>
+                        <div class="tool-icon-sm">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
                         <div class="tool-info-compact">
                             <span class="tool-title-sm">Flashcards</span>
                             <span class="tool-subtitle-sm">Smart revision cards</span>
@@ -111,10 +269,12 @@
                     <i class="fas fa-chevron-right tool-arrow"></i>
                 </a>
 
-                <a href="{% url 'learning_support:start_course_support' course.id %}" class="compact-tool-card"
-                    onclick="showAIProcessing('AI Learning Support', 'Initializing context-aware assistant...')">
+                <!-- Learning Support -->
+                <a href="{% url 'learning_support:start_course_support' course.id %}" class="compact-tool-card">
                     <div class="tool-left-group">
-                        <div class="tool-icon-sm"><i class="fas fa-life-ring"></i></div>
+                        <div class="tool-icon-sm">
+                            <i class="fas fa-life-ring"></i>
+                        </div>
                         <div class="tool-info-compact">
                             <span class="tool-title-sm">Learning Support</span>
                             <span class="tool-subtitle-sm">Context-aware study helper</span>
@@ -123,19 +283,49 @@
                     <i class="fas fa-chevron-right tool-arrow"></i>
                 </a>
 
-                <a href="{% url 'course:summary' course.id %}" class="compact-tool-card"
-                    onclick="showAIProcessing('Synthesizing Summary', 'Using AI to condense course materials into an executive overview...')">
+                <!-- Summary Engine -->
+                <a href="{% url 'course:summary' course.id %}" class="compact-tool-card">
                     <div class="tool-left-group">
-                        <div class="tool-icon-sm"><i class="fas fa-list-check"></i></div>
+                        <div class="tool-icon-sm">
+                            <i class="fas fa-file-contract"></i>
+                        </div>
                         <div class="tool-info-compact">
                             <span class="tool-title-sm">Summary Engine</span>
-                            <span class="tool-subtitle-sm">Structured topic summaries</span>
+                            <span class="tool-subtitle-sm">Extract key concepts fast</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right tool-arrow"></i>
+                </a>
+
+                <!-- Concept Map -->
+                <a href="javascript:void(0)" class="compact-tool-card" onclick="openConceptMap()">
+                    <div class="tool-left-group">
+                        <div class="tool-icon-sm"><i class="fas fa-project-diagram"></i></div>
+                        <div class="tool-info-compact">
+                            <span class="tool-title-sm">Concept Map</span>
+                            <span class="tool-subtitle-sm">Visual relationship graph</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right tool-arrow"></i>
+                </a>
+
+                <!-- Practice & Feedback -->
+                <a href="{% url 'assessment:start_practice' course.id %}" class="compact-tool-card"
+                    onclick="showAIProcessing('Generating Practice Test', 'Analyzing course material to generate custom MCQs and short answer questions...')">
+                    <div class="tool-left-group">
+                        <div class="tool-icon-sm" style="color: #8b5cf6;">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <div class="tool-info-compact">
+                            <span class="tool-title-sm">Practice & Feedback</span>
+                            <span class="tool-subtitle-sm">AI-graded practice test</span>
                         </div>
                     </div>
                     <i class="fas fa-chevron-right tool-arrow"></i>
                 </a>
 
                 {% if has_knowledge %}
+                <!-- Sentence Explainer -->
                 <a href="{% url 'sentence_explain:sentence_explain' %}" class="compact-tool-card"
                     onclick="showAIProcessing('Sentence Explainer', 'Preparing context-aware explanation engine...')">
                     <div class="tool-left-group">
@@ -154,34 +344,32 @@
 
     {% else %}
     <!-- UPLOAD MODE: Onboarding -->
-    <div class="onboarding-container">
-        <div class="course-upload-card fade-in">
-            <h2>Upload Your Study Notes</h2>
-            <p>Add PDFs, PPTs or documents. All quizzes and AI answers will be generated from these notes.</p>
-
-            <div class="upload-area" id="dropZone" onclick="document.getElementById('onboardingInput').click();"
-                style="min-height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
-                <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data"
-                    id="onboardingForm">
+    <div class="onboarding-container" style="position: relative;">
+        <a href="{% url 'course:list' %}" class="back-nav-link"
+            style="position: absolute; top: -40px; left: 0; display: inline-flex; align-items: center; gap: 10px; color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.9rem; transition: 0.2s;">
+            <i class="fas fa-arrow-left"></i> Back to Courses
+        </a>
+        <div class="course-upload-card reveal-section" id="section-1">
+            <h2>Welcome to {{ course.title }}</h2>
+            <p>To unlock AI-powered summaries, quizzes, and your personal tutor, please upload your course materials first.</p>
+            
+            <div class="upload-area" id="dropZone" onclick="document.getElementById('onboardingInput').click();">
+                <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data" id="onboardingForm">
                     {% csrf_token %}
-                    <input type="file" name="file" id="onboardingInput"
-                        accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" multiple
-                        onchange="handleDashboardUpload(this)" style="display:none;">
-
+                    <input type="file" name="file" id="onboardingInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" multiple onchange="handleDashboardUpload(this)" style="display:none;">
+                    
                     <div id="uploadPlaceholder">
-                        <i class="fas fa-cloud-upload-alt"
-                            style="font-size: 3rem; color: var(--primary); margin-bottom: 1.5rem;"></i>
-                        <h3 style="color: white; margin-bottom: 0.5rem;">Click or Drag Files Here</h3>
-                        <p class="supported-text">Support: PDF, PPT, Word, JPG, PNG</p>
+                        <i class="fas fa-cloud-arrow-up" style="font-size: 3rem; color: var(--primary); margin-bottom: 20px;"></i>
+                        <p>Click to upload PDFs, Images or Text notes</p>
+                        <div class="mt-4">
+                            <span class="upload-btn">Get Started</span>
+                        </div>
                     </div>
-
+                    
                     <!-- Dashboard Preview Grid -->
-                    <div id="dashboardPreview"
-                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 1rem; width: 100%; margin-top: 1rem;">
-                    </div>
+                    <div id="dashboardPreview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 1rem; width: 100%; margin-top: 1rem;"></div>
 
-                    <button type="submit" id="submitAllBtn" class="btn btn-primary"
-                        style="display: none; margin-top: 2rem; width: 100%; border-radius: 12px; padding: 1rem;">
+                    <button type="submit" id="submitAllBtn" class="btn btn-primary" onclick="showAIProcessing('Processing Notes', 'Analyzing and indexing your materials...')" style="display: none; margin-top: 2rem; width: 100%; border-radius: 12px; padding: 1rem;">
                         <i class="fas fa-rocket"></i> Start Processing
                     </button>
                 </form>
@@ -191,7 +379,82 @@
     {% endif %}
 </div>
 
+<!-- CONCEPT MAP MODAL -->
+<div id="conceptMapModal" class="modal-overlay"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; backdrop-filter:blur(10px);">
+    <div class="modal-content"
+        style="position:relative; width:90%; height:90%; margin:2% auto; background:#0f172a; border:1px solid rgba(255,255,255,0.1); border-radius:24px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+        <div class="modal-header"
+            style="padding:20px 30px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02);">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <div
+                    style="width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg, #06b6d4, #3b82f6); display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-project-diagram" style="color:white;"></i>
+                </div>
+                <div>
+                    <h2 style="margin:0; font-size:1.25rem; color:white;">AI Concept Map</h2>
+                    <p style="margin:0; font-size:0.85rem; color:rgba(255,255,255,0.5);">Visualizing relationships in {{
+                        course.title }}</p>
+                </div>
+            </div>
+            <button onclick="closeConceptMap()"
+                style="background:rgba(255,255,255,0.05); border:none; color:white; width:36px; height:36px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="conceptMapContainer" style="flex:1; width:100%; position:relative; background:#0a0a0c;">
+            <div id="cy" style="width:100%; height:100%;"></div>
+            <div id="cmLoader"
+                style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
+                <div class="spinner"
+                    style="width:40px; height:40px; border:3px solid rgba(255,255,255,0.1); border-top-color:#3b82f6; border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 15px;">
+                </div>
+                <p style="color:rgba(255,255,255,0.6); font-size:0.9rem;">Architecting Knowledge Graph...</p>
+            </div>
+            <div id="cmEmpty"
+                style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
+                <i class="fas fa-folder-open"
+                    style="font-size:3rem; color:rgba(255,255,255,0.1); margin-bottom:20px;"></i>
+                <h3 style="color:white; margin-bottom:10px;">No Map Available</h3>
+                <p style="color:rgba(255,255,255,0.5); max-width:300px;">Upload notes to generate a concept map.</p>
+            </div>
+        </div>
+        <div class="modal-footer"
+            style="padding:15px 30px; border-top:1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.01); display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; gap:20px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="width:10px; height:10px; border-radius:50%; background:#3b82f6;"></div>
+                    <span style="font-size:0.75rem; color:rgba(255,255,255,0.6);">Topic</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="width:10px; height:10px; border-radius:50%; background:#06b6d4;"></div>
+                    <span style="font-size:0.75rem; color:rgba(255,255,255,0.6);">Subtopic</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="width:10px; height:10px; border-radius:50%; background:#10b981;"></div>
+                    <span style="font-size:0.75rem; color:rgba(255,255,255,0.6);">Concept</span>
+                </div>
+            </div>
+            <button onclick="refreshConceptMap()"
+                style="background:transparent; border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); padding:6px 15px; border-radius:8px; font-size:0.8rem; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-sync-alt"></i> Regenerate Map
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js"></script>
+
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const reveals = document.querySelectorAll('.reveal-section');
+    reveals.forEach((el, index) => {
+        setTimeout(() => {
+            el.classList.add('active');
+        }, index * 150); // Staggered entry
+    });
+});
+
 
 
     function handleDashboardUpload(input) {
@@ -233,6 +496,146 @@
                 // If on active workspace (no onboarding card), just submit
                 input.form.submit();
             }
+        }
+    }
+
+    // CONCEPT MAP LOGIC
+    function openConceptMap() {
+        const modal = document.getElementById('conceptMapModal');
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        loadConceptMap();
+    }
+
+    function closeConceptMap() {
+        const modal = document.getElementById('conceptMapModal');
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    let cyInstance = null;
+
+    function loadConceptMap(force = false) {
+        const loader = document.getElementById('cmLoader');
+        const empty = document.getElementById('cmEmpty');
+        const cyContainer = document.getElementById('cy');
+
+        loader.style.display = 'block';
+        empty.style.display = 'none';
+        cyContainer.style.opacity = '0';
+
+        let url = "{% url 'course:concept_map_api' course.id %}";
+        if (force) url += "?force=1";
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error('Server returned error');
+                return response.json();
+            })
+            .then(data => {
+                loader.style.display = 'none';
+                if (data.status === 'success' && data.data && data.data.nodes) {
+                    initCytoscape(data.data);
+                    cyContainer.style.opacity = '1';
+                } else {
+                    empty.style.display = 'block';
+                    if (data.message) {
+                        empty.querySelector('p').innerText = data.message;
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('Concept Map Fetch Error:', err);
+                loader.style.display = 'none';
+                empty.style.display = 'block';
+                empty.querySelector('h3').innerText = "Generation Failed";
+                empty.querySelector('p').innerText = "The AI encountered an error while mapping concepts. Please try again.";
+            });
+    }
+
+    function initCytoscape(graphData) {
+        const elements = [];
+        graphData.nodes.forEach(node => {
+            elements.push({ data: { id: node.id, label: node.label, type: node.type } });
+        });
+        graphData.edges.forEach(edge => {
+            elements.push({ data: { source: edge.source, target: edge.target, label: edge.label } });
+        });
+
+        cyInstance = cytoscape({
+            container: document.getElementById('cy'),
+            elements: elements,
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'label': 'data(label)',
+                        'color': '#fff',
+                        'text-valign': 'center',
+                        'text-halign': 'center',
+                        'font-size': '10px',
+                        'text-wrap': 'wrap',
+                        'text-max-width': '80px',
+                        'background-color': '#3b82f6',
+                        'width': '60px',
+                        'height': '60px',
+                        'border-width': '2px',
+                        'border-color': 'rgba(255,255,255,0.1)'
+                    }
+                },
+                {
+                    selector: 'node[type="main"]',
+                    style: {
+                        'background-color': '#3b82f6',
+                        'width': '80px',
+                        'height': '80px',
+                        'font-size': '12px',
+                        'font-weight': 'bold'
+                    }
+                },
+                {
+                    selector: 'node[type="subtopic"]',
+                    style: {
+                        'background-color': '#06b6d4',
+                        'width': '70px',
+                        'height': '70px'
+                    }
+                },
+                {
+                    selector: 'node[type="concept"]',
+                    style: {
+                        'background-color': '#10b981',
+                        'width': '50px',
+                        'height': '50px'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 2,
+                        'line-color': 'rgba(255,255,255,0.1)',
+                        'target-arrow-color': 'rgba(255,255,255,0.1)',
+                        'target-arrow-shape': 'triangle',
+                        'curve-style': 'bezier',
+                        'label': 'data(label)',
+                        'font-size': '8px',
+                        'color': 'rgba(255,255,255,0.4)',
+                        'text-rotation': 'autorotate',
+                        'text-margin-y': '-10px'
+                    }
+                }
+            ],
+            layout: {
+                name: 'cose',
+                animate: true,
+                padding: 100
+            }
+        });
+    }
+
+    function refreshConceptMap() {
+        if (confirm("Regenerate the map? AI will re-analyze your current notes.")) {
+            loadConceptMap(true);
         }
     }
 

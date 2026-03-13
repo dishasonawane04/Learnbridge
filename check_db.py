@@ -9,12 +9,11 @@ sys.path.append(os.getcwd())
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "learnbridge.settings")
 django.setup()
 
-print("Schema for course_course:")
 try:
     with connection.cursor() as cursor:
-        cursor.execute("PRAGMA table_info(course_course)")
-        columns = cursor.fetchall()
-        for col in columns:
-            print(col)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'course_%'")
+        tables = cursor.fetchall()
+        for table in tables:
+            print(table[0])
 except Exception as e:
     print(f"Error: {e}")

@@ -151,6 +151,13 @@ class CourseMaterial(models.Model):
                 elif self.unit and self.unit.course:
                     self.unit.course.executive_summary = ""
                     self.unit.course.save(update_fields=['executive_summary'])
+
+                # 5. Trigger Concept Map Update
+                try:
+                    from .services.concept_map import ConceptMapService
+                    ConceptMapService.generate_for_course(cid, self.course.user if self.course else self.unit.course.user)
+                except Exception as ce:
+                    logger.error(f"Concept Map update failed for Material {self.id}: {ce}")
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)
@@ -301,3 +308,18 @@ class StudySession(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.activity_type} on {self.date}"
+
+class ConceptMap(models.Model):
+    """Stores visual concept map data generated from course notes"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='concept_maps')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='concept_maps')
+    note = models.ForeignKey('notes.Note', on_delete=models.CASCADE, related_name='concept_maps', null=True, blank=True)
+    data = models.JSONField(default=dict, help_text="Cytoscape.js compatible JSON data")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('course', 'note')
+
+    def __str__(self):
+        return f"Map for {self.course.title}"

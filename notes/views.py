@@ -24,6 +24,7 @@ def note_detail(request, note_id):
 async def generate_notes(request):
     response = None
     topic = request.GET.get('topic', '')
+    course_id = request.GET.get('course_id', '')
     
     # Structure requirement for the prompt
     structure_hint = """
@@ -39,10 +40,10 @@ async def generate_notes(request):
     if request.method == "POST":
         topic = request.POST.get("topic", topic)
         action = request.POST.get("action", "generate")
+        course_id = request.POST.get("course_id", course_id)
 
         if action == "save":
             content = request.POST.get("content")
-            course_id = request.POST.get("course_id")
             images = request.FILES.getlist("images")
             
             if content:
@@ -72,7 +73,8 @@ async def generate_notes(request):
         # --- CENTRALIZED CONTEXT INJECTION ---
         from core.ai.services import CourseContextEngine
         
-        course_id = request.session.get("active_course_id") or request.GET.get('course_id') or request.POST.get('course_id')
+        if not course_id:
+            course_id = request.session.get("active_course_id")
         
         context_text = CourseContextEngine.get_course_context(course_id)
         

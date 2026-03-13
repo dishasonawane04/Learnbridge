@@ -2,7 +2,6 @@ import fitz  # PyMuPDF
 from pptx import Presentation
 from PIL import Image
 import os
-import requests
 import base64
 from django.conf import settings
 
@@ -24,20 +23,24 @@ def extract_text_from_ppt(file_path):
 
 def extract_text_from_image(file_path):
     """Uses Ollama Vision model for OCR/Understanding"""
+    import urllib.request
+    import json
     try:
         with open(file_path, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
         
-        response = requests.post(
-            f"{settings.OLLAMA_BASE_URL}/api/generate",
-            json={
-                "model": getattr(settings, "OLLAMA_MODEL_VISION", "llava:latest"),
-                "prompt": "Transcribe all text from this image accurately. Only return the transcribed text.",
-                "images": [encoded_string],
-                "stream": False
-            }
-        )
-        return response.json().get('response', '')
+        url = f"{settings.OLLAMA_BASE_URL}/api/generate"
+        data = json.dumps({
+            "model": getattr(settings, "OLLAMA_MODEL_VISION", "llava:latest"),
+            "prompt": "Transcribe all text from this image accurately. Only return the transcribed text.",
+            "images": [encoded_string],
+            "stream": False
+        }).encode('utf-8')
+        
+        req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=180) as response:
+            result = json.loads(response.read().decode('utf-8'))
+            return result.get('response', '')
     except Exception as e:
         return f"Image OCR Failed: {str(e)}"
 

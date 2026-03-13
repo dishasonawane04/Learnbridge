@@ -56,17 +56,22 @@ def course_dashboard(request, course_id):
     
     request.session['active_course_id'] = str(course.id)
     materials = course.course_materials.all().order_by('-created_at')
+    units = course.units.all().order_by('order')
     
     # Check if RAG knowledge exists
     has_knowledge = course.knowledge_chunks.exists()
+    
+    # Determine if any content exists (Primary file, Materials, or Units)
+    has_content = materials.exists() or units.exists() or bool(course.uploaded_file)
 
     return render(request, 'course/course_dashboard.html', {
         'course': course,
         'materials': materials,
-        'has_knowledge': has_knowledge
+        'units': units,
+        'has_knowledge': has_knowledge,
+        'has_content': has_content
     })
 
-@login_required
 @login_required
 def upload_notes(request, course_id):
     course = get_object_or_404(Course, id=course_id, user=request.user)
@@ -90,7 +95,7 @@ def upload_notes(request, course_id):
         from core.ai.services import CourseContextEngine
         CourseContextEngine.consolidate_course_notes(course.id)
                 
-    return redirect('course:course_dashboard', course_id=course.id)
+    return redirect('course:dashboard', course_id=course.id)
 
 @login_required
 def unit_create(request, course_id):
@@ -460,6 +465,32 @@ def course_summary(request, course_id):
         'is_error': is_error
     })
 @login_required
+def course_rename(request, course_id):
+    """Rename a course via AJAX"""
+    course = get_object_or_404(Course, id=course_id)
+    
+    # Ownership verification
+    if course.user != request.user and not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            new_title = data.get('title', '').strip()
+            
+            if not new_title:
+                return JsonResponse({'status': 'error', 'message': 'Title cannot be empty'}, status=400)
+                
+            course.title = new_title
+            course.save(update_fields=['title'])
+            
+            return JsonResponse({'status': 'success', 'message': 'Course renamed successfully', 'new_title': new_title})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+            
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
+@login_required
 def course_delete(request, course_id):
     """Securely soft-delete a course and all its data"""
     course = get_object_or_404(Course, id=course_id)
@@ -503,3 +534,29 @@ def user_courses_api(request):
             'url': f"/course/{c.id}/"
         })
     return JsonResponse({'status': 'success', 'courses': data})
+
+@login_required
+def course_concept_map_api(request, course_id):
+    """Returns the concept map data for a course."""
+    from .services.concept_map import ConceptMapService
+    from .models import ConceptMap
+    
+    course = get_object_or_404(Course, id=course_id)
+    if not (request.user.is_staff or request.user.is_superuser or course.user == request.user):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    force = request.GET.get('force') == '1'
+    concept_map = None
+    error_msg = 'No notes available to generate concept map.'
+    
+    if not force:
+        concept_map = ConceptMap.objects.filter(course=course, user=request.user).first()
+    
+    # If it doesn't exist or we are forcing an update, try to generate it
+    if not concept_map:
+        concept_map, error_msg = ConceptMapService.generate_for_course(course_id, request.user)
+        
+    if concept_map:
+        return JsonResponse({'status': 'success', 'data': concept_map.data})
+    
+    return JsonResponse({'status': 'empty', 'message': error_msg})
