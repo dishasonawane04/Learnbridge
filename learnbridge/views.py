@@ -10,7 +10,7 @@ def dashboard(request):
         {
             "name": "AI Tutor",
             "desc": "24/7 Personal Tutor for any topic.",
-            "url": "/ai/",
+            "url": "/ai-tutor/",
             "icon": "ph-robot",
             "color": "#4a90e2"
         },

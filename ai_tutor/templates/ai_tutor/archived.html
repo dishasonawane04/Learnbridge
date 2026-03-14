@@ -171,7 +171,7 @@
             if (!confirm("Restore this chat to your active list?")) return;
 
             try {
-                const response = await fetch(`/ai/api/chat/${chatId}/archive/`, {
+                const response = await fetch(`/ai-tutor/api/chat/${chatId}/archive/`, {
                     method: 'POST',
                     headers: { 'X-CSRFToken': '{{ csrf_token }}' }
                 });

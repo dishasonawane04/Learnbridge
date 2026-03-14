@@ -47,6 +47,8 @@ body {
     flex-direction: column;
     padding: 1.5rem 1rem;
     flex-shrink: 0;
+    overflow: visible;
+    /* Allow dropdowns to overflow */
 }
 
 .sidebar-header {
@@ -91,7 +93,10 @@ body {
 .history-list {
     flex: 1;
     overflow-y: auto;
+    overflow-x: visible;
+    /* Allow menus to pop out horizontally if needed */
     margin-top: 1rem;
+    position: relative;
 }
 
 .history-label {
@@ -244,6 +249,7 @@ body {
     margin-bottom: 2.5rem;
     background: linear-gradient(to right, white, #94a3b8);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -629,6 +635,13 @@ body {
     position: relative;
     padding-right: 2rem;
     /* Space for opts button */
+    z-index: 1;
+    /* Default low z-index */
+}
+
+.history-item.menu-open {
+    z-index: 9999 !important;
+    /* Force priority when menu is open */
 }
 
 .history-item.active {
@@ -636,6 +649,11 @@ body {
     /* Accent tint */
     color: var(--text-main);
     border-left: 3px solid var(--accent);
+}
+
+.history-item.menu-open {
+    z-index: 9999 !important;
+    /* Raise row priority when menu is open */
 }
 
 .chat-title {
@@ -664,7 +682,8 @@ body {
     transition: opacity 0.2s;
 }
 
-.history-item:hover .chat-options {
+.history-item:hover .chat-options,
+.chat-options.active {
     opacity: 1;
 }
 
@@ -686,16 +705,20 @@ body {
     position: absolute;
     right: 0;
     top: 100%;
-    background: var(--bg-card);
+    margin-top: 5px;
+    background-color: #1e293b !important;
+    background-image: none !important;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 4px;
-    padding: 4px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    z-index: 1000;
-    /* Increased z-index */
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    z-index: 10000;
     display: none;
-    min-width: 120px;
+    min-width: 170px;
+}
+
+.opts-menu.show {
+    display: block !important;
 }
 
 /* Search Bar Styles */

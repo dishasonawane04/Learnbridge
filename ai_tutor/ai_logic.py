@@ -15,10 +15,17 @@ def chat_with_ai(prompt, image_path=None, document_path=None, mode='text', strea
     context_text, system_prompt, is_course_aware = get_hybrid_response_context(prompt, course_id, mode=mode)
     
     # Step 2: Construct the final prompt for Ollama
+    # Providing a clear structure helps the model distinguish between instructions and context
+    prompt_structure = [
+        f"### SYSTEM INSTRUCTIONS\n{system_prompt}",
+    ]
+    
     if context_text:
-        final_prompt = f"{system_prompt}\n\nCONTEXT:\n{context_text}\n\nQUESTION: {prompt}"
-    else:
-        final_prompt = f"{system_prompt}\n\nQUESTION: {prompt}"
+        prompt_structure.append(f"### COURSE CONTEXT (Uploaded Materials)\n{context_text}")
+    
+    prompt_structure.append(f"### STUDENT QUESTION\n{prompt}")
+    
+    final_prompt = "\n\n".join(prompt_structure)
 
     url = f"{settings.OLLAMA_BASE_URL}/api/generate"
     # Default to settings model, switch to vision if image is present

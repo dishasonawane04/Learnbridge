@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentUploadType = 'text';
     let selectedFile = null;
     let currentChatId = null; // Track current DB Chat ID
+    let activeMenuId = null; // Track currently open dropdown menu ID
 
     // Auto-scroll to bottom
     const scrollToBottom = () => {
@@ -24,10 +25,23 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation();
         attachmentMenu.style.display = attachmentMenu.style.display === 'block' ? 'none' : 'block';
     });
-    document.addEventListener('click', () => {
-        attachmentMenu.style.display = 'none';
-        // Also close ANY open chat option menus
-        document.querySelectorAll('.opts-menu').forEach(m => m.style.display = 'none');
+    const closeAllMenus = () => {
+        document.querySelectorAll('.opts-menu').forEach(m => m.classList.remove('show'));
+        document.querySelectorAll('.chat-options').forEach(o => o.classList.remove('active'));
+        document.querySelectorAll('.history-item').forEach(i => i.classList.remove('menu-open'));
+        activeMenuId = null;
+    };
+
+    document.addEventListener('click', (e) => {
+        // Close attachment menu
+        if (!attachBtn.contains(e.target) && !attachmentMenu.contains(e.target)) {
+            attachmentMenu.style.display = 'none';
+        }
+
+        // Close chat menus IF clicking outside ANY chat options area
+        if (!e.target.closest('.chat-options')) {
+            closeAllMenus();
+        }
     });
 
     // Handle Attachment Uploads
@@ -148,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (file) formData.append('file', file);
             if (currentChatId) formData.append('chat_id', currentChatId);
 
-            const response = await fetch('/ai/api/chat/', {
+            const response = await fetch('/ai-tutor/api/chat/', {
                 method: 'POST',
                 headers: { 'X-CSRFToken': csrfToken },
                 body: formData
@@ -219,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messagesContainer.appendChild(loadingIndicator); // move to bottom
 
         try {
-            const res = await fetch(`/ai/api/chat/${chatId}/history/`);
+            const res = await fetch(`/ai-tutor/api/chat/${chatId}/history/`);
             const data = await res.json();
 
             loadingIndicator.style.display = 'none';
@@ -238,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.startNewChat = async () => {
         try {
-            const res = await fetch('/ai/new/', {
+            const res = await fetch('/ai-tutor/new/', {
                 method: 'POST',
                 headers: { 'X-CSRFToken': csrfToken }
             });
@@ -298,17 +312,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     window.toggleMenu = (e, chatId) => {
+        console.log("Toggling menu for chat:", chatId);
         e.stopPropagation();
-        e.preventDefault(); // Safety
-        console.log("Toggle Menu clicked for:", chatId);
+        e.preventDefault();
+
         const menu = document.getElementById(`menu-${chatId}`);
         if (!menu) return;
 
-        // Close others
+        const parent = menu.parentElement; // .chat-options
+        const isOpening = activeMenuId !== chatId;
+
+        // Force close all others
         document.querySelectorAll('.opts-menu').forEach(m => {
-            if (m !== menu) m.style.display = 'none';
+            if (m.id !== `menu-${chatId}`) {
+                m.classList.remove('show');
+                if (m.parentElement) m.parentElement.classList.remove('active');
+            }
         });
-        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+
+        if (isOpening) {
+            menu.classList.add('show');
+            if (parent) parent.classList.add('active');
+            const row = menu.closest('.history-item');
+            if (row) row.classList.add('menu-open');
+            activeMenuId = chatId;
+
+            // Interaction Lock: prevent menu clicks from closing it (unless it's an option)
+            menu.onclick = (innerEvent) => {
+                innerEvent.stopPropagation();
+            };
+        } else {
+            menu.classList.remove('show');
+            if (parent) parent.classList.remove('active');
+            const row = menu.closest('.history-item');
+            if (row) row.classList.remove('menu-open');
+            activeMenuId = null;
+        }
     };
 
     // Chat Search
@@ -330,8 +369,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.renameChat = async (e, chatId) => {
         e.stopPropagation();
         const newTitle = prompt("Enter new chat name:");
+        closeAllMenus();
         if (newTitle) {
-            const res = await fetch(`/ai/rename/${chatId}/`, {
+            const res = await fetch(`/ai-tutor/rename/${chatId}/`, {
                 method: 'POST',
                 headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title: newTitle })
@@ -347,7 +387,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteChat = async (e, chatId) => {
         e.stopPropagation();
         if (confirm("Delete this chat permanently?")) {
-            const res = await fetch(`/ai/delete/${chatId}/`, {
+            closeAllMenus();
+            const res = await fetch(`/ai-tutor/delete/${chatId}/`, {
                 method: 'POST', headers: { 'X-CSRFToken': csrfToken }
             });
             const data = await res.json();
@@ -361,7 +402,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.archiveChat = async (e, chatId) => {
         e.stopPropagation();
-        const res = await fetch(`/ai/archive/${chatId}/`, {
+        closeAllMenus();
+        const res = await fetch(`/ai-tutor/archive/${chatId}/`, {
             method: 'POST', headers: { 'X-CSRFToken': csrfToken }
         });
         const data = await res.json();
@@ -374,7 +416,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.pinChat = async (e, chatId) => {
         e.stopPropagation();
-        const res = await fetch(`/ai/pin/${chatId}/`, {
+        closeAllMenus();
+        const res = await fetch(`/ai-tutor/pin/${chatId}/`, {
             method: 'POST', headers: { 'X-CSRFToken': csrfToken }
         });
         const data = await res.json();
@@ -401,8 +444,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.shareChat = async (e, chatId) => {
         e.stopPropagation();
+        closeAllMenus();
         try {
-            const res = await fetch(`/ai/api/chat/${chatId}/share-link/`);
+            const res = await fetch(`/ai-tutor/api/chat/${chatId}/share-link/`);
             const data = await res.json();
             if (data.status === 'success') {
                 await navigator.clipboard.writeText(data.url);
@@ -531,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
         intentContentDiv.innerHTML = '<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span>';
 
         try {
-            const response = await fetch('/ai/ask_voice/', {
+            const response = await fetch('/ai-tutor/ask_voice/', {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': csrfToken,

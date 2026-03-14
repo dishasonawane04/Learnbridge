@@ -56,15 +56,21 @@ def tutor_home(request):
     if not request.session.session_key:
         request.session.create()
     
-    # Filter by User OR Session Key
+    # Filter by User OR Session Key, AND active course
+    active_course = ActiveCourseManager.get_active_course(request)
+    
     if request.user.is_authenticated:
         chats = Chat.objects.filter(user=request.user, is_archived=False)
     else:
         chats = Chat.objects.filter(session_key=request.session.session_key, is_archived=False)
     
+    if active_course:
+        chats = chats.filter(course=active_course)
+    
     context = {
         "all_chats": chats,
-        "chat_history": [] 
+        "chat_history": [],
+        "active_course": active_course
     }
     return render(request, "ai_tutor/tutor.html", context)
 
@@ -309,10 +315,15 @@ def archived_chats(request):
     # Ensure session key
     if not request.session.session_key: request.session.create()
     
+    active_course = ActiveCourseManager.get_active_course(request)
+    
     if request.user.is_authenticated:
         chats = Chat.objects.filter(user=request.user, is_archived=True)
     else:
         chats = Chat.objects.filter(session_key=request.session.session_key, is_archived=True)
+    
+    if active_course:
+        chats = chats.filter(course=active_course)
         
     return render(request, "ai_tutor/archived.html", {"chats": chats})
 
@@ -331,7 +342,7 @@ def get_share_link(request, chat_id):
     else:
         chat = get_object_or_404(Chat, id=chat_id, session_key=request.session.session_key)
     # Ensure absolute URL
-    share_url = request.build_absolute_uri(f"/ai/share/{chat.share_token}/")
+    share_url = request.build_absolute_uri(f"/ai-tutor/share/{chat.share_token}/")
     return JsonResponse({"status": "success", "url": share_url})
 
 @login_required
@@ -342,13 +353,19 @@ def start_unit_chat(request, unit_id):
     # Check if user already has a chat for this unit
     existing_chat = Chat.objects.filter(user=request.user, unit=unit).first()
     
+    active_course = ActiveCourseManager.get_active_course(request)
+    chats = Chat.objects.filter(user=request.user, is_archived=False)
+    if active_course:
+        chats = chats.filter(course=active_course)
+
     if existing_chat:
         # Redirect to existing chat
         return render(request, "ai_tutor/tutor.html", {
-            "all_chats": Chat.objects.filter(user=request.user, is_archived=False),
+            "all_chats": chats,
             "active_chat": existing_chat,
             "chat_history": existing_chat.messages.all(),
-            "unit": unit
+            "unit": unit,
+            "active_course": active_course
         })
     
     # Create new chat for this unit
@@ -360,11 +377,17 @@ def start_unit_chat(request, unit_id):
     )
     chat.save()
     
+    active_course = ActiveCourseManager.get_active_course(request)
+    chats_history = Chat.objects.filter(user=request.user, is_archived=False)
+    if active_course:
+        chats_history = chats_history.filter(course=active_course)
+
     return render(request, "ai_tutor/tutor.html", {
-        "all_chats": Chat.objects.filter(user=request.user, is_archived=False),
+        "all_chats": chats_history,
         "active_chat": chat,
         "chat_history": [],
-        "unit": unit
+        "unit": unit,
+        "active_course": active_course
     })
 
 @login_required
@@ -386,9 +409,12 @@ def start_course_chat(request, course_id):
     )
     chat.save()
     
+    chats_history = Chat.objects.filter(user=request.user, is_archived=False).filter(course=course)
+    
     return render(request, "ai_tutor/tutor.html", {
-        "all_chats": Chat.objects.filter(user=request.user, is_archived=False),
+        "all_chats": chats_history,
         "active_chat": chat,
         "chat_history": [],
-        "course": course
+        "course": course,
+        "active_course": course
     })
