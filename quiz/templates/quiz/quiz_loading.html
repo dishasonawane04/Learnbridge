@@ -185,7 +185,7 @@
             questions.push(q);
 
             // Update UI
-            const targetNum = 8;
+            const targetNum = 5;
             const prog = (questions.length / targetNum) * 100;
             document.getElementById('streamProgress').style.width = Math.min(prog, 100) + '%';
             document.getElementById('mainStatus').innerText = `Generated ${questions.length} questions...`;

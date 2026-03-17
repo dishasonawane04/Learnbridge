@@ -185,7 +185,13 @@ class CourseContextEngine:
             
             consolidated_text = []
             
-            # 1. Base Materials
+            # 1. Main Course Document
+            if course.extracted_text:
+                consolidated_text.append("--- MAIN COURSE DOCUMENT ---")
+                consolidated_text.append(course.extracted_text)
+                consolidated_text.append("\n")
+
+            # 2. Additional Materials
             for mat in materials:
                 if mat.extracted_text:
                     consolidated_text.append(f"--- Document: {mat.file.name} ---")

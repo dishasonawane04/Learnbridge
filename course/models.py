@@ -323,3 +323,17 @@ class ConceptMap(models.Model):
 
     def __str__(self):
         return f"Map for {self.course.title}"
+
+class QuizChunk(models.Model):
+    """Stores course text segments for incremental quiz generation"""
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='quiz_chunks')
+    content = models.TextField()
+    is_used = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"Chunk {self.order} for {self.course.title}"

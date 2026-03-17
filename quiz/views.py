@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 import logging
 from django.urls import reverse
 from django.conf import settings
-from .models import QuizAttempt
+from .models import QuizAttempt, StudentAnswer, StudentQuestionHistory, Quiz, Question, Option
 from core.models import UserActivity
 from course.models import Course, CourseUnit
 from course.services.state import ActiveCourseManager
@@ -13,12 +13,15 @@ import uuid
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+from .forms import ManualQuestionForm
 from .utils.document_reader import get_course_text
 from .utils.ollama_quiz import generate_mcq
 from ai_engine.quiz_generator import generate_quiz, generate_quiz_stream
 from django.http import StreamingHttpResponse
 import asyncio
 from asgiref.sync import sync_to_async
+from ai_engine.utils.optimization import AIContextOptimizer
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -144,20 +147,51 @@ def quiz_stream_api(request, course_id):
     
     def stream_generator():
         try:
-            questions = []
-            try:
-                gen = generate_quiz_stream(course_id, user=request.user, num_questions=8)
-                for q in gen:
-                    questions.append(q)
-                    yield f"data: {json.dumps(q)}\n\n"
+            # Requirement #1: Confirm document text exists
+            from ai_engine.utils.optimization import AIContextOptimizer
+            if not AIContextOptimizer.ensure_quiz_chunks(course_id):
+                yield "data: {\"status\": \"error\", \"message\": \"No course material found. Please upload a document first.\"}\n\n"
+                return
+
+            # Requirement #3 & #4: Automatic Retry/Regeneration Loop
+            max_stream_attempts = 2
+            last_heartbeat = time.time()
+            
+            for stream_attempt in range(max_stream_attempts):
+                questions = []
+                context_used = ""
                 
-                yield "data: [DONE]\n\n"
-            except Exception as e:
-                logger.warning(f"Quiz Stream Timeout or Error for Course {course_id}: {e}")
-                if "timeout" in str(e).lower():
-                    yield "data: {\"status\": \"timeout\", \"message\": \"Generation is taking longer than expected.\", \"partial_count\": " + str(len(questions)) + "}\n\n"
-                else:
-                    raise e
+                try:
+                    # Get context
+                    context_used = AIContextOptimizer.get_next_quiz_chunk(course_id)
+                    gen = generate_quiz_stream(course_id, user=request.user, num_questions=5)
+                    
+                    while True:
+                        if time.time() - last_heartbeat > 15:
+                            yield ": heartbeat\n\n"
+                            last_heartbeat = time.time()
+                        
+                        try:
+                            q = next(gen)
+                            questions.append(q)
+                            yield f"data: {json.dumps(q)}\n\n"
+                        except StopIteration:
+                            break
+                        except Exception as e:
+                            logger.error(f"Streaming token error: {e}")
+                            break
+
+                    if len(questions) >= 1:
+                        if context_used:
+                            AIContextOptimizer.mark_chunk_used(course_id, context_used)
+                        yield "data: [DONE]\n\n"
+                        return # Success
+                    
+                except Exception as e:
+                    logger.warning(f"Quiz Stream Attempt {stream_attempt + 1} Error: {e}")
+            
+            # If all attempts fail
+            yield "data: {\"status\": \"error\", \"message\": \"No questions were generated. Please check your document.\"}\n\n"
             
         except Exception as e:
             logger.error(f"Quiz Stream Error: {e}")

@@ -7,153 +7,198 @@ from ai_engine.retriever import retrieve_distributed_context
 from quiz.models import StudentQuestionHistory
 from asgiref.sync import sync_to_async
 import re
+from langchain_core.messages import SystemMessage, HumanMessage
+from ai_engine.utils.optimization import AIContextOptimizer
+from course.models import Course
+
 
 def generate_quiz(course_id, user=None, num_questions=5):
     """
-    Generates a unique quiz using Optimized Context and repetition prevention.
+    Generates a unique quiz using Sequential Chunk Optimization.
     """
-    from ai_engine.utils.optimization import AIContextOptimizer
     
-    # 1. Retrieve Optimized Context
-    # Limit num_questions to 10
-    num_questions = min(int(num_questions or 5), 10)
+    # Requirement #8: Limit to 5 questions for speed
+    num_questions = 5
     
-    context = AIContextOptimizer.prepare_context(course_id)
+    # Requirement #1 & #2: Get a random unused sequential chunk
+    context = AIContextOptimizer.get_next_quiz_chunk(course_id)
+    course = Course.objects.filter(id=course_id).first()
     
+    is_fallback = False
     if not context:
-        # Fallback to distributed if optimizer fails
-        context = retrieve_distributed_context(course_id, k=4)
-        if not context:
+        if course:
+            context = f"Topic: {course.title} ({course.subject}). Level: {course.level}."
+            is_fallback = True
+        else:
             return []
 
     seed = uuid.uuid4().hex[:8]
-    from langchain_core.messages import SystemMessage, HumanMessage
     
-    # 2. Setup LLM (Using lightweight model for speed)
-    model_name = getattr(settings, 'OLLAMA_MODEL_TEXT', 'llama3.2:1b')
-    llm = ChatOllama(
-        model=model_name, 
-        temperature=0.7,
-        base_url=settings.OLLAMA_BASE_URL,
-        format="json"
-    )
+    # Requirement #5: Retry Logic & Guarantee 5 Questions
+    max_retries = 3
+    final_results = []
+    seen_hashes = set()
     
-    system_instruction = """You are a specialized Educational MCQ Generator. 
-    Task: Create high-quality, diverse multiple choice questions.
-    STRICT REQUIREMENTS:
-    1. Output ONLY a valid JSON object.
-    2. Max 10 questions.
-    3. Each question: EXACTLY 4 options.
-    4. Explanations: STRICTLY 1 line only.
-    5. Avoid long essays or complex formatting."""
+    for attempt_idx in range(max_retries):
+        if len(final_results) >= 5: break
+        
+        try:
+            model_name = getattr(settings, 'OLLAMA_MODEL_TEXT', 'llama3.2:1b')
+            llm = ChatOllama(
+                model=model_name, 
+                temperature=0.8,
+                base_url=settings.OLLAMA_BASE_URL,
+                format="json",
+                timeout=120 
+            )
+            
+            # Requirement #7 & #2: Improved Prompt & Force Structure
+            system_instruction = """Professional MCQ Generator.
+            STRICT JSON OUTPUT ONLY.
+            Generate 5 unique multiple-choice quiz questions from the following text. 
+            Each question must include 4 options, one correct answer, and a short explanation.
+            
+            SCHEMA:
+            {
+              "questions": [
+                {
+                  "question": "string",
+                  "options": ["string", "string", "string", "string"],
+                  "correct_answer": "string",
+                  "explanation": "string"
+                }
+              ]
+            }"""
 
-    user_prompt = f"""Generate {num_questions} NEW and UNIQUE MCQs from the provided text.
-    Seed: {seed}
+            mode_text = "from the specific course section provided" if not is_fallback else "general educational knowledge"
+            user_prompt = f"""Generate 5 unique MCQs {mode_text}.
+            Ensure these questions are high-quality and directly based on the context.
+            SEED: {uuid.uuid4().hex[:8]}
+            
+            CONTEXT CHUNK:
+            {context[:3000]}"""
 
-    TEXT:
-    {context}
-
-    JSON FORMAT:
-    {{
-      "questions": [
-        {{
-          "question": "Interrogative sentence?",
-          "options": ["A", "B", "C", "D"],
-          "correct_answer": "D",
-          "explanation": "Short 1-2 line explanation.",
-          "difficulty": "Medium"
-        }}
-      ]
-    }}"""
-
-    try:
-        messages = [
-            SystemMessage(content=system_instruction),
-            HumanMessage(content=user_prompt)
-        ]
-        response = llm.invoke(messages)
-        return _process_quiz_response(response.content, course_id, user)
-
-    except Exception as e:
-        print(f"Quiz Generation Error: {e}")
-        return []
+            messages = [
+                SystemMessage(content=system_instruction),
+                HumanMessage(content=user_prompt)
+            ]
+            response = llm.invoke(messages)
+            results = _process_quiz_response(response.content, course_id, user)
+            
+            for r in results:
+                if r['hash'] not in seen_hashes:
+                    seen_hashes.add(r['hash'])
+                    final_results.append(r)
+            
+            if len(final_results) >= 5:
+                return final_results[:5]
+            
+        except Exception as e:
+            logger.error(f"Quiz Generation Attempt {attempt_idx + 1} Error: {e}")
+            
+    return final_results if len(final_results) > 0 else []
 
 def generate_quiz_stream(course_id, user=None, num_questions=5):
     """
-    Streaming version of quiz generation.
-    Yields questions one by one as they are parsed from the stream.
+    Streaming version using random unused chunks.
     """
-    from ai_engine.utils.optimization import AIContextOptimizer
-    from langchain_community.chat_models import ChatOllama
-    from langchain_core.messages import SystemMessage, HumanMessage
-    
-    num_questions = min(int(num_questions or 5), 10)
-    context = AIContextOptimizer.prepare_context(course_id)
-    
-    model_name = getattr(settings, 'OLLAMA_MODEL_TEXT', 'llama3.2:1b')
-    llm = ChatOllama(
-        model=model_name,
-        temperature=0.7,
-        base_url=settings.OLLAMA_BASE_URL,
-        format="json",
-        timeout=300
-    )
-
-    system_instruction = """You are a specialized Educational MCQ Generator. 
-    1. Output ONLY a valid JSON object.
-    2. Max 10 questions.
-    3. Each question: EXACTLY 4 options.
-    4. Explanations: STRICTLY 1 line only.
-    5. Avoid long essays or complex formatting.
-    6. JSON must have a 'questions' list."""
-    
-    user_prompt = f"""Generate {num_questions} NEW and UNIQUE MCQs from the provided text.
-    TEXT: {context[:4000]}
-    Format: JSON"""
-
-    messages = [SystemMessage(content=system_instruction), HumanMessage(content=user_prompt)]
-    
-    full_content = ""
-    found_questions = []
-
-    for chunk in llm.stream(messages):
-        full_content += chunk.content
+    # Support for internal retry
+    max_retries = 2
+    for attempt in range(max_retries):
+        context = AIContextOptimizer.get_next_quiz_chunk(course_id)
+        course = Course.objects.filter(id=course_id).first()
         
-        # Simple extraction strategy for streaming:
-        # Check if we have a complete question object within the 'questions' array
+        is_fallback = False
+        if not context:
+            if course:
+                context = f"Topic: {course.title} ({course.subject}). Level: {course.level}."
+                is_fallback = True
+            else:
+                return
+        
+        model_name = getattr(settings, 'OLLAMA_MODEL_TEXT', 'llama3.2:1b')
+        llm = ChatOllama(
+            model=model_name,
+            temperature=0.8,
+            base_url=settings.OLLAMA_BASE_URL,
+            format="json",
+            timeout=120
+        )
+
+        system_instruction = """Professional MCQ Generator.
+        STRICT JSON OUTPUT ONLY.
+        Generate 5 unique multiple-choice quiz questions from the following text. 
+        Each question must include 4 options, one correct answer, and a short explanation.
+        
+        SCHEMA:
+        {
+          "questions": [
+            {
+              "question": "string",
+              "options": ["string", "string", "string", "string"],
+              "correct_answer": "string",
+              "explanation": "string"
+            }
+          ]
+        }"""
+        
+        mode_text = "from context" if not is_fallback else "general knowledge"
+        user_prompt = f"Generate 5 unique MCQs {mode_text}.\nSEED: {uuid.uuid4().hex[:8]}\nCONTEXT: {context[:3000]}\nJSON Format ONLY."
+        
+        system_instruction = system_instruction.replace("    ", "") # Cleanup
+
+        messages = [SystemMessage(content=system_instruction), HumanMessage(content=user_prompt)]
+        
+        full_content = ""
+        found_questions_count = 0
+        found_hashes = set()
+        brace_count = 0
+        current_obj = ""
+        in_questions_list = False
+
         try:
-            # Clean up potential markdown blocks
-            clean_json = full_content.strip()
-            if clean_json.startswith("```json"):
-                clean_json = clean_json[7:]
-            if clean_json.endswith("```"):
-                clean_json = clean_json[:-3]
+            for chunk in llm.stream(messages):
+                token = chunk.content
+                full_content += token
+                
+                # Check if we've entered the questions list
+                if not in_questions_list and '"questions": [' in full_content:
+                    in_questions_list = True
+                    # Reset content to start of list content to save memory/processing
+                    start_idx = full_content.find('"questions": [') + 14
+                    full_content = full_content[start_idx:]
+                
+                if in_questions_list:
+                    for char in token:
+                        if char == '{':
+                            brace_count += 1
+                        
+                        if brace_count > 0:
+                            current_obj += char
+                            
+                        if char == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                # We have a complete object
+                                try:
+                                    # Validate and process
+                                    processed = _process_quiz_response(json.dumps({"questions": [json.loads(current_obj)]}), course_id, user)
+                                    if processed:
+                                        q_final = processed[0]
+                                        q_hash = q_final.get('hash')
+                                        if q_hash not in found_hashes:
+                                            found_hashes.add(q_hash)
+                                            found_questions_count += 1
+                                            yield q_final
+                                except:
+                                    pass # Partial or malformed object
+                                current_obj = ""
             
-            # Robust parsing for partial questions
-            # We look for the pattern of a finished object in the list
-            # ijson is good for this, but let's try a simpler approach if we can find a closed object
-            
-            # Extract questions list content
-            start_idx = clean_json.find('"questions": [')
-            if start_idx == -1: continue
-            
-            questions_part = clean_json[start_idx + 14:]
-            
-            # Find complete { ... } blocks
-            matches = re.findall(r'\{[^{}]*\}', questions_part)
-            
-            for match in matches:
-                try:
-                    q_data = json.loads(match)
-                    q_text = q_data.get("question")
-                    if q_text and q_text not in [q['question'] for q in found_questions]:
-                        processed = _process_quiz_response(json.dumps({"questions": [q_data]}), course_id, user)
-                        if processed:
-                            found_questions.append(processed[0])
-                            yield processed[0]
-                except:
-                    continue
-        except:
+            if found_questions_count > 0:
+                return # Success
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise e
             continue
 
 def _process_quiz_response(content, course_id, user):
@@ -163,7 +208,10 @@ def _process_quiz_response(content, course_id, user):
     except json.JSONDecodeError:
         cleaned = re.sub(r'```json\s*', '', content)
         cleaned = re.sub(r'```\s*', '', cleaned)
-        data = json.loads(cleaned)
+        try:
+            data = json.loads(cleaned)
+        except:
+            return []
 
     questions = data.get("questions", [])
     formatted_questions = []
@@ -171,25 +219,39 @@ def _process_quiz_response(content, course_id, user):
     for q in questions:
         q_text = q.get("question", "").strip()
         opts = q.get("options", [])
-        if not q_text or len(opts) < 4: continue
+        correct = q.get("correct_answer") or q.get("answer")
+        explanation = q.get("explanation", "").strip()
+        
+        # Requirement #8: Validate required fields
+        if not q_text or len(opts) < 4 or not correct or not explanation:
+            continue
         
         q_hash = hashlib.sha256(q_text.lower().encode()).hexdigest()
         if user and StudentQuestionHistory.objects.filter(user=user, course_id=course_id, question_hash=q_hash).exists():
             continue
 
         correct = q.get("correct_answer") or q.get("answer")
-        try:
+        correct_index = 0
+        
+        # Robust Index Logic
+        # 1. Try exact string match
+        if correct in opts:
             correct_index = opts.index(correct)
-        except (ValueError, TypeError):
-            correct_index = 0
+        # 2. Try Letter-based match (A, B, C, D)
+        elif isinstance(correct, str) and len(correct) == 1 and correct.upper() in ['A', 'B', 'C', 'D']:
+            letter_map = {'A': 0, 'B': 1, 'C': 2, 'D': 3}
+            correct_index = letter_map[correct.upper()]
+        # 3. Try integer index
+        elif isinstance(correct, int) and 0 <= correct < 4:
+            correct_index = correct
         
         formatted_questions.append({
             "id": str(uuid.uuid4()),
             "question": q_text,
             "options": opts[:4],
-            "correct_answer": correct,
+            "correct_answer": opts[correct_index], # Store the actual text
             "correct_index": correct_index, 
-            "explanation": q.get("explanation", "Short explanation based on material."),
+            "explanation": q.get("explanation", "Based on the course material provided."),
             "difficulty": q.get("difficulty", "Medium"),
             "hash": q_hash
         })

@@ -192,10 +192,6 @@
             style="padding: 1.25rem 3rem; font-size: 1.1rem; background: linear-gradient(135deg, var(--primary), var(--accent));">
             <i class="fas fa-arrow-left" style="margin-right: 0.75rem;"></i> Back to Course
         </a>
-        <a href="{% url 'core:dashboard' %}" class="back-btn-premium"
-            style="padding: 1.25rem 2.5rem; font-size: 1.1rem;">
-            <i class="fas fa-arrow-left"></i> &larr; Back to Dashboard
-        </a>
         {% else %}
         <a href="{% url 'home' %}" class="btn btn-primary"
             style="padding: 1.25rem 3rem; font-size: 1.1rem; background: linear-gradient(135deg, var(--primary), var(--accent));">
@@ -262,8 +258,7 @@
                         style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 0.5rem;">
                         <i class="fas fa-lightbulb me-1"></i> Explanation
                     </span>
-                    <p style="font-size: 0.95rem; color: var(--text-light); margin: 0; line-height: 1.6;">{{
-                        item.explanation }}</p>
+                    <p style="font-size: 0.95rem; color: var(--text-light); margin: 0; line-height: 1.6;">{{ item.explanation }}</p>
                 </div>
                 {% endif %}
             </div>

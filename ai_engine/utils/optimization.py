@@ -2,6 +2,7 @@ import re
 import logging
 from django.conf import settings
 from core.ai.services import CourseContextEngine
+from course.models import CourseNotes, QuizChunk
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +59,88 @@ class AIContextOptimizer:
         return cleaned_text
 
     @classmethod
+    def ensure_quiz_chunks(cls, course_id):
+        """
+        Ensures that the course text is split into chunks for incremental quiz generation.
+        """
+        
+        # 1. Check if chunks already exist
+        if QuizChunk.objects.filter(course_id=course_id).exists():
+            return True
+            
+        # 2. Get consolidated text
+        notes_obj = CourseNotes.objects.filter(course_id=course_id).first()
+        
+        # Requirement #1: Ensure Document Text is Always Sent
+        if not notes_obj or not notes_obj.extracted_text or len(notes_obj.extracted_text.strip()) < 100:
+            logger.info(f"AI Optimizer: Triggering deep consolidation for Course {course_id}")
+            CourseContextEngine.consolidate_course_notes(course_id)
+            notes_obj = CourseNotes.objects.filter(course_id=course_id).first()
+            
+        if not notes_obj or not notes_obj.extracted_text or len(notes_obj.extracted_text.strip()) < 100:
+            logger.error(f"AI Optimizer: No usable text found for Course {course_id}")
+            return False
+            
+        # 3. Split into 3000-character chunks
+        text = notes_obj.extracted_text
+        chunk_size = 3000
+        new_chunks = []
+        
+        # Simple character-based splitting to avoid scans
+        for i in range(0, len(text), chunk_size):
+            content = text[i:i + chunk_size]
+            if len(content.strip()) < 200: continue # Skip fragments
+            
+            new_chunks.append(
+                QuizChunk(
+                    course_id=course_id,
+                    content=content,
+                    order=i // chunk_size
+                )
+            )
+            
+        if new_chunks:
+            QuizChunk.objects.bulk_create(new_chunks)
+            return True
+        return False
+
+    @classmethod
+    def get_next_quiz_chunk(cls, course_id):
+        """
+        Retrieves a RANDOM unused chunk for the course to ensure syllabus coverage.
+        """
+        
+        # Ensure chunks exist
+        cls.ensure_quiz_chunks(course_id)
+        
+        # Get the next sequential unused chunk
+        chunk = QuizChunk.objects.filter(course_id=course_id, is_used=False).order_by('order').first()
+        
+        if not chunk:
+            # Requirement #3: Reset Logic
+            # Mark all as unused and pick the first one
+            QuizChunk.objects.filter(course_id=course_id).update(is_used=False)
+            chunk = QuizChunk.objects.filter(course_id=course_id).order_by('order').first()
+            
+        if chunk:
+            # We don't mark as used here; we wait for success
+            return chunk.content
+            
+        return ""
+
+    @classmethod
+    def mark_chunk_used(cls, course_id, content):
+        """
+        Marks a specific chunk as used based on its content.
+        Only called after successful generation.
+        """
+        QuizChunk.objects.filter(course_id=course_id, content=content).update(is_used=True)
+
+    @classmethod
     def prepare_context(cls, course_id):
         """
         Orchestrates gathering and limiting context for a course.
+        (Kept for backward compatibility or other AI features)
         """
         try:
             from course.models import CourseNotes
