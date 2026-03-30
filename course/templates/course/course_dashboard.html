@@ -4,147 +4,164 @@
 
 {% block extra_css %}
 <style>
-/* 🚀 High-Impact Professional Background */
-.course-workspace {
-    background-color: #020617 !important;
-    background-image: 
-        radial-gradient(at 20% 20%, rgba(99, 102, 241, 0.18) 0px, transparent 40%),
-        radial-gradient(at 80% 10%, rgba(139, 92, 246, 0.18) 0px, transparent 40%),
-        url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h1v1H0V0zm20 20h1v1H20v-1z' fill='rgba(255,255,255,0.06)' fill-opacity='1' fill-rule='evenodd'%3E%3C/path%3E%3C/svg%3E") !important;
-    background-attachment: fixed !important;
-    position: relative;
-    overflow-x: hidden;
-    z-index: 1;
-}
+    /* 🚀 High-Impact Professional Background */
+    .course-workspace {
+        background-color: #020617 !important;
+        background-image:
+            radial-gradient(at 20% 20%, rgba(99, 102, 241, 0.18) 0px, transparent 40%),
+            radial-gradient(at 80% 10%, rgba(139, 92, 246, 0.18) 0px, transparent 40%),
+            url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h1v1H0V0zm20 20h1v1H20v-1z' fill='rgba(255,255,255,0.06)' fill-opacity='1' fill-rule='evenodd'%3E%3C/path%3E%3C/svg%3E") !important;
+        background-attachment: fixed !important;
+        position: relative;
+        overflow-x: hidden;
+        z-index: 1;
+    }
 
-/* Animated Vibrant Blobs */
-.course-workspace::before, .course-workspace::after {
-    content: "";
-    position: fixed;
-    width: 800px;
-    height: 800px;
-    border-radius: 50%;
-    filter: blur(120px);
-    z-index: -1;
-    pointer-events: none;
-    opacity: 0.6;
-}
+    /* Animated Vibrant Blobs */
+    .course-workspace::before,
+    .course-workspace::after {
+        content: "";
+        position: fixed;
+        width: 800px;
+        height: 800px;
+        border-radius: 50%;
+        filter: blur(120px);
+        z-index: -1;
+        pointer-events: none;
+        opacity: 0.6;
+    }
 
-.course-workspace::before {
-    top: -200px;
-    left: -200px;
-    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
-    animation: blobFloat 12s infinite ease-in-out;
-}
+    .course-workspace::before {
+        top: -200px;
+        left: -200px;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+        animation: blobFloat 12s infinite ease-in-out;
+    }
 
-.course-workspace::after {
-    bottom: -300px;
-    right: -200px;
-    background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
-    animation: blobFloat 18s infinite ease-in-out reverse;
-}
+    .course-workspace::after {
+        bottom: -300px;
+        right: -200px;
+        background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+        animation: blobFloat 18s infinite ease-in-out reverse;
+    }
 
-@keyframes blobFloat {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(100px, 80px) scale(1.2); }
-}
+    @keyframes blobFloat {
 
-/* ✨ Premium Title Shine */
-.workspace-title-section h1 {
-    background: linear-gradient(120deg, #fff 0%, #fff 40%, #818cf8 50%, #fff 60%, #fff 100%);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent !important;
-    animation: shine 5s linear infinite;
-    font-weight: 800;
-}
+        0%,
+        100% {
+            transform: translate(0, 0) scale(1);
+        }
 
-@keyframes shine {
-    to { background-position: 200% center; }
-}
+        50% {
+            transform: translate(100px, 80px) scale(1.2);
+        }
+    }
 
-/* 📦 Staggered Reveal Logic (JS Triggered) */
-.reveal-section {
-    opacity: 0;
-    transform: translateY(30px);
-    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-    animation: simpleReveal 1s ease forwards;
-}
+    /* ✨ Premium Title Shine */
+    .workspace-title-section h1 {
+        background: linear-gradient(120deg, #fff 0%, #fff 40%, #818cf8 50%, #fff 60%, #fff 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent !important;
+        animation: shine 5s linear infinite;
+        font-weight: 800;
+    }
 
-.reveal-section.active {
-    opacity: 1 !important;
-    transform: translateY(0) !important;
-    animation: none !important;
-}
+    @keyframes shine {
+        to {
+            background-position: 200% center;
+        }
+    }
 
-@keyframes simpleReveal {
-    to { opacity: 1; transform: translateY(0); }
-}
+    /* 📦 Staggered Reveal Logic (JS Triggered) */
+    .reveal-section {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        animation: simpleReveal 1s ease forwards;
+    }
 
-/* 🖱️ Hover Effects - Refined & Impactful */
-.compact-tool-card, .material-row {
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.05) !important;
-    background: rgba(255, 255, 255, 0.02) !important;
-    position: relative;
-    overflow: hidden;
-}
+    .reveal-section.active {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+        animation: none !important;
+    }
 
-/* Glossy Shine on Hover */
-.compact-tool-card::after, .material-row::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-    transition: left 0.6s ease;
-    z-index: 1;
-}
+    @keyframes simpleReveal {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 
-.compact-tool-card:hover::after, .material-row:hover::after {
-    left: 150%;
-}
+    /* 🖱️ Hover Effects - Refined & Impactful */
+    .compact-tool-card,
+    .material-row {
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        background: rgba(255, 255, 255, 0.02) !important;
+        position: relative;
+        overflow: hidden;
+    }
 
-.compact-tool-card:hover, .material-row:hover {
-    transform: translateY(-8px) scale(1.01) !important;
-    border-color: rgba(99, 102, 241, 0.4) !important;
-    background: rgba(255, 255, 255, 0.06) !important;
-    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.1) !important;
-}
+    /* Glossy Shine on Hover */
+    .compact-tool-card::after,
+    .material-row::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+        transition: left 0.6s ease;
+        z-index: 1;
+    }
 
-.tool-arrow {
-    transition: transform 0.3s ease !important;
-}
+    .compact-tool-card:hover::after,
+    .material-row:hover::after {
+        left: 150%;
+    }
 
-.compact-tool-card:hover .tool-arrow {
-    transform: translateX(8px) !important;
-    color: #818cf8 !important;
-}
+    .compact-tool-card:hover,
+    .material-row:hover {
+        transform: translateY(-8px) scale(1.01) !important;
+        border-color: rgba(99, 102, 241, 0.4) !important;
+        background: rgba(255, 255, 255, 0.06) !important;
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.1) !important;
+    }
 
-/* Add Notes Button */
-.btn-add-notes {
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-}
+    .tool-arrow {
+        transition: transform 0.3s ease !important;
+    }
 
-.btn-add-notes:hover {
-    transform: scale(1.08) rotate(1deg) !important;
-    box-shadow: 0 0 25px rgba(99, 102, 241, 0.5) !important;
-}
+    .compact-tool-card:hover .tool-arrow {
+        transform: translateX(8px) !important;
+        color: #818cf8 !important;
+    }
 
-/* Actions Fade-in */
-.material-actions {
-    opacity: 0 !important;
-    transition: opacity 0.3s ease, transform 0.3s ease !important;
-    transform: translateX(10px);
-}
+    /* Add Notes Button */
+    .btn-add-notes {
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    }
 
-.material-row:hover .material-actions {
-    opacity: 1 !important;
-    transform: translateX(0);
-}
+    .btn-add-notes:hover {
+        transform: scale(1.08) rotate(1deg) !important;
+        box-shadow: 0 0 25px rgba(99, 102, 241, 0.5) !important;
+    }
+
+    /* Actions Fade-in */
+    .material-actions {
+        opacity: 0 !important;
+        transition: opacity 0.3s ease, transform 0.3s ease !important;
+        transform: translateX(10px);
+    }
+
+    .material-row:hover .material-actions {
+        opacity: 1 !important;
+        transform: translateX(0);
+    }
 </style>
 {% endblock %}
 
@@ -165,11 +182,36 @@
                 <span>Back to Courses</span>
             </a>
 
+            <!-- Language Selector -->
+            <div class="language-selector" style="margin-right: 15px; position: relative;">
+                <select id="aiLanguageSelect" onchange="updateAILanguage(this.value)"
+                    style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); color: white; padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; outline: none; cursor: pointer;">
+                    {% if request.session.ai_language == 'English' or not request.session.ai_language %}
+                    <option value="English" selected style="background-color: #0f172a; color: white;">English (Default)
+                    </option>
+                    {% else %}
+                    <option value="English" style="background-color: #0f172a; color: white;">English (Default)</option>
+                    {% endif %}
+
+                    {% if request.session.ai_language == 'Hindi' %}
+                    <option value="Hindi" selected style="background-color: #0f172a; color: white;">Hindi</option>
+                    {% else %}
+                    <option value="Hindi" style="background-color: #0f172a; color: white;">Hindi</option>
+                    {% endif %}
+
+                    {% if request.session.ai_language == 'Marathi' %}
+                    <option value="Marathi" selected style="background-color: #0f172a; color: white;">Marathi</option>
+                    {% else %}
+                    <option value="Marathi" style="background-color: #0f172a; color: white;">Marathi</option>
+                    {% endif %}
+                </select>
+            </div>
+
             <div class="status-badge">
                 <i class="fas fa-sparkles"></i>
                 <span>AI Personalized</span>
             </div>
-            
+
             <button class="btn-add-notes" onclick="window.location.href='{% url 'course:upload_notes' course.id %}'">
                 <i class="fas fa-plus"></i>
                 <span>Add Notes</span>
@@ -182,31 +224,41 @@
         <!-- LEFT: MATERIALS -->
         <div class="materials-column reveal-section" id="section-2">
             <span class="section-label">Your Materials</span>
-            
+
             <div class="materials-list">
                 {% for material in materials %}
-                <div class="material-row">
-                    <div class="material-info">
+                <div class="material-row" id="mat-row-{{ material.id }}">
+                    <div class="material-info" style="flex:1; min-width:0;">
                         <div class="file-icon">
                             {% if material.file_type == 'pdf' %}
-                                <i class="fas fa-file-pdf"></i>
+                            <i class="fas fa-file-pdf"></i>
                             {% elif material.file_type == 'image' %}
-                                <i class="fas fa-file-image"></i>
+                            <i class="fas fa-file-image"></i>
                             {% else %}
-                                <i class="fas fa-file-lines"></i>
+                            <i class="fas fa-file-lines"></i>
                             {% endif %}
                         </div>
-                        <div class="file-meta">
-                            <span class="file-name">{{ material.file.name|slice:"15:" }}</span>
+                        <div class="file-meta" style="min-width:0; flex:1;">
+                            <!-- Static name display (shown by default) -->
+                            <span class="file-name" id="mat-name-{{ material.id }}">
+                                {{ material.get_display_name }}
+                            </span>
                             <span class="upload-date">Uploaded on {{ material.uploaded_at|date:"M d, Y" }}</span>
+
+                            <!-- Document rename uses prompt, no inline form present -->
                         </div>
                     </div>
-                    
+
                     <div class="material-actions">
+                        <button onclick="startRename({{ material.id }})" class="action-btn" title="Rename"
+                            style="background:none; border:none; cursor:pointer;">
+                            <i class="fas fa-pencil"></i>
+                        </button>
                         <a href="{{ material.file.url }}" target="_blank" class="action-btn" title="View">
                             <i class="far fa-eye"></i>
                         </a>
-                        <a href="{% url 'course:material_delete' material.id %}" class="action-btn text-danger" title="Delete">
+                        <a href="{% url 'course:material_delete' material.id %}" class="action-btn text-danger"
+                            title="Delete" onclick="return confirm('Delete this document?');">
                             <i class="far fa-trash-can"></i>
                         </a>
                     </div>
@@ -351,25 +403,34 @@
         </a>
         <div class="course-upload-card reveal-section" id="section-1">
             <h2>Welcome to {{ course.title }}</h2>
-            <p>To unlock AI-powered summaries, quizzes, and your personal tutor, please upload your course materials first.</p>
-            
+            <p>To unlock AI-powered summaries, quizzes, and your personal tutor, please upload your course materials
+                first.</p>
+
             <div class="upload-area" id="dropZone" onclick="document.getElementById('onboardingInput').click();">
-                <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data" id="onboardingForm">
+                <form action="{% url 'course:upload_notes' course.id %}" method="POST" enctype="multipart/form-data"
+                    id="onboardingForm">
                     {% csrf_token %}
-                    <input type="file" name="file" id="onboardingInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" multiple onchange="handleDashboardUpload(this)" style="display:none;">
-                    
+                    <input type="file" name="file" id="onboardingInput"
+                        accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" multiple
+                        onchange="handleDashboardUpload(this)" style="display:none;">
+
                     <div id="uploadPlaceholder">
-                        <i class="fas fa-cloud-arrow-up" style="font-size: 3rem; color: var(--primary); margin-bottom: 20px;"></i>
+                        <i class="fas fa-cloud-arrow-up"
+                            style="font-size: 3rem; color: var(--primary); margin-bottom: 20px;"></i>
                         <p>Click to upload PDFs, Images or Text notes</p>
                         <div class="mt-4">
                             <span class="upload-btn">Get Started</span>
                         </div>
                     </div>
-                    
-                    <!-- Dashboard Preview Grid -->
-                    <div id="dashboardPreview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 1rem; width: 100%; margin-top: 1rem;"></div>
 
-                    <button type="submit" id="submitAllBtn" class="btn btn-primary" onclick="showAIProcessing('Processing Notes', 'Analyzing and indexing your materials...')" style="display: none; margin-top: 2rem; width: 100%; border-radius: 12px; padding: 1rem;">
+                    <!-- Dashboard Preview Grid -->
+                    <div id="dashboardPreview"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 1rem; width: 100%; margin-top: 1rem;">
+                    </div>
+
+                    <button type="submit" id="submitAllBtn" class="btn btn-primary"
+                        onclick="showAIProcessing('Processing Notes', 'Analyzing and indexing your materials...')"
+                        style="display: none; margin-top: 2rem; width: 100%; border-radius: 12px; padding: 1rem;">
                         <i class="fas fa-rocket"></i> Start Processing
                     </button>
                 </form>
@@ -446,14 +507,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const reveals = document.querySelectorAll('.reveal-section');
-    reveals.forEach((el, index) => {
-        setTimeout(() => {
-            el.classList.add('active');
-        }, index * 150); // Staggered entry
+    document.addEventListener('DOMContentLoaded', () => {
+        const reveals = document.querySelectorAll('.reveal-section');
+        reveals.forEach((el, index) => {
+            setTimeout(() => {
+                el.classList.add('active');
+            }, index * 150); // Staggered entry
+        });
     });
-});
 
 
 
@@ -639,6 +700,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ── Inline Document Rename ─────────────────────────────────────
+    function startRename(id) {
+        const nameEl = document.getElementById('mat-name-' + id);
+        const currentName = nameEl.textContent.trim();
+        const newName = prompt("Enter new name for this material:", currentName);
+
+        if (newName !== null && newName.trim() !== "" && newName.trim() !== currentName) {
+            saveRename(id, newName.trim());
+        }
+    }
+
+    function saveRename(id, newName) {
+        const csrfToken = document.cookie.split(';')
+            .find(c => c.trim().startsWith('csrftoken='))
+            ?.split('=')[1] || '';
+
+        fetch(`/course/material/${id}/rename/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ name: newName })
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const nameEl = document.getElementById('mat-name-' + id);
+                    nameEl.textContent = data.name;
+                } else {
+                    alert('Rename failed: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(() => alert('Network error. Please try again.'));
+    }
+
     const dropZone = document.getElementById('dropZone');
     const onboardingInput = document.getElementById('onboardingInput');
 
@@ -659,6 +756,22 @@ document.addEventListener('DOMContentLoaded', () => {
             onboardingInput.files = e.dataTransfer.files;
             handleDashboardUpload(onboardingInput);
         }, false);
+    }
+
+    function updateAILanguage(lang) {
+        const csrfToken = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+        fetch("{% url 'course:set_ai_language' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ language: lang })
+        }).then(res => res.json()).then(data => {
+            if (data.status !== 'success') {
+                console.error("Failed to update language:", data);
+            }
+        });
     }
 </script>
 {% endblock %}

@@ -32,6 +32,7 @@ def sentence_explain_api(request):
         return JsonResponse({"error": "Only POST allowed"}, status=405)
 
     sentence = request.POST.get("sentence", "")
+    language = request.POST.get("language", "English")
     image = request.FILES.get("image")
     course_id = request.session.get("active_course_id")
 
@@ -87,7 +88,7 @@ def sentence_explain_api(request):
     if image:
         model = settings.OLLAMA_MODEL_VISION
 
-    final_prompt = f"{prompt_style} {context_instruction} \n\n Task: Explain: '{sentence or 'Image content'}'"
+    final_prompt = f"{prompt_style} {context_instruction} \n\n Task: Explain in '{language}': '{sentence or 'Image content'}'\n\nEnsure the response is strictly in {language}."
 
     # Streaming Response
     from ai_tutor.ai_logic import chat_with_ai

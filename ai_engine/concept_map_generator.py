@@ -34,11 +34,21 @@ def generate_concept_map_data(text):
       ]
     }"""
     
-    user_prompt = f"""Generate a Concept Map (MAX 15 NODES) from this text:
+    from core.middleware import get_current_request
+    request = get_current_request()
+    lang = "English"
+    if request:
+        if request.method == "POST":
+            lang = request.POST.get("language", "English")
+        elif hasattr(request, 'session'):
+            lang = request.session.get('ai_language', 'English')
+
+    user_prompt = f"""Generate a Concept Map (MAX 15 NODES) in {lang} from this text:
     
     TEXT:
     {text}
     
+    Ensure the response is strictly in {lang}.
     JSON:"""
     
     try:

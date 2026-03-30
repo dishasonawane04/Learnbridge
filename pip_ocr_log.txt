@@ -1,0 +1,11 @@
+Collecting pytesseract
+  Downloading pytesseract-0.3.13-py3-none-any.whl.metadata (11 kB)
+Collecting pdf2image
+  Downloading pdf2image-1.17.0-py3-none-any.whl.metadata (6.2 kB)
+Requirement already satisfied: packaging>=21.3 in .\venv\Lib\site-packages (from pytesseract) (25.0)
+Requirement already satisfied: Pillow>=8.0.0 in .\venv\Lib\site-packages (from pytesseract) (12.1.0)
+Downloading pytesseract-0.3.13-py3-none-any.whl (14 kB)
+Downloading pdf2image-1.17.0-py3-none-any.whl (11 kB)
+Installing collected packages: pytesseract, pdf2image
+
+Successfully installed pdf2image-1.17.0 pytesseract-0.3.13

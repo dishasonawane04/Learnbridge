@@ -87,7 +87,110 @@
         transform: translateY(-2px);
         box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3);
     }
+
+    /* Audio Control Styles */
+    .audio-controls-bar {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        display: none;
+        /* Shown via JS when content is ready */
+        align-items: center;
+        gap: 1.5rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .audio-btn {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        background: rgba(99, 102, 241, 0.1);
+        color: white;
+        transition: all 0.2s ease;
+    }
+
+    .audio-btn:hover {
+        background: var(--primary);
+        transform: scale(1.05);
+    }
+
+    .audio-btn.active {
+        background: var(--primary);
+        box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .speed-control {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.9rem;
+    }
+
+    .speed-slider {
+        width: 100px;
+        height: 4px;
+        accent-color: var(--primary);
+    }
+
+    .voice-select {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        max-width: 200px;
+    }
+
+    /* PDF Export Styling */
+    .pdf-export-header {
+        text-align: center;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #6366f1;
+        padding-bottom: 15px;
+    }
+
+    .pdf-title {
+        color: #6366f1;
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .pdf-meta {
+        color: #666;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+
+    .pdf-content {
+        font-family: Arial, Helvetica, sans-serif !important;
+        line-height: 1.8 !important;
+        color: #000000 !important;
+        background: #ffffff !important;
+        font-size: 14pt !important;
+        width: 100% !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    .pdf-content * {
+        color: #000000 !important;
+        background: transparent !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
 </style>
+<!-- html2pdf.js (Latest stable) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -95,12 +198,48 @@
     <!-- Tool Header -->
     <div class="tool-header">
         <div class="tool-icon-bg"><i class="fas {{ icon }}"></i></div>
-        <div class="position-relative z-1">
-            <div class="ai-badge mb-3">
-                <i class="fas fa-sparkles"></i> AI Generated Insight
+        <div class="position-relative z-1 d-flex justify-content-between align-items-end">
+            <div>
+                <div class="ai-badge mb-3">
+                    <i class="fas fa-sparkles"></i> AI Generated Insight
+                </div>
+                <h1 class="display-5 fw-bold text-white mb-2">{{ tool_name }}</h1>
+                <p class="lead text-muted mb-0">Personalized intelligence synthesized from your active course materials.
+                </p>
             </div>
-            <h1 class="display-5 fw-bold text-white mb-2">{{ tool_name }}</h1>
-            <p class="lead text-muted mb-0">Personalized intelligence synthesized from your active course materials.</p>
+
+            {% if not is_error and content %}
+            <button id="mainListenBtn" class="btn btn-primary btn-action shadow-glow" onclick="toggleAudioBar()">
+                <i class="fas fa-volume-up me-2"></i> Listen
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Audio Player Bar -->
+    <div id="audioBar" class="audio-controls-bar fade-in">
+        <div class="d-flex gap-2">
+            <button id="playBtn" class="audio-btn" onclick="playAudio()" title="Play">
+                <i class="fas fa-play"></i>
+            </button>
+            <button id="pauseBtn" class="audio-btn" onclick="pauseAudio()" title="Pause">
+                <i class="fas fa-pause"></i>
+            </button>
+            <button id="stopBtn" class="audio-btn" onclick="stopAudio()" title="Stop">
+                <i class="fas fa-stop"></i>
+            </button>
+        </div>
+
+        <div class="speed-control">
+            <span>Speed</span>
+            <input type="range" class="speed-slider" min="0.5" max="1.5" step="0.1" value="1" id="speedRange"
+                onchange="updateSpeed()">
+            <span id="speedVal">1.0x</span>
+        </div>
+
+        <div class="ms-auto voice-control d-flex align-items-center gap-2">
+            <i class="fas fa-user-circle text-muted"></i>
+            <select id="voiceSelect" class="voice-select" onchange="updateVoice()"></select>
         </div>
     </div>
 
@@ -114,7 +253,7 @@
                 <button onclick="location.reload()" class="btn btn-outline-primary mt-3">Try Again</button>
             </div>
             {% else %}
-            <div class="summary-text-clean">
+            <div id="summary-content" class="summary-text-clean">
                 {{ content|linebreaks }}
             </div>
             {% endif %}
@@ -126,12 +265,270 @@
         <a href="{% url 'course:course_dashboard' course.id %}" class="btn btn-secondary btn-action">
             <i class="fas fa-home me-2"></i> Back to Course
         </a>
-        <button onclick="window.print()" class="btn btn-outline-primary btn-action">
-            <i class="fas fa-download me-2"></i> Export PDF
+        <button id="translateBtn" onclick="translateOutput(this)" class="btn btn-outline-info btn-action">
+            <i class="fas fa-language me-2"></i> Translate Output
+        </button>
+        <button onclick="exportToPDF(this)" class="btn btn-outline-primary btn-action">
+            <i class="fas fa-file-pdf me-2"></i> Export PDF
         </button>
         <a href="{% url 'ai_tutor:start_course_chat' course.id %}" class="btn btn-primary btn-action shadow-glow">
             <i class="fas fa-comment-alt me-2"></i> Discuss with AI
         </a>
     </div>
 </div>
+
+<!-- jsPDF CDN - Direct text PDF writer, no html2canvas needed -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+    let synth = window.speechSynthesis;
+
+    let utterance = null;
+    let voices = [];
+    let isPaused = false;
+
+    function initVoices() {
+        voices = synth.getVoices();
+        const voiceSelect = document.getElementById('voiceSelect');
+        if (!voiceSelect) return;
+
+        voiceSelect.innerHTML = '';
+        voices.forEach((voice, i) => {
+            if (voice.lang.includes('en')) {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.value = i;
+                if (voice.default) option.selected = true;
+                voiceSelect.appendChild(option);
+            }
+        });
+    }
+
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = initVoices;
+    }
+
+    function toggleAudioBar() {
+        const bar = document.getElementById('audioBar');
+        const btn = document.getElementById('mainListenBtn');
+        if (bar.style.display === 'flex') {
+            bar.style.display = 'none';
+            stopAudio();
+        } else {
+            bar.style.display = 'flex';
+            initVoices();
+        }
+    }
+
+    function playAudio() {
+        if (isPaused) {
+            synth.resume();
+            isPaused = false;
+            updateBtnStates('play');
+            return;
+        }
+
+        synth.cancel();
+        const text = document.querySelector('.summary-text-clean')?.innerText ||
+            document.querySelector('.markdown-body')?.innerText;
+
+        if (!text) return;
+
+        utterance = new SpeechSynthesisUtterance(text);
+
+        // Settings
+        const voiceIdx = document.getElementById('voiceSelect').value;
+        if (voices[voiceIdx]) utterance.voice = voices[voiceIdx];
+
+        utterance.rate = document.getElementById('speedRange').value;
+        utterance.pitch = 1;
+
+        utterance.onend = () => {
+            updateBtnStates('stop');
+            isPaused = false;
+        };
+
+        synth.speak(utterance);
+        updateBtnStates('play');
+    }
+
+    function pauseAudio() {
+        if (synth.speaking && !synth.paused) {
+            synth.pause();
+            isPaused = true;
+            updateBtnStates('pause');
+        }
+    }
+
+    function stopAudio() {
+        synth.cancel();
+        isPaused = false;
+        updateBtnStates('stop');
+    }
+
+    function updateSpeed() {
+        const val = document.getElementById('speedRange').value;
+        document.getElementById('speedVal').innerText = val + 'x';
+        if (synth.speaking) {
+            // Must restart for rate to take effect in most browsers
+            playAudio();
+        }
+    }
+
+    function updateVoice() {
+        if (synth.speaking) {
+            playAudio();
+        }
+    }
+
+    function updateBtnStates(active) {
+        document.getElementById('playBtn').classList.toggle('active', active === 'play');
+        document.getElementById('pauseBtn').classList.toggle('active', active === 'pause');
+    }
+
+    function exportToPDF(btn) {
+        const sourceElement = document.getElementById('summary-content');
+        if (!sourceElement || sourceElement.innerText.trim() === "") {
+            alert("No summary available to export.");
+            return;
+        }
+
+        const originalBtnContent = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Generating PDF...';
+        btn.disabled = true;
+
+        try {
+            // ✅ PURE jsPDF TEXT APPROACH - no html2canvas, no rendering issues
+            // Reads plain text and writes directly into the PDF page by page
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+            const pageW = doc.internal.pageSize.getWidth();
+            const pageH = doc.internal.pageSize.getHeight();
+            const margin = 20;
+            const maxW = pageW - margin * 2;
+            let y = margin;
+
+            // ── HEADER ──────────────────────────────────────────────────
+            const toolName = "{{ tool_name|escapejs }}" || "Course Summary";
+            const courseTitle = "{{ course.title|escapejs }}";
+            const dateStr = new Date().toLocaleDateString();
+
+            // Title
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(20);
+            doc.setTextColor(99, 102, 241);
+            const titleLines = doc.splitTextToSize(toolName, maxW);
+            doc.text(titleLines, pageW / 2, y, { align: 'center' });
+            y += titleLines.length * 8 + 4;
+
+            // Subtitle
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Course: ${courseTitle}   |   Date: ${dateStr}`, pageW / 2, y, { align: 'center' });
+            y += 5;
+
+            // Divider line
+            doc.setDrawColor(99, 102, 241);
+            doc.setLineWidth(0.5);
+            doc.line(margin, y, pageW - margin, y);
+            y += 10;
+
+            // ── BODY ────────────────────────────────────────────────────
+            // Get clean text — works even in dark mode (no colour inheritance)
+            const rawText = sourceElement.innerText.trim();
+            const paragraphs = rawText.split(/\n\n+/).filter(p => p.trim());
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+            doc.setTextColor(0, 0, 0);
+
+            for (const para of paragraphs) {
+                const lines = doc.splitTextToSize(para.trim(), maxW);
+                const blockH = lines.length * 6;   // ~6 mm per line at 11pt
+
+                // New page if needed
+                if (y + blockH > pageH - margin) {
+                    doc.addPage();
+                    y = margin;
+                }
+
+                doc.text(lines, margin, y);
+                y += blockH + 5;   // 5 mm spacing between paragraphs
+            }
+
+            // ── FOOTER ──────────────────────────────────────────────────
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(
+                    `Generated via LearnBridge AI Summary Engine  |  Page ${i} of ${totalPages}`,
+                    pageW / 2,
+                    pageH - 8,
+                    { align: 'center' }
+                );
+            }
+
+            doc.save('summary.pdf');
+
+        } catch (error) {
+            console.error("PDF Export Error:", error);
+            alert("Export failed. Please try again.");
+        } finally {
+            btn.innerHTML = originalBtnContent;
+            btn.disabled = false;
+        }
+    }
+
+
+    // Clean up on leave
+    window.onbeforeunload = () => {
+        synth.cancel();
+    };
+
+    function translateOutput(btn) {
+        const sourceElement = document.getElementById('summary-content') || document.querySelector('.markdown-body');
+        if (!sourceElement || sourceElement.innerText.trim() === "") {
+            alert("Translation not available. Showing original content.");
+            return;
+        }
+
+        const originalBtnContent = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Translating...';
+        btn.disabled = true;
+
+        const csrfToken = document.cookie.split(';')
+            .find(c => c.trim().startsWith('csrftoken='))
+            ?.split('=')[1] || '';
+
+        fetch(`/course/api/translate/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ text: sourceElement.innerText })
+        })
+            .then(r => r.json())
+            .then(data => {
+                btn.innerHTML = originalBtnContent;
+                btn.disabled = false;
+
+                if (data.status === 'success') {
+                    sourceElement.innerHTML = data.translated_text.replace(/\n/g, '<br>');
+                } else {
+                    alert("Translation not available. Showing original content.");
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                btn.innerHTML = originalBtnContent;
+                btn.disabled = false;
+                alert("Translation not available. Showing original content.");
+            });
+    }
+</script>
 {% endblock %}

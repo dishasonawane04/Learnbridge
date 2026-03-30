@@ -255,6 +255,7 @@ class CourseContextEngine:
             context_text, system_prompt, is_course_aware = get_hybrid_response_context(prompt, course_id)
         
         # 2. Query Ollama with dynamic model and speed constraints
+        return CourseContextEngine._query_ollama(system_prompt, context_text)
     @staticmethod
     def ask_course_ai_raw(user_msg: str, system_prompt: str = "You are a helpful assistant.") -> str:
         """
@@ -266,24 +267,39 @@ class CourseContextEngine:
     @staticmethod
     def _query_ollama(system: str, user_msg: str, **kwargs) -> str:
         try:
+            from core.middleware import get_current_request
+            request = get_current_request()
+            lang = "English"
+            if request and hasattr(request, 'session'):
+                lang = request.session.get('ai_language', 'English')
+            if lang.lower() != "english":
+                system += f"\n\nIMPORTANT INSTRUCTION: You MUST generate your entire response/output in {lang}. Do NOT use English unless explicitly asked. Translate all formatting, questions, answers, and explanations to {lang}."
+
             # Neutralize model choice for speed (OLLAMA_MODEL_TEXT is usually 1B)
             model = getattr(settings, 'OLLAMA_MODEL_TEXT', 'llama3.2:1b')
             
             options = {
                 "temperature": 0.3,
-                "num_predict": 400,
+                "num_predict": 1000, # Increased for longer summaries/outputs
                 "top_k": 30
             }
             options.update(kwargs)
             
+            # Extract format if present to place it at top level (Ollama requirement)
+            format_type = options.pop('format', None)
+            
+            api_payload = {
+                "model": model,
+                "prompt": f"{system}\n\nStudent: {user_msg}\nAI:",
+                "stream": False,
+                "options": options
+            }
+            if format_type:
+                api_payload["format"] = format_type
+
             response = requests.post(
                 f"{settings.OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": model,
-                    "prompt": f"{system}\n\nStudent: {user_msg}\nAI:",
-                    "stream": False,
-                    "options": options
-                },
+                json=api_payload,
                 timeout=300
             )
             response.raise_for_status()

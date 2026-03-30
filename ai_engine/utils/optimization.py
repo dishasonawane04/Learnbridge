@@ -2,7 +2,8 @@ import re
 import logging
 from django.conf import settings
 from core.ai.services import CourseContextEngine
-from course.models import CourseNotes, QuizChunk
+from django.db import models
+from course.models import CourseNotes, QuizChunk, FlashcardChunk
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +136,71 @@ class AIContextOptimizer:
         Only called after successful generation.
         """
         QuizChunk.objects.filter(course_id=course_id, content=content).update(is_used=True)
+
+    @classmethod
+    def ensure_flashcard_chunks(cls, course_id):
+        """
+        Ensures that the course text is split into chunks for incremental flashcard generation.
+        Chunk size: 2000 characters (per user request 1500-2500)
+        """
+        if FlashcardChunk.objects.filter(course_id=course_id).exists():
+            return True
+            
+        notes_obj = CourseNotes.objects.filter(course_id=course_id).first()
+        if not notes_obj or not notes_obj.extracted_text or len(notes_obj.extracted_text.strip()) < 100:
+            CourseContextEngine.consolidate_course_notes(course_id)
+            notes_obj = CourseNotes.objects.filter(course_id=course_id).first()
+            
+        if not notes_obj or not notes_obj.extracted_text:
+            return False
+            
+        text = notes_obj.extracted_text
+        chunk_size = 2000
+        new_chunks = []
+        
+        for i in range(0, len(text), chunk_size):
+            content = text[i:i + chunk_size]
+            if len(content.strip()) < 150: continue
+            
+            new_chunks.append(
+                FlashcardChunk(
+                    course_id=course_id,
+                    content=content,
+                    order=i // chunk_size
+                )
+            )
+            
+        if new_chunks:
+            FlashcardChunk.objects.bulk_create(new_chunks)
+            return True
+        return False
+
+    @classmethod
+    def get_next_flashcard_chunk(cls, course_id):
+        """
+        Retrieves the next chunk based on Course.flashcard_chunk_index
+        """
+        from course.models import Course
+        cls.ensure_flashcard_chunks(course_id)
+        
+        course = Course.objects.filter(id=course_id).first()
+        if not course: return ""
+        
+        idx = course.flashcard_chunk_index
+        chunk = FlashcardChunk.objects.filter(course_id=course_id, order=idx).first()
+        
+        if not chunk:
+            # Wrap around
+            course.flashcard_chunk_index = 0
+            course.save(update_fields=['flashcard_chunk_index'])
+            chunk = FlashcardChunk.objects.filter(course_id=course_id, order=0).first()
+            
+        return chunk.content if chunk else ""
+
+    @classmethod
+    def increment_flashcard_index(cls, course_id):
+        from course.models import Course
+        Course.objects.filter(id=course_id).update(flashcard_chunk_index=models.F('flashcard_chunk_index') + 1)
 
     @classmethod
     def prepare_context(cls, course_id):

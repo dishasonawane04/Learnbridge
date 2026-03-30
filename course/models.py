@@ -30,6 +30,10 @@ class Course(models.Model):
     page_count = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
+    
+    # Chunking State
+    flashcard_chunk_index = models.PositiveIntegerField(default=0)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -112,6 +116,7 @@ class CourseMaterial(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='course_materials', null=True, blank=True)
     unit = models.ForeignKey(CourseUnit, on_delete=models.CASCADE, related_name='materials', null=True, blank=True)
     file = models.FileField(upload_to=course_material_upload_path)
+    display_name = models.CharField(max_length=255, blank=True, help_text="Custom name for the document")
     file_type = models.CharField(max_length=10, choices=FILE_TYPES)
     extracted_text = models.TextField(blank=True, help_text="AI-extracted text content for context")
     summary = models.TextField(blank=True, help_text="AI-generated summary")
@@ -119,6 +124,14 @@ class CourseMaterial(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def get_display_name(self):
+        """Returns user-set display_name or a clean version of the filename."""
+        if self.display_name:
+            return self.display_name
+        import os
+        return os.path.basename(self.file.name)
+
     
     def save(self, *args, **kwargs):
         is_new = self.pk is None
@@ -337,3 +350,16 @@ class QuizChunk(models.Model):
 
     def __str__(self):
         return f"Chunk {self.order} for {self.course.title}"
+
+class FlashcardChunk(models.Model):
+    """Stores course text segments for incremental flashcard generation"""
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='flashcard_chunks')
+    content = models.TextField()
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"FC Chunk {self.order} for {self.course.title}"

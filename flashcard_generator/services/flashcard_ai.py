@@ -126,49 +126,55 @@ def parse_qa_text(response_text):
 
 def clean_json_response(response_text):
     """
-    ATTEMPT 1: Try Text Parsing (Q: A: format)
-    ATTEMPT 2: Try JSON Parsing (Fallback for legacy/other models)
+    Cleaner for AI JSON responses. Handles Markdown blocks and conversational filler.
+    Can extract from a nested 'flashcards' or 'questions' key.
     """
-    # 1. Try strict Q/A Text Parsing first (since Prompt requests it)
+    if not response_text:
+        return []
+
+    # 1. Try strict Q/A Text Parsing first (legacy/fallback)
     cards = parse_qa_text(response_text)
     if cards and len(cards) > 0:
         return cards
 
-    # 2. Fallback to JSON logic
-    if isinstance(response_text, dict): 
-        return response_text.get('cards', response_text.get('flashcards', []))
-
-    text = response_text.strip()
-    
-    # Remove Markdown code blocks if present
+    # 2. Basic Cleaning
+    text = str(response_text).strip()
     text = re.sub(r'^```json\s*', '', text, flags=re.MULTILINE)
     text = re.sub(r'^```\s*', '', text, flags=re.MULTILINE)
     text = re.sub(r'\s*```$', '', text, flags=re.MULTILINE)
-    
+
+    # 3. Try direct JSON load
     try:
-        return json.loads(text)
-    except json.JSONDecodeError:
+        data = json.loads(text)
+        if isinstance(data, dict):
+            for key in ['flashcards', 'questions', 'cards', 'data']:
+                if key in data and isinstance(data[key], list):
+                    return data[key]
+            if 'front' in data or 'question' in data:
+                return [data]
+        if isinstance(data, list):
+            return data
+    except:
         pass
-        
+
+    # 4. Regex Fallback for individual objects
     try:
-        pattern = r"\[\s*\{.*\}\s*\]"
-        match = re.search(pattern, text, re.DOTALL)
-        if match:
-             return json.loads(match.group())
+        # Match anything between { }
+        json_objects = re.findall(r'\{[^{}]*\}', text)
+        if json_objects:
+            parsed = []
+            for obj in json_objects:
+                try:
+                    c = json.loads(obj)
+                    if isinstance(c, dict) and len(c.keys()) >= 2:
+                        parsed.append(c)
+                except:
+                    continue
+            if parsed:
+                return parsed
     except Exception:
         pass
 
-    try:
-        pattern = r"\{.*\}"
-        match = re.search(pattern, text, re.DOTALL)
-        if match:
-            data = json.loads(match.group())
-            for key in ['cards', 'flashcards', 'response', 'data']:
-                if key in data and isinstance(data[key], list):
-                    return data[key]
-    except Exception:
-        pass
-         
     return []
 
 
@@ -213,9 +219,18 @@ def generate_flashcards(input_text=None, file_path=None, difficulty="Medium", co
         format="json" 
     )
     
+    from core.middleware import get_current_request
+    request = get_current_request()
+    lang = "English"
+    if request:
+        if request.method == "POST":
+            lang = request.POST.get("language", "English")
+        elif hasattr(request, 'session'):
+            lang = request.session.get('ai_language', 'English')
+
     prompt = f"""
     You are an expert Flashcard Generator.
-    Task: Generate 8-10 high-quality flashcards based on the provided text.
+    Task: Generate 8-10 high-quality flashcards in {lang} based on the provided text.
     
     Content:
     {content} 
@@ -235,6 +250,10 @@ def generate_flashcards(input_text=None, file_path=None, difficulty="Medium", co
         ]
     }}
     """
+    
+    if lang.lower() != "english":
+        prompt += f"\n\nIMPORTANT: Generate your entire response/output in {lang}. Translate all sides of the flashcards and tips to {lang}. Ensure the response is strictly in {lang}."
+
 
     try:
         response = llm.invoke(prompt)

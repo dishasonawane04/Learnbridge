@@ -23,7 +23,7 @@ class OllamaEmbeddings(Embeddings):
         for url in urls:
             try:
                 payload = {"model": self.model, "prompt": text}
-                response = requests.post(url, json=payload, timeout=15)
+                response = requests.post(url, json=payload, timeout=60)
                 response.raise_for_status()
                 return response.json().get('embedding', [0.0] * 2048)
             except Exception as e:

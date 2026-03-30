@@ -17,11 +17,23 @@ def get_support_response(user_message, mode='text', stream=False, context=None, 
     Generates a response from Ollama using the Support Persona with RAG context.
     """
     try:
+        from core.middleware import get_current_request
+        request = get_current_request()
+        lang = "English"
+        if request:
+            if request.method == "POST":
+                lang = request.POST.get("language", "English")
+            elif hasattr(request, 'session'):
+                lang = request.session.get('ai_language', 'English')
+
         current_system_prompt = custom_system_prompt if custom_system_prompt else SUPPORT_SYSTEM_PROMPT
         
         # If context exists and not using a custom prompt that already includes it
         if context and not custom_system_prompt:
             current_system_prompt += f"\n\nCONTEXT:\n{context}"
+            
+        if lang.lower() != "english":
+             current_system_prompt += f"\n\nIMPORTANT: Please explain in {lang}. Ensure the response is strictly in {lang}."
 
         final_prompt = f"{current_system_prompt}\n\nQUESTION: {user_message}"
         if mode == 'voice':

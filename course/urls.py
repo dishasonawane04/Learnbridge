@@ -14,6 +14,7 @@ urlpatterns = [
     path('unit/<int:unit_id>/edit/', views.unit_edit, name='unit_edit'),
     path('<int:course_id>/material/upload/', views.upload_notes, name='upload_notes'),
     path('material/<int:material_id>/delete/', views.material_delete, name='material_delete'),
+    path('material/<int:material_id>/rename/', views.rename_material, name='material_rename'),
     path('switch/<int:course_id>/', views.switch_course, name='switch'),
     path('research/<int:course_id>/', views.course_research, name='research'),
     path('career/<int:course_id>/', views.course_career, name='career'),
@@ -25,5 +26,7 @@ urlpatterns = [
     path('api/search/', views.unit_search_api, name='search_api'),
     path('api/user/courses/', views.user_courses_api, name='user_courses_api'),
     path('api/user/enrolled-courses/', views.user_courses_api, name='enrolled_courses_api'),
+    path('api/set-language/', views.set_ai_language, name='set_ai_language'),
+    path('api/translate/', views.translate_content, name='translate_content'),
     path('<int:course_id>/concept-map/', views.course_concept_map_api, name='concept_map_api'),
 ]

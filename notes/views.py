@@ -78,6 +78,8 @@ async def generate_notes(request):
         
         context_text = CourseContextEngine.get_course_context(course_id)
         
+        language = request.POST.get("language", "English")
+        
         system_prompt = (
             "You are an academic AI assistant. "
             "Use ONLY the following study material to generate notes. "
@@ -88,8 +90,10 @@ async def generate_notes(request):
         final_prompt = f"""{system_prompt}
         
         TASK:
-        Generate comprehensive, exam-oriented notes for the topic: '{topic}'.
+        Generate comprehensive, exam-oriented notes in {language} for the topic: '{topic}'.
         {structure_hint}
+        
+        Ensure the response is strictly in {language}.
         """
 
         client = ollama.AsyncClient()

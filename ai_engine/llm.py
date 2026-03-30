@@ -25,6 +25,9 @@ def ask_llm(prompt, system_prompt="You are a helpful educational assistant.", **
     options = {"temperature": 0.3}
     options.update(kwargs)
     
+    # Extract format if present to place it at top level (Ollama requirement)
+    format_type = options.pop('format', None)
+    
     payload = {
         "model": model,
         "messages": [
@@ -34,6 +37,9 @@ def ask_llm(prompt, system_prompt="You are a helpful educational assistant.", **
         "options": options,
         "stream": False
     }
+    
+    if format_type:
+        payload["format"] = format_type
 
     last_error = None
     for url in urls:

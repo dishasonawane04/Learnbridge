@@ -70,8 +70,20 @@ def generate_quiz(course_id, user=None, num_questions=5):
               ]
             }"""
 
+            from core.middleware import get_current_request
+            request = get_current_request()
+            lang = "English"
+            if request:
+                if request.method == "POST":
+                    lang = request.POST.get("language", "English")
+                elif hasattr(request, 'session'):
+                    lang = request.session.get('ai_language', 'English')
+            if lang.lower() != "english":
+                system_instruction += f"\n\nIMPORTANT: Generate your entire response/output in {lang}. Translate all questions, options, and explanations to {lang}. Ensure the response is strictly in {lang}."
+
+
             mode_text = "from the specific course section provided" if not is_fallback else "general educational knowledge"
-            user_prompt = f"""Generate 5 unique MCQs {mode_text}.
+            user_prompt = f"""Generate 5 unique MCQs in {lang} {mode_text}.
             Ensure these questions are high-quality and directly based on the context.
             SEED: {uuid.uuid4().hex[:8]}
             
@@ -142,8 +154,21 @@ def generate_quiz_stream(course_id, user=None, num_questions=5):
           ]
         }"""
         
+        from core.middleware import get_current_request
+        request = get_current_request()
+        lang = "English"
+        if request:
+            if request.method == "POST":
+                lang = request.POST.get("language", "English")
+            elif hasattr(request, 'session'):
+                lang = request.session.get('ai_language', 'English')
+
+        if lang.lower() != "english":
+            system_instruction += f"\n\nIMPORTANT: Generate your entire response/output in {lang}. Translate all questions, options, and explanations to {lang}. Ensure the response is strictly in {lang}."
+
+        
         mode_text = "from context" if not is_fallback else "general knowledge"
-        user_prompt = f"Generate 5 unique MCQs {mode_text}.\nSEED: {uuid.uuid4().hex[:8]}\nCONTEXT: {context[:3000]}\nJSON Format ONLY."
+        user_prompt = f"Generate 5 unique MCQs in {lang} {mode_text}.\nSEED: {uuid.uuid4().hex[:8]}\nCONTEXT: {context[:3000]}\nJSON Format ONLY."
         
         system_instruction = system_instruction.replace("    ", "") # Cleanup
 

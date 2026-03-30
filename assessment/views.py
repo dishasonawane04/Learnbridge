@@ -16,45 +16,60 @@ async def start_practice(request, course_id):
     # Generate Practice Questions using Context
     context_text = await sync_to_async(get_course_context)(request.user, course_id)
     
+    # Prevent massive context windows from crashing the AI
+    if len(context_text) > 6000:
+        context_text = context_text[:6000] + "\n... [Context truncated to fit AI memory limits]"
+        
+    language = request.POST.get("language", "English")
+        
     system_prompt = (
-        "You are an expert academic tutor. Generate a practice test based on the actual course notes provided below.\n"
+        f"You are an expert academic tutor. Generate a practice test in {language} based on the actual course notes provided below.\n"
         f"--- COURSE NOTES ---\n{context_text}\n---------------------\n"
     )
     
-    task_prompt = """
-    Generate exactly 3 Multiple Choice Questions (mcq) and exactly 2 Short Answer/Concept questions (short) based on the course notes.
+    task_prompt = f"""
+    Generate exactly 3 Multiple Choice Questions (mcq) and exactly 2 Short Answer/Concept questions (short) in {language} based on the course notes.
     
     Output strictly in the following JSON format without any backticks, markdown, or extra text:
-    {
+    {{
       "questions": [
-        {
+        {{
           "type": "mcq",
           "question": "What is...?",
           "options": ["Option A", "Option B", "Option C", "Option D"],
           "answer": "Option A",
           "topic": "Topic Name"
-        },
-        {
+        }},
+        {{
           "type": "short",
           "question": "Explain the concept of...",
           "answer": "Detailed explanation...",
           "topic": "Topic Name"
-        }
+        }}
       ]
-    }
+    }}
+    
+    Ensure the response is strictly in {language}.
     """
     
     client = ollama.AsyncClient()
     try:
         res = await client.chat(
             model=settings.OLLAMA_MODEL_TEXT,
-            messages=[{'role': 'user', 'content': system_prompt + task_prompt}]
+            messages=[{'role': 'user', 'content': system_prompt + task_prompt}],
+            format='json'
         )
         
-        # Parse JSON
+        # Parse JSON robustly
         raw_content = res['message']['content'].strip()
-        if raw_content.startswith('```json'):
-            raw_content = raw_content[7:-3].strip()
+        
+        import re
+        json_match = re.search(r'\{.*\}', raw_content, re.DOTALL)
+        if json_match:
+            raw_content = json_match.group(0)
+            
+        if not raw_content:
+            raise ValueError("AI returned an empty response.")
             
         data = json.loads(raw_content)
         
@@ -116,16 +131,21 @@ async def submit_practice(request, attempt_id):
                     ai_exp = f"The correct answer was {q.correct_answer}. Your answer was {user_ans}."
             else:
                 # Grade short answer with AI
-                eval_prompt = f"Question: {q.question_text}\nCorrect Answer/Concept: {q.correct_answer}\nStudent Answer: {user_ans}\n\nStrictly respond with a JSON object format like this without markdown:\n{{\"score\": 0.0 to 1.0, \"explanation\": \"Brief explanation mapping the student answer to correct concept\"}}"
+                language = request.POST.get("language", "English")
+                eval_prompt = f"Question: {q.question_text}\nCorrect Answer/Concept: {q.correct_answer}\nStudent Answer: {user_ans}\n\nStrictly respond with a JSON object format like this without markdown:\n{{\"score\": 0.0 to 1.0, \"explanation\": \"Brief explanation in {language} mapping the student answer to correct concept\"}}"
                 try:
                     res = await client.chat(
                         model=settings.OLLAMA_MODEL_TEXT,
-                        messages=[{'role': 'user', 'content': eval_prompt}]
+                        messages=[{'role': 'user', 'content': eval_prompt}],
+                        format='json'
                     )
                     raw_content = res['message']['content'].strip()
-                    if raw_content.startswith('```json'):
-                        raw_content = raw_content[7:-3].strip()
                     
+                    import re
+                    eval_match = re.search(r'\{.*\}', raw_content, re.DOTALL)
+                    if eval_match:
+                        raw_content = eval_match.group(0)
+                        
                     eval_data = json.loads(raw_content)
                     score_awarded = float(eval_data.get('score', 0))
                     ai_exp = eval_data.get('explanation', '')
@@ -195,6 +215,7 @@ async def learning_support(request):
 
     if request.method == "POST":
         doubt = request.POST.get("doubt")
+        language = request.POST.get("language", "English")
         image = request.FILES.get("image")
         
         client = ollama.AsyncClient()
@@ -220,7 +241,7 @@ async def learning_support(request):
                     model=settings.OLLAMA_MODEL_VISION,
                     messages=[{
                         'role': 'user',
-                        'content': f"Provide a simplified, step-by-step explanation for this doubt: {doubt or ''}. {context} Focus on clarity and basics.",
+                        'content': f"Provide a simplified, step-by-step explanation in {language} for this doubt: {doubt or ''}. {context} Focus on clarity and basics. Ensure the response is strictly in {language}.",
                         'images': [image_path]
                     }]
                 )
@@ -234,7 +255,7 @@ async def learning_support(request):
                     model=settings.OLLAMA_MODEL_TEXT,
                     messages=[{
                         'role': 'user',
-                        'content': f"Simplify this concept: {doubt}. {context} Use an analogy and a step-by-step breakdown."
+                        'content': f"Simplify this concept in {language}: {doubt}. {context} Use an analogy and a step-by-step breakdown. Ensure the response is strictly in {language}."
                     }]
                 )
                 response = res['message']['content']

@@ -95,7 +95,7 @@ def upload_notes(request, course_id):
         from core.ai.services import CourseContextEngine
         CourseContextEngine.consolidate_course_notes(course.id)
                 
-    return redirect('course:dashboard', course_id=course.id)
+    return redirect('course:course_dashboard', course_id=course.id)
 
 @login_required
 def unit_create(request, course_id):
@@ -231,6 +231,24 @@ def material_delete(request, material_id):
     # Re-consolidate after deletion
     CourseContextEngine.consolidate_course_notes(course_id)
     return redirect('course:course_dashboard', course_id=course_id)
+
+@login_required
+def rename_material(request, material_id):
+    """Rename a document display name via AJAX POST."""
+    material = get_object_or_404(CourseMaterial, id=material_id, course__user=request.user)
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            new_name = data.get('name', '').strip()
+            if not new_name:
+                return JsonResponse({'status': 'error', 'message': 'Name cannot be empty.'}, status=400)
+            material.display_name = new_name
+            material.save(update_fields=['display_name'])
+            return JsonResponse({'status': 'success', 'name': new_name})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'POST required.'}, status=405)
+
 
 @login_required
 def material_upload(request, unit_id):
@@ -413,6 +431,7 @@ def course_career(request, course_id):
 def course_summary(request, course_id):
     """Generates a comprehensive executive summary of the entire course material."""
     course = get_object_or_404(Course, id=course_id)
+    language = request.POST.get("language", "English")
     
     # Return cached summary if available - CLEARING ONCE TO RE-FORMAT
     if course.executive_summary:
@@ -430,14 +449,15 @@ def course_summary(request, course_id):
             })
         
     prompt = (
-        "Synthesize all provided course material into a clean textbook-style Executive Summary. "
+        f"Synthesize all provided course material into a clean textbook-style Executive Summary in {language}. "
         "Cover Major Concepts, Core Objectives, and Critical Takeaways. "
         "\nSTRICT REQUIREMENTS: "
         "1. Output must be PLAIN ACADEMIC TEXT only. "
         "2. Use ONLY paragraphs. No bullet points or symbols. "
         "3. ABSOLUTELY NO markdown: No #, no *, no _, no bold, no italic. "
         "4. Use simple, clear language with logical organization. "
-        "5. If listing items, use normal sentences starting with 'First,', 'Second,', etc. or simple numbers (1, 2, 3)."
+        "5. If listing items, use normal sentences starting with 'First,', 'Second,', etc. or simple numbers (1, 2, 3). "
+        f"Ensure the response is strictly in {language}."
     )
     content = CourseContextEngine.ask_course_ai(course.id, prompt, specialized_mode='summary')
     
@@ -560,3 +580,37 @@ def course_concept_map_api(request, course_id):
         return JsonResponse({'status': 'success', 'data': concept_map.data})
     
     return JsonResponse({'status': 'empty', 'message': error_msg})
+
+@login_required
+def set_ai_language(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            lang = data.get('language', 'English')
+            request.session['ai_language'] = lang
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error'}, status=400)
+
+@login_required
+def translate_content(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            text = data.get('text', '')
+            if not text:
+                return JsonResponse({'status': 'error', 'message': 'No text provided'}, status=400)
+                
+            lang = request.session.get('ai_language', 'English')
+            if lang.lower() == 'english':
+                return JsonResponse({'status': 'success', 'translated_text': text})
+                
+            prompt = f"Translate the following educational content completely and accurately into {lang}. Preserve all formatting, line breaks, emojis, and styling exactly as provided.\n\nContent to translate:\n{text}"
+            translated = CourseContextEngine.ask_course_ai_raw(prompt)
+            
+            return JsonResponse({'status': 'success', 'translated_text': translated})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error'}, status=400)
+

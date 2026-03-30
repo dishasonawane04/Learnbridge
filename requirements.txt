@@ -9,3 +9,5 @@ python-dotenv
 markdown
 pymupdf
 python-pptx
+pytesseract
+pdf2image

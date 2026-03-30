@@ -16,91 +16,87 @@ def get_card_hash(front_text):
 
 def generate_flashcards_dynamic(user, course_id, count=8):
     """
-    Dynamic flashcard generation with RAG, Repetition Avoidance, and Caching.
-    Optimized for SPEED (Simpler retrieval, smaller count, prediction limits).
+    Overhauled: Chunk-Based Flashcard Generation.
+    Uses sequential chunks (2000 chars) to prevent timeouts.
+    Includes 1-time automatic retry and validation.
     """
-    cache_key = f"flashcards_session_{user.id}_{course_id}"
-    cached_cards = cache.get(cache_key)
-    
-    if cached_cards:
-        logger.info(f"Returning cached flashcards for User {user.id}, Course {course_id}")
-        return cached_cards
-
     from ai_engine.utils.optimization import AIContextOptimizer
     
-    # 1. Faster Context Retrieval
-    context = AIContextOptimizer.prepare_context(course_id)
-    
-    if not context or len(context.strip()) < 100:
-        return [{"error": "AI could not find enough context. Please ensure your material contains clear academic concepts."}]
-    
-    # ... Validation remains mostly same ...
-    total_text_len = len(course.extracted_text or "") if course else 0
-    
-    if not context or len(context.strip()) < 200:
-        return [{"error": "AI could not find enough context. Please ensure your material contains clear academic concepts."}]
+    # Check cache first (for current chunk session)
+    cache_key = f"flashcards_session_{user.id}_{course_id}"
+    cached_cards = cache.get(cache_key)
+    if cached_cards:
+        return cached_cards
 
-    # 3. Optimized Prompt & Model Constraints
-    prompt = f"""
-    Create 8-10 educational flashcards based ONLY on this context. 
-    Format: JSON Array of {{"front": "Term", "back": "Short Definition"}}.
-    Definitions must be 1-2 lines only.
-    
-    Context:
-    {context}
-    """
+    # 1. Get the next available chunk
+    context = AIContextOptimizer.get_next_flashcard_chunk(course_id)
+    if not context:
+        return [{"error": "No course material found. Please upload a document first."}]
 
-    # 4. Call LLM with strict limits for speed
-    raw_response = ask_llm(
-        prompt, 
-        num_predict=400,  # Prevent long-windedness
-        top_k=20,         # Narrower sampling for faster decoding
-        repeat_penalty=1.2
-    )
-    
-    # 5. Robust Parsing
-    generated_cards = clean_json_response(raw_response)
-    
-    if not generated_cards:
-        logger.error(f"Gen: LLM returned empty or invalid response for Course {course_id}.")
-        logger.error(f"Raw response (first 200 chars): {str(raw_response)[:200]}")
-        return [{"error": "AI could not generate valid flashcards from this material. Please try adding more detail or simplify the text."}]
-
-    # 6. Repetition Avoidance (Discard seen cards)
-    final_cards = []
-    new_history_entries = []
-    
-    history_hashes = set(StudentFlashcardHistory.objects.filter(
-        student=user, course_id=course_id
-    ).values_list('card_hash', flat=True))
-
-    logger.info(f"Gen: Received {len(generated_cards)} cards from AI. History: {len(history_hashes)}")
-
-    for card in generated_cards:
-        if not isinstance(card, dict) or 'front' not in card or 'back' not in card:
-            continue
+    # 2. Generation Loop (with 1 automatic retry)
+    max_attempts = 2
+    for attempt in range(max_attempts):
+        try:
+            # Explicit prompt for 1B models
+            prompt = (
+                "Create a list of 6 flashcards from the text below.\n"
+                "Return ONLY a JSON object with this exact structure:\n"
+                "{\n"
+                "  \"flashcards\": [\n"
+                "    {\"question\": \"...\", \"answer\": \"...\"},\n"
+                "    {\"question\": \"...\", \"answer\": \"...\"}\n"
+                "  ]\n"
+                "}\n"
+                "Keep questions and answers very concise."
+            )
             
-        c_hash = get_card_hash(card['front'])
-        if c_hash in history_hashes:
-            logger.info(f"Skipping repeated card: {card['front'][:30]}...")
-            continue
+            user_msg = f"Context:\n{context}\n\nTask: {prompt}"
             
-        final_cards.append(card)
-        new_history_entries.append(StudentFlashcardHistory(
-            student=user, course_id=course_id, card_hash=c_hash
-        ))
-
-    # Handle the case where ALL cards were duplicates
-    if not final_cards and generated_cards:
-        logger.warning("Gen: All generated cards were duplicates.")
-        return [{"error": "You've reviewed all generated flashcards for this material. Try adding new material to get fresh concepts!"}]
-
-    # Bulk create history entries
-    if new_history_entries:
-        StudentFlashcardHistory.objects.bulk_create(new_history_entries, ignore_conflicts=True)
-
-    # 6. Session Cache (10 minutes)
-    if final_cards:
-        cache.set(cache_key, final_cards, 600)
-
-    return final_cards
+            raw_response = ask_llm(
+                user_msg,
+                format="json",
+                num_predict=1000,
+                timeout=90
+            )
+            
+            # 3. Parsing
+            generated_data = clean_json_response(raw_response)
+            
+            # 4. Success Handling & Mapping
+            valid_cards = []
+            
+            # If AI returned a list of strings, pair them up as (Question, Answer)
+            if isinstance(generated_data, list) and len(generated_data) > 0:
+                if isinstance(generated_data[0], str):
+                    logger.info(f"Fallback: Pairing strings for Course {course_id}")
+                    for i in range(0, len(generated_data) - 1, 2):
+                        valid_cards.append({
+                            "front": generated_data[i],
+                            "back": generated_data[i+1],
+                            "type": "QA"
+                        })
+                else:
+                    # Normal processing for list of dicts
+                    for card in generated_data:
+                        if not isinstance(card, dict): continue
+                        q = card.get('question') or card.get('front') or card.get('term')
+                        a = card.get('answer') or card.get('back') or card.get('definition')
+                        if q and a:
+                            valid_cards.append({"front": q, "back": a, "type": "QA"})
+            
+            # 5. Success Handling
+            min_required = 5 if attempt == 0 else 3
+            if len(valid_cards) >= min_required:
+                AIContextOptimizer.increment_flashcard_index(course_id)
+                cache.set(cache_key, valid_cards, 600)
+                return valid_cards
+                
+            logger.warning(f"Validation failed ({len(valid_cards)} cards) on attempt {attempt+1}")
+            
+        except Exception as e:
+            logger.error(f"Gen Error on attempt {attempt+1}: {e}")
+            if attempt == max_attempts - 1:
+                return [{"error": f"Internal generation error. Please try again soon."}]
+            
+    # If we fall through the loop
+    return [{"error": "AI could not generate valid flashcards. Retrying might help."}]

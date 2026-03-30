@@ -28,6 +28,8 @@ async def study_plan(request):
             
         context_text = get_course_context(request.user, course_id)
         
+        language = request.POST.get("language", "English")
+        
         # Calculate days until exam
         days_until_exam = 7 # Default
         if exam_date:
@@ -65,7 +67,7 @@ async def study_plan(request):
         )
 
         task_prompt = f"""task:
-        Generate a detailed study plan for the topic: '{topic}'.
+        Generate a detailed study plan in {language} for the topic: '{topic}'.
         The student has {days_until_exam} days until their exam.
         The student can dedicate {hours} hours per day to studying.
         
@@ -87,6 +89,8 @@ async def study_plan(request):
         
         ## Day {days_until_exam - 1}: Practice Quiz
         ## Day {days_until_exam}: Final Revision
+        
+        Ensure the response is strictly in {language}.
         """
         
         final_prompt = f"{system_prompt}\n\n{task_prompt}"

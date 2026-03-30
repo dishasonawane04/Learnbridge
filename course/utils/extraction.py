@@ -3,14 +3,45 @@ from pptx import Presentation
 from PIL import Image
 import os
 import base64
+import logging
 from django.conf import settings
 
+logger = logging.getLogger(__name__)
+
+# Minimum characters from normal extraction before OCR fallback kicks in
+_MIN_TEXT_CHARS = 100
+
+_OCR_ERROR_MSG = (
+    "Unable to detect text clearly. "
+    "Please upload a clearer image or scan."
+)
+
+
 def extract_text_from_pdf(file_path):
+    """
+    Extract text from PDF using PyMuPDF.
+    If the result is too short (scanned/handwritten PDF), fall back to OCR.
+    """
     text = ""
     with fitz.open(file_path) as doc:
         for page in doc:
             text += page.get_text()
+
+    # --- OCR Fallback for scanned / handwritten PDFs ---
+    if len(text.strip()) < _MIN_TEXT_CHARS:
+        logger.info(f"[OCR] PDF text too short ({len(text.strip())} chars). "
+                    f"Attempting OCR fallback: {file_path}")
+        from .ocr_utils import ocr_pdf_pages
+        ocr_text = ocr_pdf_pages(file_path)
+        if ocr_text and len(ocr_text.strip()) >= _MIN_TEXT_CHARS:
+            logger.info(f"[OCR] Fallback succeeded: {len(ocr_text)} chars extracted.")
+            return ocr_text
+        else:
+            logger.warning(f"[OCR] Fallback yielded insufficient text for: {file_path}")
+            return _OCR_ERROR_MSG if not text.strip() else text
+
     return text
+
 
 def extract_text_from_ppt(file_path):
     text = ""
@@ -21,14 +52,20 @@ def extract_text_from_ppt(file_path):
                 text += shape.text + "\n"
     return text
 
+
 def extract_text_from_image(file_path):
-    """Uses Ollama Vision model for OCR/Understanding"""
+    """
+    Uses Ollama Vision model for OCR/Understanding.
+    Falls back to pytesseract if Ollama fails or returns no text.
+    """
     import urllib.request
     import json
+
+    ollama_text = ""
     try:
         with open(file_path, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-        
+
         url = f"{settings.OLLAMA_BASE_URL}/api/generate"
         data = json.dumps({
             "model": getattr(settings, "OLLAMA_MODEL_VISION", "llava:latest"),
@@ -36,13 +73,29 @@ def extract_text_from_image(file_path):
             "images": [encoded_string],
             "stream": False
         }).encode('utf-8')
-        
+
         req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
         with urllib.request.urlopen(req, timeout=180) as response:
             result = json.loads(response.read().decode('utf-8'))
-            return result.get('response', '')
+            ollama_text = result.get('response', '').strip()
     except Exception as e:
-        return f"Image OCR Failed: {str(e)}"
+        logger.warning(f"[OCR] Ollama Vision failed for {file_path}: {e}. Trying pytesseract fallback.")
+
+    # --- pytesseract Fallback ---
+    if not ollama_text or len(ollama_text) < _MIN_TEXT_CHARS:
+        logger.info(f"[OCR] Ollama returned little/no text. Attempting pytesseract fallback: {file_path}")
+        from .ocr_utils import ocr_image
+        ocr_text = ocr_image(file_path)
+        if ocr_text and len(ocr_text.strip()) >= _MIN_TEXT_CHARS:
+            logger.info(f"[OCR] pytesseract fallback succeeded: {len(ocr_text)} chars.")
+            return ocr_text
+        elif ollama_text:
+            return ollama_text  # return whatever Ollama gave even if short
+        else:
+            logger.warning(f"[OCR] Both Ollama and pytesseract failed for: {file_path}")
+            return _OCR_ERROR_MSG
+
+    return ollama_text
 
 def extract_text_from_path(file_path):
     """Generic extraction based on file extension"""
