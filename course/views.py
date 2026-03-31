@@ -429,12 +429,34 @@ def course_career(request, course_id):
 
 @login_required
 def course_summary(request, course_id):
-    """Generates a comprehensive executive summary of the entire course material."""
+    """Generates a comprehensive executive summary of the entire course material or a specific file."""
     course = get_object_or_404(Course, id=course_id)
     language = request.POST.get("language", "English")
+    material_id = request.GET.get('material_id')
     
-    # Return cached summary if available - CLEARING ONCE TO RE-FORMAT
-    if course.executive_summary:
+    # Try fetching specific file context
+    context_text = ""
+    if material_id:
+        from course.models import CourseMaterial
+        try:
+            file_obj = CourseMaterial.objects.get(id=material_id)
+            context_text = file_obj.extracted_text
+            print("Using file ID:", material_id)
+            print("Text preview:", context_text[:200] if context_text else "None")
+            
+            if not context_text or len(context_text.strip()) < 50:
+                return render(request, 'course/ai_tool_result.html', {
+                    'course': course,
+                    'tool_name': 'Course Summary Engine',
+                    'content': 'No content found for this file. Please wait for OCR or check the document.',
+                    'icon': 'fa-file-invoice',
+                    'is_error': True
+                })
+        except CourseMaterial.DoesNotExist:
+            pass
+            
+    # Return cached summary if available and NOT requesting a specific file
+    if not material_id and course.executive_summary:
         # Check if it has markdown, if so, clear it once
         if '#' in course.executive_summary or '*' in course.executive_summary:
              course.executive_summary = ""
@@ -459,7 +481,14 @@ def course_summary(request, course_id):
         "5. If listing items, use normal sentences starting with 'First,', 'Second,', etc. or simple numbers (1, 2, 3). "
         f"Ensure the response is strictly in {language}."
     )
-    content = CourseContextEngine.ask_course_ai(course.id, prompt, specialized_mode='summary')
+    
+    if context_text:
+        content = CourseContextEngine.ask_course_ai_raw(
+            user_msg=f"CONTEXT:\n{context_text[:20000]}", 
+            system_prompt=prompt
+        )
+    else:
+        content = CourseContextEngine.ask_course_ai(course.id, prompt, specialized_mode='summary')
     
     # --- ROBUST TEXT CLEANING (Strip all markdown/symbols) ---
     import re
@@ -473,13 +502,64 @@ def course_summary(request, course_id):
     is_error = "Error contacting AI service" in content or content.startswith("Error:")
     
     # Cache the result if successful
-    if not is_error:
+    if not is_error and not material_id:
         course.executive_summary = content
         course.save(update_fields=['executive_summary'])
         
     return render(request, 'course/ai_tool_result.html', {
         'course': course,
         'tool_name': 'Course Summary Engine',
+        'content': content,
+        'icon': 'fa-file-invoice',
+        'is_error': is_error
+    })
+
+@login_required
+def summary_file(request, file_id):
+    """STRICTLY file-based Summary endpoint."""
+    from course.models import CourseMaterial
+    import re
+    
+    file_obj = get_object_or_404(CourseMaterial, id=file_id)
+    text = file_obj.extracted_text
+    
+    # 4. HARD VALIDATION (VERY IMPORTANT)
+    if not text or len(text.strip()) < 10:
+        return render(request, 'core/error.html', {'message': "No valid content found for this file. Please wait for OCR or ensure text is readable."})
+        
+    # 5. DEBUG LOGGING (MANDATORY)
+    print("FILE ID:", file_id)
+    print("FILE NAME:", file_obj.file.name)
+    print("TEXT PREVIEW:", text[:200])
+
+    language = request.POST.get("language", "English") if request.method == "POST" else request.session.get('ai_language', 'English')
+    
+    prompt = (
+        f"Synthesize this specific document into a clean textbook-style Executive Summary in {language}. "
+        "Cover Major Concepts, Core Objectives, and Critical Takeaways. "
+        "\nSTRICT REQUIREMENTS: "
+        "1. Output must be PLAIN ACADEMIC TEXT only. "
+        "2. Use ONLY paragraphs. No bullet points or symbols. "
+        "3. ABSOLUTELY NO markdown: No #, no *, no _, no bold, no italic. "
+        "4. Use simple, clear language with logical organization. "
+        f"Ensure the response is strictly in {language}."
+    )
+    
+    content = CourseContextEngine.ask_course_ai_raw(
+        user_msg=f"CONTEXT:\n{text[:20000]}", 
+        system_prompt=prompt
+    )
+    
+    # --- ROBUST TEXT CLEANING ---
+    content = re.sub(r'[#*_`~>|+]', '', content)
+    content = re.sub(r'^[ \t]*[-+*•][ \t]+', '', content, flags=re.MULTILINE)
+    content = re.sub(r'\n{3,}', '\n\n', content).strip()
+    
+    is_error = "Error contacting AI service" in content or content.startswith("Error:")
+    
+    return render(request, 'course/ai_tool_result.html', {
+        'course': file_obj.course,
+        'tool_name': f'Summary: {file_obj.file.name.split("/")[-1]}',
         'content': content,
         'icon': 'fa-file-invoice',
         'is_error': is_error

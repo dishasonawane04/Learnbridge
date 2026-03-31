@@ -418,3 +418,54 @@ def start_course_chat(request, course_id):
         "course": course,
         "active_course": course
     })
+
+@login_required
+def start_file_chat(request, file_id):
+    """Start a new global chat session specifically for a given file."""
+    from course.models import CourseMaterial
+    file_obj = get_object_or_404(CourseMaterial, id=file_id)
+    text = file_obj.extracted_text
+    
+    # 4. HARD VALIDATION (VERY IMPORTANT)
+    if not text or len(text.strip()) < 10:
+        return render(request, 'core/error.html', {'message': "No valid content found for this file. Please wait for OCR to complete."})
+        
+    # 5. DEBUG LOGGING (MANDATORY)
+    print("FILE ID:", file_id)
+    print("FILE NAME:", file_obj.file.name)
+    print("TEXT PREVIEW:", text[:200])
+    
+    # We pass the file_id inside the Chat title/metadata to bind it visually.
+    chat = Chat(
+        user=request.user,
+        course=file_obj.course,
+        title=f"Chat: {file_obj.file.name.split('/')[-1][:30]}"
+    )
+    chat.save()
+    
+    chats_history = Chat.objects.filter(user=request.user, is_archived=False).filter(course=file_obj.course)
+    
+    # Since we can't modify DB schema to strictly attach a file ID to the Chat model,
+    # we inject a system initial message into the chat UI using the text. 
+    # Actually, RAG fetches global context. We'll rely on the RAG query picking it up, 
+    # or we can create a first user message automatically!
+    ChatMessage.objects.create(
+        chat=chat,
+        sender='user',
+        content=f"Please help me study this specific file context:\n\n{text[:2000]}",
+        msg_type='text'
+    )
+    ChatMessage.objects.create(
+        chat=chat,
+        sender='ai',
+        content="I have loaded the specific file you selected. What questions do you have about it?",
+        msg_type='text'
+    )
+    
+    return render(request, "ai_tutor/tutor.html", {
+        "all_chats": chats_history,
+        "active_chat": chat,
+        "chat_history": chat.messages.all().order_by('created_at'),
+        "course": file_obj.course,
+        "active_course": file_obj.course
+    })

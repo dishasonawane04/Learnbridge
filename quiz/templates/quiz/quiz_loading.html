@@ -121,8 +121,15 @@
 
 <script>
     const courseId = "{{ course.id }}";
+    // Grab materialId from template context OR url if present
+    const materialId = "{{ material_id|default:'' }}" || new URLSearchParams(window.location.search).get('material_id');
     const questions = [];
-    const eventSource = new EventSource(`/quiz/api/generate-stream/${courseId}/`);
+
+    let streamUrl = `/quiz/api/generate-stream/${courseId}/`;
+    if (materialId) {
+        streamUrl += `?material_id=${materialId}`;
+    }
+    const eventSource = new EventSource(streamUrl);
 
     let timer = setTimeout(() => {
         if (questions.length === 0) {
@@ -159,7 +166,9 @@
                     course_id: courseId
                 })
             }).then(() => {
-                window.location.href = "{% url 'quiz:quiz_start' %}?course_id=" + courseId;
+                let redirectUrl = "{% url 'quiz:quiz_start' %}?course_id=" + courseId;
+                if (materialId) redirectUrl += "&material_id=" + materialId;
+                window.location.href = redirectUrl;
             });
             return;
         }

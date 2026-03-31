@@ -429,31 +429,37 @@ def generate_from_unit(request, unit_id):
 
 @csrf_exempt
 def generate_from_course(request, course_id):
-    """Generates a flashcard deck from the Course context using RAG."""
+    """Generates a flashcard deck from the Course context using RAG or a specific file."""
     course = get_object_or_404(Course, id=course_id)
+    material_id = request.GET.get('material_id')
     
-    # Call AI Service with course title as query hint
-    cards_data = generate_flashcards(input_text=course.title, course_id=course.id)
-    
-    if not cards_data:
-        # Fallback to general course context if RAG search is empty
-        context_text = CourseContextEngine.get_course_context(course.id)
-        if context_text:
-            cards_data = generate_flashcards(input_text=context_text[:5000])
+    # Check for specific file content first
+    context_text = ""
+    if material_id:
+        from course.models import CourseMaterial
+        try:
+            file_obj = CourseMaterial.objects.get(id=material_id)
+            context_text = file_obj.extracted_text
+            print("Using file ID:", material_id)
+            print("Text preview:", context_text[:200] if context_text else "None")
+        except CourseMaterial.DoesNotExist:
+            pass
+            
+    if context_text:
+        cards_data = generate_flashcards(input_text=context_text[:5000])
+    else:
+        # Call AI Service with course title as query hint
+        cards_data = generate_flashcards(input_text=course.title, course_id=course.id)
+        
+        if not cards_data:
+            # Fallback to general course context if RAG search is empty
+            context_text = CourseContextEngine.get_course_context(course.id)
+            if context_text:
+                cards_data = generate_flashcards(input_text=context_text[:5000])
 
     if not cards_data:
-        # 5. Robust Parsing
-        # The `cards_data` variable is already the result of `generate_flashcards`,
-        # which should handle robust parsing and return an error message if generation fails.
-        # So, if `cards_data` is empty here, it means no valid cards were generated.
         print(f"Gen: LLM returned empty or invalid response for Course {course_id}.")
-        # The `generate_flashcards` function should ideally return a list with an error dict
-        # if it fails, or an empty list if no cards were generated but no error occurred.
-        # If it returns an empty list, we redirect. If it returns an error dict, we should handle it.
-        # For now, assuming an empty list means no cards, so redirect.
         return redirect('course:course_dashboard', course_id=course.id)
-        
-    # ... rest of the logic ...
         
     # Create Deck linked to Course
     deck = FlashcardDeck.objects.create(
@@ -486,6 +492,56 @@ def generate_from_course(request, course_id):
             course=course,
             activity_type='flashcards',
             time_spent=5 # Initial credits
+        )
+
+    return redirect('flashcard_generator:study_deck', deck_id=deck.id)
+
+@csrf_exempt
+def generate_flashcards_file(request, file_id):
+    """STRICTLY file-based Flashcards endpoint."""
+    from course.models import CourseMaterial
+    file_obj = get_object_or_404(CourseMaterial, id=file_id)
+    text = file_obj.extracted_text
+    
+    # 4. HARD VALIDATION (VERY IMPORTANT)
+    if not text or len(text.strip()) < 10:
+        return render(request, 'core/error.html', {'message': "No valid content found for this file. Please ensure the file has readable text or wait for OCR to complete."})
+        
+    # 5. DEBUG LOGGING (MANDATORY)
+    print("FILE ID:", file_id)
+    print("FILE NAME:", file_obj.file.name)
+    print("TEXT PREVIEW:", text[:200])
+
+    cards_data = generate_flashcards(input_text=text[:5000])
+    
+    if not cards_data:
+        print(f"Gen: LLM returned empty or invalid response for File {file_id}.")
+        return redirect('course:course_dashboard', course_id=file_obj.course.id)
+        
+    # Create Deck linked to Course
+    deck = FlashcardDeck.objects.create(
+        title=f"Flashcards: {file_obj.file.name.split('/')[-1][:30]}",
+        course=file_obj.course,
+        difficulty="Medium"
+    )
+    
+    for card in cards_data:
+        if 'front' in card and 'back' in card:
+            Flashcard.objects.create(
+                deck=deck,
+                front=card['front'],
+                back=card['back'],
+                exam_tip=card.get('exam_tip', "")
+            )
+            
+    # Log Activity
+    if request.user.is_authenticated:
+        ActivityLog.objects.create(
+            user=request.user,
+            app_name='flashcard',
+            activity_type='deck_generated',
+            topic=deck.title,
+            metadata={'deck_id': str(deck.id), 'source': 'specific_file'}
         )
 
     return redirect('flashcard_generator:study_deck', deck_id=deck.id)

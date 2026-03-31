@@ -139,19 +139,82 @@ def quiz_view(request):
         'course': active_course
     })
 
+@login_required
+def generate_quiz_file(request, file_id):
+    """
+    STRICTLY file-based Quiz Generator endpoint.
+    Handles Requirement #2, #3, #4, #5
+    """
+    from course.models import CourseMaterial
+    file_obj = get_object_or_404(CourseMaterial, id=file_id)
+    text = file_obj.extracted_text
+    
+    # 4. HARD VALIDATION (VERY IMPORTANT)
+    if not text or len(text.strip()) < 10:
+        return render(request, 'core/error.html', {'message': "No valid content found for this file. Please ensure the file has readable text or wait for OCR to complete."})
+        
+    # 5. DEBUG LOGGING (MANDATORY)
+    print("FILE ID:", file_id)
+    print("FILE NAME:", file_obj.file.name)
+    print("TEXT PREVIEW:", text[:200])
+
+    course = file_obj.course
+    subject_obj = course.subject
+    
+    # Clear any old cached questions correctly
+    if 'questions' in request.session:
+        del request.session['questions']
+        request.session.modified = True
+        
+    if request.method == "POST":
+        language = request.POST.get("language", "English")
+        request.session['ai_language'] = language
+
+    # Render loading state passing the material_id in URL params 
+    # to redirect the stream endpoint to fetch THIS file ONLY.
+    url = f"{reverse('quiz:quiz_start')}?course_id={course.id}&material_id={file_obj.id}"
+    
+    # We render the standard loading template but inject the material context
+    return render(request, 'quiz/quiz_loading.html', {
+        'subject': subject_obj,
+        'course': course,
+        'material_id': file_obj.id
+    })
+
 def quiz_stream_api(request, course_id):
     """
     Server-Sent Events (SSE) endpoint for streaming quiz questions.
     """
     course = get_object_or_404(Course, id=course_id)
+    material_id = request.GET.get('material_id')
     
     def stream_generator():
         try:
-            # Requirement #1: Confirm document text exists
             from ai_engine.utils.optimization import AIContextOptimizer
-            if not AIContextOptimizer.ensure_quiz_chunks(course_id):
-                yield "data: {\"status\": \"error\", \"message\": \"No course material found. Please upload a document first.\"}\n\n"
-                return
+            
+            # Fetch specific file if requested
+            base_context = ""
+            if material_id:
+                from course.models import CourseMaterial
+                try:
+                    file_obj = CourseMaterial.objects.get(id=material_id)
+                    base_context = file_obj.extracted_text
+                    
+                    # Requested Debug Logging
+                    print("Using file ID:", material_id)
+                    print("Text preview:", base_context[:200] if base_context else "None")
+                    
+                    if not base_context or len(base_context.strip()) < 50:
+                        yield "data: {\"status\": \"error\", \"message\": \"No content found for this file. Please wait for OCR or check the document.\"}\n\n"
+                        return
+                except CourseMaterial.DoesNotExist:
+                     yield "data: {\"status\": \"error\", \"message\": \"Selected material not found.\"}\n\n"
+                     return
+            else:
+                # Requirement #1: Confirm document text exists
+                if not AIContextOptimizer.ensure_quiz_chunks(course_id):
+                    yield "data: {\"status\": \"error\", \"message\": \"No course material found. Please upload a document first.\"}\n\n"
+                    return
 
             # Requirement #3 & #4: Automatic Retry/Regeneration Loop
             max_stream_attempts = 2
@@ -159,12 +222,14 @@ def quiz_stream_api(request, course_id):
             
             for stream_attempt in range(max_stream_attempts):
                 questions = []
-                context_used = ""
+                context_used = base_context
                 
                 try:
-                    # Get context
-                    context_used = AIContextOptimizer.get_next_quiz_chunk(course_id)
-                    gen = generate_quiz_stream(course_id, user=request.user, num_questions=5)
+                    # Get context if not using specific file
+                    if not context_used:
+                        context_used = AIContextOptimizer.get_next_quiz_chunk(course_id)
+                        
+                    gen = generate_quiz_stream(course_id, user=request.user, num_questions=5, context=context_used)
                     
                     while True:
                         if time.time() - last_heartbeat > 15:

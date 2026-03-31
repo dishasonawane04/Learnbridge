@@ -19,6 +19,7 @@ urlpatterns = [
     path('research/<int:course_id>/', views.course_research, name='research'),
     path('career/<int:course_id>/', views.course_career, name='career'),
     path('summary/<int:course_id>/', views.course_summary, name='summary'),
+    path('summary-file/<int:file_id>/', views.summary_file, name='summary_file'),
     path('<int:course_id>/delete/', views.course_delete, name='delete'),
     path('<int:course_id>/rename/', views.course_rename, name='rename'),
     path('unit/<int:unit_id>/toggle-completion/', views.toggle_unit_completion, name='toggle_unit_completion'),

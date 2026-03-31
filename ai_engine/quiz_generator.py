@@ -12,16 +12,18 @@ from ai_engine.utils.optimization import AIContextOptimizer
 from course.models import Course
 
 
-def generate_quiz(course_id, user=None, num_questions=5):
+def generate_quiz(course_id, user=None, num_questions=5, context=None):
     """
-    Generates a unique quiz using Sequential Chunk Optimization.
+    Generates a unique quiz using Sequential Chunk Optimization, or directly from provided context.
     """
     
     # Requirement #8: Limit to 5 questions for speed
     num_questions = 5
     
-    # Requirement #1 & #2: Get a random unused sequential chunk
-    context = AIContextOptimizer.get_next_quiz_chunk(course_id)
+    # Requirement #1 & #2: Get a random unused sequential chunk (if context not provided)
+    if not context:
+        context = AIContextOptimizer.get_next_quiz_chunk(course_id)
+        
     course = Course.objects.filter(id=course_id).first()
     
     is_fallback = False
@@ -110,14 +112,16 @@ def generate_quiz(course_id, user=None, num_questions=5):
             
     return final_results if len(final_results) > 0 else []
 
-def generate_quiz_stream(course_id, user=None, num_questions=5):
+def generate_quiz_stream(course_id, user=None, num_questions=5, context=None):
     """
-    Streaming version using random unused chunks.
+    Streaming version using random unused chunks or direct context.
     """
     # Support for internal retry
     max_retries = 2
     for attempt in range(max_retries):
-        context = AIContextOptimizer.get_next_quiz_chunk(course_id)
+        if not context:
+            context = AIContextOptimizer.get_next_quiz_chunk(course_id)
+            
         course = Course.objects.filter(id=course_id).first()
         
         is_fallback = False

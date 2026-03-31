@@ -17,5 +17,6 @@ urlpatterns = [
     path('share/link/<int:chat_id>/', views.get_share_link, name='get_share_link'),
     path('unit/<int:unit_id>/', views.start_unit_chat, name='start_unit_chat'),
     path('course/<int:course_id>/', views.start_course_chat, name='start_course_chat'),
+    path('file/<int:file_id>/', views.start_file_chat, name='start_file_chat'),
     path('ask_voice/', views.ask_voice, name='ask_voice'),
 ]

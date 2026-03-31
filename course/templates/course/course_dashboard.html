@@ -227,8 +227,9 @@
 
             <div class="materials-list">
                 {% for material in materials %}
-                <div class="material-row" id="mat-row-{{ material.id }}">
-                    <div class="material-info" style="flex:1; min-width:0;">
+                <div class="material-row" id="mat-row-{{ material.id }}" data-mat-id="{{ material.id }}"
+                    onclick="setActiveMaterial('{{ material.id }}', this)">
+                    <div class="material-info" style="flex:1; min-width:0; pointer-events: none;">
                         <div class="file-icon">
                             {% if material.file_type == 'pdf' %}
                             <i class="fas fa-file-pdf"></i>
@@ -280,35 +281,35 @@
 
             <div class="tools-list">
                 <!-- AI Tutor -->
-                <a href="{% url 'ai_tutor:start_course_chat' course.id %}" class="compact-tool-card">
+                <a href="#" id="tutor-link" class="compact-tool-card" onclick="checkMaterialSelection(event)">
                     <div class="tool-left-group">
                         <div class="tool-icon-sm">
                             <i class="fas fa-brain"></i>
                         </div>
                         <div class="tool-info-compact">
                             <span class="tool-title-sm">AI Tutor</span>
-                            <span class="tool-subtitle-sm">Interactive course-based assistant</span>
+                            <span class="tool-subtitle-sm">Interactive file-based assistant</span>
                         </div>
                     </div>
                     <i class="fas fa-chevron-right tool-arrow"></i>
                 </a>
 
                 <!-- Quiz Generator -->
-                <a href="{% url 'quiz:quiz_start' %}?course_id={{ course.id }}" class="compact-tool-card">
+                <a href="#" id="quiz-link" class="compact-tool-card" onclick="checkMaterialSelection(event)">
                     <div class="tool-left-group">
                         <div class="tool-icon-sm">
                             <i class="fas fa-graduation-cap"></i>
                         </div>
                         <div class="tool-info-compact">
                             <span class="tool-title-sm">Quiz Generator</span>
-                            <span class="tool-subtitle-sm">Dynamic questions from syllabus</span>
+                            <span class="tool-subtitle-sm">Dynamic questions from file</span>
                         </div>
                     </div>
                     <i class="fas fa-chevron-right tool-arrow"></i>
                 </a>
 
                 <!-- Flashcards -->
-                <a href="{% url 'flashcard_generator:dynamic_flashcards' course.id %}" class="compact-tool-card">
+                <a href="#" id="flashcard-link" class="compact-tool-card" onclick="checkMaterialSelection(event)">
                     <div class="tool-left-group">
                         <div class="tool-icon-sm">
                             <i class="fas fa-layer-group"></i>
@@ -336,7 +337,7 @@
                 </a>
 
                 <!-- Summary Engine -->
-                <a href="{% url 'course:summary' course.id %}" class="compact-tool-card">
+                <a href="#" id="summary-link" class="compact-tool-card" onclick="checkMaterialSelection(event)">
                     <div class="tool-left-group">
                         <div class="tool-icon-sm">
                             <i class="fas fa-file-contract"></i>
@@ -773,5 +774,65 @@
             }
         });
     }
+</script>
+<script>
+    let activeMaterialId = null;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Auto-select the first material on page load
+        {% if materials %}
+        const defaultMaterial = document.querySelector('.material-row');
+        if (defaultMaterial) {
+            const matId = defaultMaterial.getAttribute('data-mat-id');
+            window.setActiveMaterial(matId, defaultMaterial);
+        }
+        {% endif %}
+    });
+
+    window.checkMaterialSelection = function (e) {
+        if (!activeMaterialId) {
+            e.preventDefault();
+            alert("No document selected! Please click on a specific document on the left before generating AI content.");
+        }
+    };
+
+    window.setActiveMaterial = function (matId, el) {
+        activeMaterialId = matId;
+        // Reset all rows
+        document.querySelectorAll('.material-row').forEach(row => {
+            row.style.borderColor = 'transparent';
+            row.style.background = 'rgba(255, 255, 255, 0.02)';
+        });
+
+        // Highlight selected
+        if (el) {
+            el.style.borderColor = 'var(--primary)';
+            el.style.background = 'rgba(99, 102, 241, 0.1)';
+        }
+
+        // Update direct strict file URLs
+        const tutorLink = document.getElementById('tutor-link');
+        const quizLink = document.getElementById('quiz-link');
+        const flashcardLink = document.getElementById('flashcard-link');
+        const summaryLink = document.getElementById('summary-link');
+
+        if (tutorLink) tutorLink.href = "/ai-tutor/file/" + matId + "/";
+        if (quizLink) quizLink.href = "/quiz/generate-file/" + matId + "/";
+        if (flashcardLink) flashcardLink.href = "/flashcards/generate-file/" + matId + "/";
+        if (summaryLink) summaryLink.href = "/course/summary-file/" + matId + "/";
+
+        // Update any other remaining tool links with ?material_id param securely
+        document.querySelectorAll('.compact-tool-card').forEach(link => {
+            if (!['tutor-link', 'quiz-link', 'flashcard-link', 'summary-link'].includes(link.id)) {
+                try {
+                    let url = new URL(link.href, window.location.origin);
+                    url.searchParams.set('material_id', matId);
+                    link.href = url.toString();
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        });
+    };
 </script>
 {% endblock %}
