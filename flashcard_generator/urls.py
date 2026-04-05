@@ -14,6 +14,7 @@ urlpatterns = [
     path('api/card/<int:card_id>/explain/', views.explain_card_api, name='explain_card'),
     path('api/card/<int:card_id>/delete/', views.delete_card_api, name='delete_card_api'),
     path('api/deck/<int:deck_id>/delete/', views.delete_deck_api, name='delete_deck_api'),
+    path('api/quiz/generate/<int:deck_id>/', views.generate_quiz_view, name='generate_quiz_view'),
     path('api/quiz/submit/', views.submit_quiz_api, name='submit_quiz_api'),
     path('progress/', views.progress_view, name='flashcard_progress'),
     path('api/generate_from_unit/<int:unit_id>/', views.generate_from_unit, name='generate_from_unit'),

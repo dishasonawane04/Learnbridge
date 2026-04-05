@@ -304,6 +304,9 @@ class CourseContextEngine:
             )
             response.raise_for_status()
             return response.json().get('response', "Error: Empty response from AI.")
+        except requests.exceptions.ConnectionError:
+            logger.error(f"Ollama Connection Error: Could not connect to {settings.OLLAMA_BASE_URL}")
+            return "Error: The AI service is currently unavailable. Please ensure the local AI engine is running."
         except Exception as e:
             logger.error(f"Ollama Error: {e}")
             return f"Error contacting AI service: {e}"
