@@ -191,68 +191,6 @@
             border-radius: 4px;
             font-family: inherit;
         }
-
-        /* Custom Cursor Styles */
-        body {
-            cursor: none;
-        }
-
-        .custom-cursor-dot,
-        .custom-cursor-outline {
-            pointer-events: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            border-radius: 50%;
-            z-index: 99999;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            will-change: transform;
-        }
-
-        .custom-cursor-dot {
-            width: 8px;
-            height: 8px;
-            background-color: #4f46e5;
-            box-shadow: 0 0 10px rgba(79, 70, 229, 0.4);
-        }
-
-        .custom-cursor-outline {
-            width: 30px;
-            height: 30px;
-            border: 1px solid rgba(148, 163, 184, 0.3);
-        }
-
-        /* Hover States */
-        body.cursor-hover .custom-cursor-dot {
-            transform: scale(0.5);
-            background-color: #f8fafc;
-            box-shadow: 0 0 10px rgba(248, 250, 252, 0.3);
-        }
-
-        body.cursor-hover .custom-cursor-outline {
-            transform: scale(1.6);
-            border-color: white;
-            background: rgba(255, 255, 255, 0.1);
-            opacity: 0.8;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-        }
-
-        /* Ensure interactive elements also hide cursor */
-        a,
-        button,
-        input,
-        select,
-        textarea,
-        .course-card-premium,
-        .card,
-        .chart-card,
-        .stat-card,
-        .btn,
-        .palette-item,
-        [onclick] {
-            cursor: none !important;
-        }
     </style>
 
     {% block extra_css %}{% endblock %}
@@ -748,68 +686,6 @@
             }
         };
     </script>
-    <!-- Custom Cursor Elements -->
-    <div class="custom-cursor-dot"></div>
-    <div class="custom-cursor-outline"></div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const dot = document.querySelector('.custom-cursor-dot');
-            const outline = document.querySelector('.custom-cursor-outline');
-
-            let mouseX = 0;
-            let mouseY = 0;
-            let dotX = 0;
-            let dotY = 0;
-            let outlineX = 0;
-            let outlineY = 0;
-
-            document.addEventListener('mousemove', (e) => {
-                mouseX = e.clientX;
-                mouseY = e.clientY;
-                dot.style.opacity = '1';
-                outline.style.opacity = '1';
-            });
-
-            function animate() {
-                dotX += (mouseX - dotX) * 0.2;
-                dotY += (mouseY - dotY) * 0.2;
-                dot.style.transform = `translate3d(${dotX}px, ${dotY}px, 0) translate(-50%, -50%)`;
-
-                outlineX += (mouseX - outlineX) * 0.1;
-                outlineY += (mouseY - outlineY) * 0.1;
-                outline.style.transform = `translate3d(${outlineX}px, ${outlineY}px, 0) translate(-50%, -50%)`;
-
-                requestAnimationFrame(animate);
-            }
-            animate();
-
-            const interactiveElements = 'a, button, input, select, textarea, .course-card-premium, .card, .chart-card, .stat-card, .btn, .palette-item, [onclick]';
-
-            document.addEventListener('mouseover', (e) => {
-                if (e.target.closest(interactiveElements)) {
-                    document.body.classList.add('cursor-hover');
-                }
-            });
-
-            document.addEventListener('mouseout', (e) => {
-                if (e.target.closest(interactiveElements)) {
-                    document.body.classList.remove('cursor-hover');
-                }
-            });
-
-            document.addEventListener('mouseleave', () => {
-                dot.style.opacity = '0';
-                outline.style.opacity = '0';
-            });
-
-            document.addEventListener('mouseenter', () => {
-                dot.style.opacity = '1';
-                outline.style.opacity = '1';
-            });
-        });
-    </script>
-
     <!-- Debug Tools -->
     {% if user.is_authenticated %}
     <div style="position: fixed; bottom: 10px; left: 10px; z-index: 1000; opacity: 0.3;">

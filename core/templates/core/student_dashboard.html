@@ -107,6 +107,8 @@
         mask-composite: exclude;
         opacity: 0;
         transition: opacity 0.4s ease;
+        pointer-events: none;
+        /* FIX: allow clicks to pass through */
     }
 
     .premium-tool-card:hover {
@@ -136,6 +138,8 @@
         margin-bottom: 24px;
         box-shadow: 0 8px 16px rgba(124, 108, 255, 0.3);
         transition: transform 0.3s ease;
+        position: relative;
+        z-index: 1;
     }
 
     .premium-tool-card:hover .tool-icon-wrapper {
@@ -173,6 +177,8 @@
         text-decoration: none !important;
         transition: all 0.3s ease;
         margin-top: auto;
+        position: relative;
+        z-index: 2;
     }
 
     .btn-tool-premium:hover {
@@ -413,6 +419,23 @@
             </div>
             <a href="{% url 'analytics:student_dashboard' %}" class="btn-tool-premium">
                 <span>View Analytics</span>
+                <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
+            </a>
+        </div>
+
+        <!-- App 7: Image Report Generator -->
+        <div class="premium-tool-card reveal-item" data-id="image-report">
+            <div>
+                <div class="tool-icon-wrapper" style="background: linear-gradient(135deg, #14b8a6, #0f766e);">
+                    <i class="fas fa-image"></i>
+                </div>
+                <h3 class="tool-title">📸 Image Report Generator</h3>
+                <p class="tool-description">
+                    Generate a detailed report from any uploaded image.
+                </p>
+            </div>
+            <a href="{% url 'generator:image_report' %}" class="btn-tool-premium">
+                <span>Upload & Generate</span>
                 <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
             </a>
         </div>

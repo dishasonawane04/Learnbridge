@@ -55,12 +55,21 @@ def extract_text_from_ppt(file_path):
 
 def extract_text_from_image(file_path):
     """
-    Uses Ollama Vision model for OCR/Understanding.
-    Falls back to pytesseract if Ollama fails or returns no text.
+    Uses fast pytesseract for OCR first.
+    Falls back to Ollama Vision model if PyTesseract fails to find anything.
     """
     import urllib.request
     import json
+    from .ocr_utils import ocr_image
 
+    logger.info(f"[OCR] Attempting pytesseract OCR: {file_path}")
+    ocr_text = ocr_image(file_path)
+    
+    if ocr_text and len(ocr_text.strip()) >= 10:
+        logger.info(f"[OCR] pytesseract succeeded: {len(ocr_text)} chars.")
+        return ocr_text
+
+    logger.info(f"[OCR] pytesseract returned little/no text. Attempting Ollama Vision fallback: {file_path}")
     ollama_text = ""
     try:
         with open(file_path, "rb") as image_file:
@@ -71,31 +80,27 @@ def extract_text_from_image(file_path):
             "model": getattr(settings, "OLLAMA_MODEL_VISION", "llava:latest"),
             "prompt": "Transcribe all text from this image accurately. Only return the transcribed text.",
             "images": [encoded_string],
-            "stream": False
+            "stream": False,
+            "options": {"num_predict": 500}
         }).encode('utf-8')
 
         req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
-        with urllib.request.urlopen(req, timeout=180) as response:
+        logger.info(f"[OCR] Sending image to Ollama Vision (45s timeout): {file_path}")
+        with urllib.request.urlopen(req, timeout=45) as response:
             result = json.loads(response.read().decode('utf-8'))
             ollama_text = result.get('response', '').strip()
     except Exception as e:
-        logger.warning(f"[OCR] Ollama Vision failed for {file_path}: {e}. Trying pytesseract fallback.")
+        logger.warning(f"[OCR] Ollama Vision failed for {file_path}: {e}")
 
-    # --- pytesseract Fallback ---
-    if not ollama_text or len(ollama_text) < _MIN_TEXT_CHARS:
-        logger.info(f"[OCR] Ollama returned little/no text. Attempting pytesseract fallback: {file_path}")
-        from .ocr_utils import ocr_image
-        ocr_text = ocr_image(file_path)
-        if ocr_text and len(ocr_text.strip()) >= _MIN_TEXT_CHARS:
-            logger.info(f"[OCR] pytesseract fallback succeeded: {len(ocr_text)} chars.")
-            return ocr_text
-        elif ollama_text:
-            return ollama_text  # return whatever Ollama gave even if short
-        else:
-            logger.warning(f"[OCR] Both Ollama and pytesseract failed for: {file_path}")
-            return _OCR_ERROR_MSG
+    if ollama_text and len(ollama_text.strip()) >= 10:
+        return ollama_text
 
-    return ollama_text
+    # Return whatever we got from pytesseract if it was short, or the error message
+    if ocr_text:
+        return ocr_text
+        
+    logger.warning(f"[OCR] Both pytesseract and Ollama failed for: {file_path}")
+    return _OCR_ERROR_MSG
 
 def extract_text_from_path(file_path):
     """Generic extraction based on file extension"""

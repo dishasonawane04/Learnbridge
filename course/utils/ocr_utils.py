@@ -72,7 +72,12 @@ def ocr_image(image_input):
             img = image_input  # already a PIL Image
 
         processed = _preprocess_image(img)
-        text = pytesseract.image_to_string(processed, lang='eng+hin+mar')
+        try:
+            text = pytesseract.image_to_string(processed, lang='eng+hin+mar')
+        except pytesseract.pytesseract.TesseractError as te:
+            logger.warning(f"[OCR] Multilingual OCR failed (missing traineddata?). Falling back to 'eng'. Error: {te}")
+            text = pytesseract.image_to_string(processed, lang='eng')
+            
         return text.strip()
 
     except ImportError:

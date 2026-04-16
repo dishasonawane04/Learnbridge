@@ -6,4 +6,5 @@ app_name = 'generator'
 urlpatterns = [
     path('generate/', views.study_plan, name='study_plan'),
     path('unit/<int:unit_id>/', views.generate_unit_plan, name='generate_unit_plan'),
+    path('image-report/', views.image_report_view, name='image_report'),
 ]
