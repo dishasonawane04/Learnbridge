@@ -1,4 +1,4 @@
-{% extends 'letter_of_recommendation_generator/base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Sign Up | LearnBridge{% endblock %}
@@ -7,19 +7,15 @@
 <style>
     /* Animated Background */
     body {
-        background: url("{% static 'accounts/login_bg.png' %}") no-repeat center center fixed;
-        background-size: cover;
-        min-height: 100vh;
+        background: url("{% static 'accounts/login_bg.png' %}") no-repeat center center fixed !important;
+        background-size: cover !important;
         margin: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
     }
 
     /* Overlay for readability */
     body::before {
         content: '';
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
         right: 0;
@@ -27,6 +23,14 @@
         background: rgba(15, 23, 42, 0.75);
         /* Dark blue overlay */
         z-index: -2;
+    }
+
+    .auth-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 100px);
+        padding: 2rem;
     }
 
     /* Animation Canvas */
@@ -114,76 +118,53 @@
     .btn-auth:hover {
         background-color: #4f46e5;
     }
-
-    /* Override Base Styles */
-    nav,
-    footer {
-        display: none !important;
-    }
-
-    /* Ensure container centers the card without extra boxes */
-    .container {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        min-height: 100vh !important;
-        padding: 1rem !important;
-        max-width: 100% !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-
-    /* Hide base alerts */
-    .container>.alert {
-        display: none !important;
-    }
 </style>
 
-<div class="auth-card" style="text-align: center;">
-    <i class="ph ph-user-plus" style="font-size: 2.5rem; color: #6366f1; margin-bottom: 0.5rem;"></i>
-    <h2 class="auth-title" style="font-size: 1.5rem;">Create Account</h2>
-    <p class="auth-subtitle" style="margin-bottom: 1rem;">Join LearnBridge as a Student or Faculty.</p>
+<div class="auth-wrapper">
+    <div class="auth-card" style="text-align: center;">
+        <i class="ph ph-user-plus" style="font-size: 2.5rem; color: #6366f1; margin-bottom: 0.5rem;"></i>
+        <h2 class="auth-title" style="font-size: 1.5rem;">Create Account</h2>
+        <p class="auth-subtitle" style="margin-bottom: 1rem;">Join LearnBridge as a Student or Faculty.</p>
 
-    <form method="post">
-        {% csrf_token %}
+        <form method="post">
+            {% csrf_token %}
 
-        <!-- Render Non-field errors if any -->
-        {% if form.non_field_errors %}
-        <div
-            style="color: #f87171; font-size: 0.85rem; margin-bottom: 1rem; background: rgba(239,68,68,0.1); padding: 0.5rem; border-radius: 4px;">
-            {{ form.non_field_errors|striptags }}
-        </div>
-        {% endif %}
+            <!-- Render Non-field errors if any -->
+            {% if form.non_field_errors %}
+            <div
+                style="color: #f87171; font-size: 0.85rem; margin-bottom: 1rem; background: rgba(239,68,68,0.1); padding: 0.5rem; border-radius: 4px;">
+                {{ form.non_field_errors|striptags }}
+            </div>
+            {% endif %}
 
-        {% for field in form %}
-        <div class="form-group" style="text-align: left; margin-bottom: 0.75rem; position: relative;">
-            <label style="font-size: 0.8rem; margin-bottom: 0.25rem;">{{ field.label }}</label>
-            {{ field }}
+            {% for field in form %}
+            <div class="form-group" style="text-align: left; margin-bottom: 0.75rem; position: relative;">
+                <label style="font-size: 0.8rem; margin-bottom: 0.25rem;">{{ field.label }}</label>
+                {{ field }}
 
-            {% if 'password' in field.name %}
-            <button type="button" class="password-toggle" data-target="{{ field.id_for_label }}"
-                style="position: absolute; right: 10px; top: 32px; background: none; border: none; color: #9ca3af; cursor: pointer;">
-                <i class="ph ph-eye-slash" style="font-size: 1.2rem;"></i>
+                {% if 'password' in field.name %}
+                <button type="button" class="password-toggle" data-target="{{ field.id_for_label }}"
+                    style="position: absolute; right: 10px; top: 32px; background: none; border: none; color: #9ca3af; cursor: pointer;">
+                    <i class="ph ph-eye-slash" style="font-size: 1.2rem;"></i>
+                </button>
+                {% endif %}
+
+                {% if field.errors %}
+                <small style="color: #ef4444; display: block; font-size: 0.75rem;">{{ field.errors|striptags }}</small>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btn-auth" style="margin-top: 0.5rem; padding: 0.6rem;">
+                Sign Up
             </button>
-            {% endif %}
+        </form>
 
-            {% if field.errors %}
-            <small style="color: #ef4444; display: block; font-size: 0.75rem;">{{ field.errors|striptags }}</small>
-            {% endif %}
-        </div>
-        {% endfor %}
-
-        <button type="submit" class="btn-auth" style="margin-top: 0.5rem; padding: 0.6rem;">
-            Sign Up
-        </button>
-    </form>
-
-    <p style="margin-top: 1rem; color: #9ca3af; font-size: 0.8rem;">
-        Already have an account? <a href="{% url 'accounts:login' %}"
-            style="color: #6366f1; text-decoration: none; font-weight: 500;">Login</a>
-    </p>
+        <p style="margin-top: 1rem; color: #9ca3af; font-size: 0.8rem;">
+            Already have an account? <a href="{% url 'accounts:login' %}"
+                style="color: #6366f1; text-decoration: none; font-weight: 500;">Login</a>
+        </p>
+    </div>
 </div>
 
 <!-- Background Animation Canvas -->

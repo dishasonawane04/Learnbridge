@@ -1,4 +1,4 @@
-{% extends 'letter_of_recommendation_generator/base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 <!-- Reusing the base implementation for quick styling, assuming standard block structure -->
 
@@ -8,19 +8,15 @@
 <style>
     /* Animated Background */
     body {
-        background: url("{% static 'accounts/login_bg.png' %}") no-repeat center center fixed;
-        background-size: cover;
-        min-height: 100vh;
+        background: url("{% static 'accounts/login_bg.png' %}") no-repeat center center fixed !important;
+        background-size: cover !important;
         margin: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
     }
 
     /* Overlay for readability */
     body::before {
         content: '';
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
         right: 0;
@@ -28,6 +24,14 @@
         background: rgba(15, 23, 42, 0.75);
         /* Dark blue overlay */
         z-index: -2;
+    }
+
+    .auth-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 100px);
+        padding: 2rem;
     }
 
     /* Animation Canvas */
@@ -128,75 +132,52 @@
     .btn-auth:hover {
         background-color: #4f46e5;
     }
-
-    /* Override Base Styles */
-    nav,
-    footer {
-        display: none !important;
-    }
-
-    /* Ensure container centers the card without extra boxes */
-    .container {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        min-height: 100vh !important;
-        padding: 0 !important;
-        max-width: 100% !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-
-    /* Hide base alerts */
-    .container>.alert {
-        display: none !important;
-    }
 </style>
 
-<div class="auth-card" style="text-align: center;">
-    <i class="ph ph-sign-in" style="font-size: 3rem; color: #6366f1; margin-bottom: 1rem;"></i>
-    <h2 class="auth-title">Welcome Back</h2>
-    <p class="auth-subtitle">Sign in to continue your learning journey.</p>
+<div class="auth-wrapper">
+    <div class="auth-card" style="text-align: center;">
+        <i class="ph ph-sign-in" style="font-size: 3rem; color: #6366f1; margin-bottom: 1rem;"></i>
+        <h2 class="auth-title">Welcome Back</h2>
+        <p class="auth-subtitle">Sign in to continue your learning journey.</p>
 
-    <form method="post">
-        {% csrf_token %}
+        <form method="post">
+            {% csrf_token %}
 
-        {% if form.non_field_errors %}
-        <div class="alert"
-            style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1.5rem; font-size: 0.875rem;">
-            {{ form.non_field_errors|striptags }}
-        </div>
-        {% endif %}
-
-        <div class="form-group" style="text-align: left;">
-            <label>Username</label>
-            {{ form.username }}
-        </div>
-
-        <div class="form-group" style="text-align: left; position: relative;">
-            <label>Password</label>
-            {{ form.password }}
-            <button type="button" class="password-toggle" data-target="{{ form.password.id_for_label }}"
-                style="position: absolute; right: 10px; top: 38px; background: none; border: none; color: #9ca3af; cursor: pointer;">
-                <i class="ph ph-eye-slash" style="font-size: 1.2rem;"></i>
-            </button>
-            <div style="text-align: right; margin-top: 0.5rem;">
-                <a href="{% url 'accounts:forgot_password' %}"
-                    style="color: #6366f1; text-decoration: none; font-size: 0.85rem;">Forgot Password?</a>
+            {% if form.non_field_errors %}
+            <div class="alert"
+                style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1.5rem; font-size: 0.875rem;">
+                {{ form.non_field_errors|striptags }}
             </div>
-        </div>
+            {% endif %}
 
-        <button type="submit" class="btn-auth" style="margin-top: 1rem;">
-            Login
-        </button>
-    </form>
+            <div class="form-group" style="text-align: left;">
+                <label>Username</label>
+                {{ form.username }}
+            </div>
 
-    <p style="margin-top: 1.5rem; color: #9ca3af; font-size: 0.875rem;">
-        Don't have an account? <a href="{% url 'accounts:signup' %}"
-            style="color: #6366f1; text-decoration: none; font-weight: 500;">Sign up</a>
-    </p>
+            <div class="form-group" style="text-align: left; position: relative;">
+                <label>Password</label>
+                {{ form.password }}
+                <button type="button" class="password-toggle" data-target="{{ form.password.id_for_label }}"
+                    style="position: absolute; right: 10px; top: 38px; background: none; border: none; color: #9ca3af; cursor: pointer;">
+                    <i class="ph ph-eye-slash" style="font-size: 1.2rem;"></i>
+                </button>
+                <div style="text-align: right; margin-top: 0.5rem;">
+                    <a href="{% url 'accounts:forgot_password' %}"
+                        style="color: #6366f1; text-decoration: none; font-size: 0.85rem;">Forgot Password?</a>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-auth" style="margin-top: 1rem;">
+                Login
+            </button>
+        </form>
+
+        <p style="margin-top: 1.5rem; color: #9ca3af; font-size: 0.875rem;">
+            Don't have an account? <a href="{% url 'accounts:signup' %}"
+                style="color: #6366f1; text-decoration: none; font-weight: 500;">Sign up</a>
+        </p>
+    </div>
 </div>
 
 <!-- Background Animation Canvas -->
