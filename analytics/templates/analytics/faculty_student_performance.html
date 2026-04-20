@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Student Performance | Learnbridge{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2rem 0;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h1 style="color: white; font-size: 2.2rem; margin-bottom: 0.5rem;"><i class="fas fa-users-cog"
+                    style="color: var(--primary);"></i> Student Performance</h1>
+            <p style="color: var(--text-light); font-size: 1.1rem;">Monitor academic progress, strengths, and areas
+                needing improvement.</p>
+        </div>
+        <a href="{% url 'core:dashboard' %}" class="btn btn-secondary border"><i class="fas fa-arrow-left"></i> Back to
+            Dashboard</a>
+    </div>
+
+    <div class="glass-card fade-in" style="padding: 2rem; overflow-x: auto;">
+        {% if students %}
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; color: white;">
+            <thead>
+                <tr
+                    style="text-align: left; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--glass-border);">Student Name</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--glass-border);">Score</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--glass-border);">Weak Topics</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--glass-border);">Strong Topics</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--glass-border);">Status</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--glass-border);">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr style="background: rgba(255, 255, 255, 0.02); transition: background 0.2s ease;">
+                    <td style="padding: 1.25rem 1rem; border-radius: 8px 0 0 8px;">
+                        <div style="font-weight: 600; font-size: 1.1rem;">
+                            {% if student.full_name %}
+                            {{ student.full_name }}
+                            {% else %}
+                            {{ student.user.username }}
+                            {% endif %}
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.25rem;">
+                            {% if student.last_active %}
+                            Active: {{ student.last_active|timesince }} ago
+                            {% else %}
+                            Never active
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td style="padding: 1.25rem 1rem;">
+                        <span
+                            style="font-size: 1.25rem; font-weight: 700; color: {% if student.overall_score >= 80 %}var(--success){% elif student.overall_score >= 60 %}var(--warning){% else %}var(--danger){% endif %};">
+                            {{ student.overall_score }}%
+                        </span>
+                    </td>
+                    <td style="padding: 1.25rem 1rem; max-width: 250px;">
+                        {% for topic in student.weak_topics %}
+                        <span class="badge"
+                            style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; margin-bottom: 4px; display: inline-block; white-space: normal;">
+                            {{ topic|truncatechars:40 }}
+                        </span>
+                        {% empty %}
+                        <span class="text-muted" style="font-size: 0.9rem;">No data yet</span>
+                        {% endfor %}
+                    </td>
+                    <td style="padding: 1.25rem 1rem; max-width: 250px;">
+                        {% for topic in student.strong_topics %}
+                        <span class="badge"
+                            style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; margin-bottom: 4px; display: inline-block; white-space: normal;">
+                            {{ topic|truncatechars:40 }}
+                        </span>
+                        {% empty %}
+                        <span class="text-muted" style="font-size: 0.9rem;">No data yet</span>
+                        {% endfor %}
+                    </td>
+                    <td style="padding: 1.25rem 1rem;">
+                        {% if student.trend == 'Improving' %}
+                        <span style="color: var(--success); font-weight: 600; font-size: 0.9rem;"><i
+                                class="fas fa-arrow-trend-up"></i> Improving</span>
+                        {% elif student.trend == 'Needs Attention' %}
+                        <span style="color: var(--danger); font-weight: 600; font-size: 0.9rem;"><i
+                                class="fas fa-arrow-trend-down"></i> Needs Attention</span>
+                        {% else %}
+                        <span style="color: var(--text-light); font-weight: 600; font-size: 0.9rem;"><i
+                                class="fas fa-minus"></i> Stable</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1.25rem 1rem; border-radius: 0 8px 8px 0;">
+                        <a href="{% url 'analytics:faculty_student_detail' student.user.id %}"
+                            class="btn btn-primary btn-sm">Details</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-5">
+            <div style="font-size: 3rem; color: var(--text-dim); margin-bottom: 1rem;"><i class="fas fa-chart-bar"></i>
+            </div>
+            <h3 style="color: white; margin-bottom: 0.5rem;">No student performance data available yet.</h3>
+            <p style="color: var(--text-muted);">As students interact with quizzes and courses, their data will appear
+                here.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

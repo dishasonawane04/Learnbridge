@@ -175,3 +175,55 @@ def get_student_stats(user):
         'chart_data': chart_data,
         'prereq_sessions': prereq_sessions
     }
+
+@faculty_required
+def faculty_student_performance(request):
+    """
+    Detailed performance overview for all students (Weak Topics, Strong Topics, etc).
+    """
+    students = UserProfile.objects.filter(role='Student')
+    
+    student_data = []
+    for profile in students:
+        user = profile.user
+        logs = ActivityLog.objects.filter(user=user)
+        
+        # 1. Overall Score
+        quiz_avg = logs.filter(app_name='flashcard', activity_type='quiz_completed').aggregate(score__avg=Avg('score'))['score__avg'] or 0
+        overall_score = round(quiz_avg, 1)
+
+        # 2. Weak & Strong Topics
+        topic_logs = logs.exclude(topic__isnull=True).exclude(topic='')
+        
+        weak_topics = list(topic_logs.filter(outcome='needs_revision').values_list('topic', flat=True).distinct()[:3])
+        if not weak_topics:
+            weak_topics = list(topic_logs.filter(score__lt=60).values_list('topic', flat=True).distinct()[:3])
+            
+        strong_topics = list(topic_logs.filter(outcome='completed', score__gte=80).values_list('topic', flat=True).distinct()[:3])
+        if not strong_topics:
+            strong_topics = list(topic_logs.filter(score__gte=75).values_list('topic', flat=True).distinct()[:3])
+        
+        # 3. Improvement Trend
+        quiz_logs = logs.filter(app_name='flashcard', activity_type='quiz_completed').order_by('-timestamp')
+        trend = "Stable"
+        if quiz_logs.count() >= 2:
+            recent_avg = quiz_logs[:2].aggregate(s=Avg('score'))['s'] or 0
+            older_avg = quiz_logs[2:].aggregate(s=Avg('score'))['s'] or recent_avg
+            if recent_avg > older_avg + 5:
+                trend = "Improving"
+            elif recent_avg < older_avg - 5:
+                trend = "Needs Attention"
+        elif quiz_avg < 60 and quiz_logs.exists():
+            trend = "Needs Attention"
+            
+        student_data.append({
+            'user': user,
+            'full_name': profile.full_name,
+            'overall_score': overall_score,
+            'weak_topics': weak_topics,
+            'strong_topics': strong_topics,
+            'trend': trend,
+            'last_active': logs.first().timestamp if logs.exists() else None
+        })
+        
+    return render(request, 'analytics/faculty_student_performance.html', {'students': student_data})

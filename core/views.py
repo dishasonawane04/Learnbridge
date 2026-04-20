@@ -33,8 +33,7 @@ def set_active_course(request):
     
     return redirect(next_url)
 
-@login_required
-def dashboard(request):
+def _get_dashboard_context(request):
     profile = None
     if hasattr(request.user, 'account_profile'):
         profile = request.user.account_profile
@@ -155,10 +154,48 @@ def dashboard(request):
         'recent_activity': recent_activity,
         'topic_dist': topic_dist,
     }
+    return context, profile
+
+@login_required
+def dashboard_redirect(request):
+    from accounts.models import UserProfile
+    from django.contrib import messages
+    profile = UserProfile.objects.filter(user=request.user).first()
     
-    if profile and profile.role.lower() == 'faculty':
-        return render(request, 'core/faculty_dashboard.html', context)
+    if profile:
+        raw_role = profile.role
+        clean_role = str(raw_role).lower().strip()
+        if clean_role == 'faculty' or request.user.is_staff:
+            return redirect('core:faculty_dashboard')
+    elif request.user.is_staff:
+        return redirect('core:faculty_dashboard')
+            
+    return redirect('core:student_dashboard')
+
+from functools import wraps
+
+def faculty_required(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        from accounts.models import UserProfile
+        profile = UserProfile.objects.filter(user=request.user).first()
+        is_faculty = (profile and str(profile.role).lower().strip() == 'faculty') or request.user.is_staff
+        if is_faculty:
+            return view_func(request, *args, **kwargs)
+        messages.error(request, "You do not have permission to access the faculty dashboard.")
+        return redirect('core:student_dashboard')
+    return _wrapped_view
+
+@login_required
+def student_dashboard(request):
+    context, profile = _get_dashboard_context(request)
     return render(request, 'core/student_dashboard.html', context)
+
+@login_required
+@faculty_required
+def faculty_dashboard(request):
+    context, profile = _get_dashboard_context(request)
+    return render(request, 'core/faculty_dashboard.html', context)
 
 @login_required
 def role_selection(request):

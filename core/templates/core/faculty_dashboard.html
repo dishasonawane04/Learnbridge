@@ -1,134 +1,432 @@
 {% extends "base.html" %}
 
-{% block content %}
-<div style="padding: 2rem 0; text-align: center;">
-    <h1 style="font-size: 2.5rem; margin-bottom: 1rem; color: white;">Faculty Dashboard</h1>
-    <p style="color: var(--text-light); margin-bottom: 3rem; font-size: 1.1rem;">Monitor your students' performance and
-        manage content.</p>
+{% block extra_css %}
+<style>
+    .faculty-dashboard-wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+    }
 
-    <div class="glass-card fade-in"
-        style="margin-bottom: 2rem; position: relative; overflow: hidden; padding: 2.5rem; background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);">
-        <div style="position: relative; z-index: 1; text-align: center;">
-            <span class="badge badge-primary" style="margin-bottom: 1.5rem;">Faculty Dashboard</span>
-            <h1 style="margin-top: 0.5rem;">Welcome back,
-                <div style="width: 100%; text-align: left;">
-                    {% for course in course_data %}
-                    <div class="glass-card mb-3"
-                        style="padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h5 class="mb-1 text-white">{{ course.title }}</h5>
-                            <small class="text-muted">{{ course.units_count }} Units • {{ course.level }}</small>
-                        </div>
-                        <a href="{% url 'course:course_dashboard' course.id %}"
-                            class="btn btn-secondary btn-sm">Manage</a>
-                    </div>
-                    {% empty %}
-                    <div class="text-center py-4">
-                        <p class="text-muted">You haven't created any courses yet.</p>
-                        <a href="{% url 'course:list' %}" class="btn btn-primary">Create Your First Course</a>
-                    </div>
-                    {% endfor %}
-                </div>
+    .dashboard-header {
+        margin-bottom: 2.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 1.5rem;
+    }
+
+    .dashboard-title {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 0.5rem;
+    }
+
+    .dashboard-subtitle {
+        color: var(--text-muted);
+        font-size: 1.1rem;
+    }
+
+    .welcome-card {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 16px;
+        padding: 2.5rem;
+        margin-bottom: 3rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .welcome-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .glass-panel {
+        background: var(--bg-surface);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .glass-panel:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .premium-tools-grid {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        row-gap: 28px;
+        padding: 32px;
+        background: radial-gradient(circle at top center, rgba(124, 92, 255, 0.08), transparent 60%), linear-gradient(180deg, #0d1117 0%, #0b0f17 100%);
+        border-radius: 16px;
+        margin-top: 2rem;
+    }
+
+    @media (max-width: 1100px) {
+        .premium-tools-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (max-width: 850px) {
+        .premium-tools-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 600px) {
+        .premium-tools-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .premium-tool-card {
+        box-sizing: border-box;
+        overflow: hidden;
+        background-color: #161b24;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 28px 24px;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .premium-tool-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(124, 92, 255, 0.35);
+        box-shadow: 0 10px 30px rgba(124, 92, 255, 0.15);
+    }
+
+    .premium-icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background-color: rgba(124, 92, 255, 0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .premium-icon-box svg {
+        width: 24px;
+        height: 24px;
+        stroke: #7c5cff;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .premium-tool-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #f0f4f8;
+        margin-bottom: 8px;
+        margin-top: 0;
+    }
+
+    .premium-tool-desc {
+        font-size: 13px;
+        color: #7a8a9e;
+        line-height: 1.65;
+        margin-bottom: 24px;
+        flex-grow: 1;
+    }
+
+    .premium-tool-btn {
+        box-sizing: border-box;
+        display: block;
+        width: 180px;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        padding: 12px;
+        color: #f0f4f8;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        margin-top: auto;
+    }
+
+    .premium-tool-btn:hover {
+        border-color: #7c5cff;
+        color: #ffffff;
+        box-shadow: 0 0 10px rgba(124, 92, 255, 0.35);
+        text-decoration: none;
+    }
+
+
+
+    .course-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .course-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        transition: background 0.2s;
+    }
+
+    .course-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    @media (max-width: 768px) {
+        .welcome-card-inner {
+            flex-direction: column;
+            gap: 2rem;
+            align-items: flex-start !important;
+        }
+
+        .action-buttons {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dashboard-container {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="faculty-dashboard-wrapper fade-in">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">Faculty Dashboard</h1>
+        <p class="dashboard-subtitle">Monitor student progress, engagement, and classroom performance.</p>
+    </div>
+
+    <!-- Welcome Section -->
+    <div class="welcome-card">
+        <div class="welcome-card-inner"
+            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+            <div>
+                <span class="badge badge-primary" style="margin-bottom: 1rem;">Faculty Portal</span>
+                <h2 style="color: white; margin: 0.5rem 0; font-size: 2rem;">
+                    Welcome back,
+                    {% if profile and profile.full_name %}
+                    {{ profile.full_name }}
+                    {% else %}
+                    {{ request.user.username }}
+                    {% endif %}!
+                </h2>
+                <p style="color: var(--text-light); margin: 0; font-size: 1.05rem; max-width: 600px; line-height: 1.6;">
+                    Access your teaching tools, monitor learners, and guide student progress from one centralized place.
+                </p>
+            </div>
+            <div class="action-buttons" style="display: flex; gap: 1rem; align-items: center;">
+                <a href="{% url 'course:list' %}" class="btn btn-secondary px-4 py-2"><i class="fas fa-plus"></i> Create
+                    Course</a>
+                <a href="{% url 'analytics:faculty_dashboard' %}" class="btn btn-primary px-4 py-2"><i
+                        class="fas fa-chart-line"></i> Class Analytics</a>
+            </div>
         </div>
     </div>
 
-    <!-- My Apps Grid -->
-    <div
-        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-top: 4rem; text-align: left;">
-        <!-- App 1: AI Tutor -->
-        <div class="glass-card feature-card"
-            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
-            <div>
-                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary);">
-                    <i class="fas fa-robot"></i>
+    <!-- Student Monitoring Section -->
+    <div style="margin-bottom: 3.5rem;">
+        <h3 class="section-title"><i class="fas fa-users-cog" style="color: var(--primary);"></i> Student Monitoring
+        </h3>
+        <div class="glass-panel" style="padding: 2.5rem;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 2rem;">
+                <div style="flex: 1; min-width: 300px;">
+                    <h4 style="color: white; font-size: 1.35rem; margin-bottom: 0.75rem;">Progress Tracking Engine</h4>
+                    <p style="color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6; font-size: 1.05rem;">
+                        Identify struggling students early, view detailed performance analytics, and monitor engagement
+                        trends across all your active courses to provide targeted interventions.
+                    </p>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <a href="{% url 'analytics:faculty_student_performance' %}" class="btn btn-primary px-4 py-2">
+                            <i class="fas fa-search-chart"></i> View Student Performance
+                        </a>
+                        <a href="{% url 'analytics:faculty_dashboard' %}" class="btn btn-secondary px-4 py-2"
+                            style="background: transparent; border: 1px solid var(--text-muted); color: white;">
+                            <i class="fas fa-chart-bar"></i> Analytics
+                        </a>
+                    </div>
                 </div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: white;">🤖 AI Tutor</h3>
-                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
-                    Your personal AI tutor. Chat, ask questions, and get instant explanations.
-                </p>
             </div>
-            <a href="{% url 'ai_tutor:tutor_home' %}" class="btn btn-primary w-full mt-4"
-                style="text-align: center;">Start AI Tutor</a>
+        </div>
+    </div>
+
+    <!-- Course Management Section -->
+    <div style="margin-bottom: 3.5rem;">
+        <h3 class="section-title"><i class="fas fa-book-open" style="color: var(--success);"></i> Course Management</h3>
+
+        {% if course_data %}
+        <div class="course-list">
+            {% for course in course_data %}
+            <div class="course-item">
+                <div>
+                    <h5 style="color: white; margin: 0 0 0.4rem 0; font-size: 1.15rem;">{{ course.title }}</h5>
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">
+                        <span><i class="fas fa-layer-group"></i> {{ course.units_count }} Units</span>
+                        <span style="margin: 0 0.5rem; opacity: 0.5;">|</span>
+                        <span><i class="fas fa-signal"></i> {{ course.level }}</span>
+                    </div>
+                </div>
+                <a href="{% url 'course:course_dashboard' course.id %}" class="btn btn-secondary"
+                    style="padding: 0.5rem 1.25rem;">Manage</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="glass-panel" style="text-align: center; padding: 4rem 1rem;">
+            <div style="font-size: 3rem; color: var(--text-dim); margin-bottom: 1rem;"><i
+                    class="fas fa-folder-open"></i></div>
+            <h4 style="color: white; margin-bottom: 0.5rem; font-size: 1.25rem;">No Courses Yet</h4>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">You haven't created any learning materials for
+                your students.</p>
+            <a href="{% url 'course:list' %}" class="btn btn-primary px-4 py-2">Create Your First Course</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Faculty Tools Section -->
+    <div style="padding-bottom: 3rem;">
+        <div style="margin-bottom: 1.5rem;">
+            <h3 class="section-title" style="margin-bottom: 0.5rem;"><i class="fas fa-toolbox"
+                    style="color: #7c5cff;"></i> Learning & Support Tools</h3>
+            <p style="color: var(--text-muted); font-size: 1.05rem; margin: 0;">Access faculty tools to support
+                learning, monitor readiness, and analyze class performance.</p>
         </div>
 
-        <!-- App 2: Learning Support -->
-        <div class="glass-card feature-card"
-            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
-            <div>
-                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--success);">
-                    <i class="fas fa-life-ring"></i>
+        <div class="premium-tools-grid">
+            <!-- App 1: AI Tutor -->
+            <div class="premium-tool-card">
+                <div class="premium-icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M12 2v2m-2-2h4M9 6h6a2 2 0 012 2v2a2 2 0 01-2 2H9a2 2 0 01-2-2V8a2 2 0 012-2zM8 12h8m-8 4h8m-4-6v9m-5 3h10M5 8v6M19 8v6">
+                        </path>
+                    </svg>
                 </div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: white;">🤝 Support</h3>
-                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
-                    Get guided hints and simplified break-downs to help you solve problems.
+                <h4 class="premium-tool-title">AI Tutor</h4>
+                <p class="premium-tool-desc">
+                    Personalized AI tutoring interface. Evaluate how students interact with AI-driven concepts.
                 </p>
+                <a href="{% url 'ai_tutor:tutor_home' %}" class="premium-tool-btn">Start AI Tutor</a>
             </div>
-            <a href="{% url 'learning_support:support_home' %}" class="btn btn-primary w-full mt-4"
-                style="text-align: center;">Get Support</a>
-        </div>
 
-        <!-- App 3: Flashcard Generator -->
-        <div class="glass-card feature-card"
-            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
-            <div>
-                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--accent);">
-                    <i class="fas fa-layer-group"></i>
+            <!-- App 2: Support Desk -->
+            <div class="premium-tool-card">
+                <div class="premium-icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path
+                            d="M12 3v2m0 14v2m9-9h-2M5 12H3m14.36-6.36l-1.41 1.41M6.05 17.95l-1.41 1.41M18.36 18.36l-1.41-1.41M6.05 6.05L7.46 7.46">
+                        </path>
+                    </svg>
                 </div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: white;">🗂️ Flashcards</h3>
-                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
-                    Generate active recall flashcards from your study materials.
+                <h4 class="premium-tool-title">Support Desk</h4>
+                <p class="premium-tool-desc">
+                    Provide guided hints and simplified break-downs to help students solve difficult problems.
                 </p>
+                <a href="{% url 'learning_support:support_home' %}" class="premium-tool-btn">Launch Tool</a>
             </div>
-            <a href="{% url 'flashcard_generator:flashcard_home' %}" class="btn btn-primary w-full mt-4"
-                style="text-align: center;">Generate Flashcards</a>
-        </div>
 
-        <!-- App 4: Prerequisite Checker -->
-        <div class="glass-card feature-card"
-            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
-            <div>
-                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary);">
-                    <i class="fas fa-tasks"></i>
+            <!-- App 3: Flashcards -->
+            <div class="premium-tool-card">
+                <div class="premium-icon-box">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M4 6h16M4 12h16M4 18h16"></path>
+                        <rect x="3" y="4" width="18" height="16" rx="2" stroke="#00d2c8"></rect>
+                    </svg>
                 </div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: white;">✅ Readiness</h3>
-                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
-                    Check your readiness for new topics with quick quizzes.
+                <h4 class="premium-tool-title">Flashcards</h4>
+                <p class="premium-tool-desc">
+                    Generate and review active recall flashcards mapped directly to your course materials.
                 </p>
+                <a href="{% url 'flashcard_generator:flashcard_home' %}" class="premium-tool-btn">Generate
+                    Flashcards</a>
             </div>
-            <a href="{% url 'prerequisite_checker:home' %}" class="btn btn-primary w-full mt-4"
-                style="text-align: center;">Check Readiness</a>
-        </div>
 
-        <!-- App 5: LOR Generator -->
-        <div class="glass-card feature-card"
-            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
-            <div>
-                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--success);">
-                    <i class="fas fa-file-signature"></i>
+            <!-- App 4: Readiness Checker -->
+            <div class="premium-tool-card">
+                <div class="premium-icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4">
+                        </path>
+                    </svg>
                 </div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: white;">✍️ LOR Gen</h3>
-                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
-                    Draft professional Letters of Recommendation quickly.
+                <h4 class="premium-tool-title">Readiness Checker</h4>
+                <p class="premium-tool-desc">
+                    Evaluate student readiness for upcoming advanced topics through targeted micro-quizzes.
                 </p>
+                <a href="{% url 'prerequisite_checker:home' %}" class="premium-tool-btn">Check Readiness</a>
             </div>
-            <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}"
-                class="btn btn-primary w-full mt-4" style="text-align: center;">Create LOR</a>
-        </div>
 
-        <!-- App 6: Analytics Dashboard -->
-        <div class="glass-card feature-card"
-            style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s ease, border-color 0.3s ease;">
-            <div>
-                <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--accent);">
-                    <i class="fas fa-chart-pie"></i>
+            <!-- App 5: LOR Generator -->
+            <div class="premium-tool-card">
+                <div class="premium-icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
                 </div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: white;">📊 Analytics</h3>
-                <p style="color: var(--text-light); line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
-                    Visualize your learning progress and performance.
+                <h4 class="premium-tool-title">LOR Generator</h4>
+                <p class="premium-tool-desc">
+                    Quickly draft professional Letters of Recommendation using validated student performance.
                 </p>
+                <a href="{% url 'letter_of_recommendation_generator:letter_dashboard' %}"
+                    class="premium-tool-btn">Create LOR</a>
             </div>
-            <a href="{% url 'analytics:teacher_dashboard' %}" class="btn btn-primary w-full mt-4"
-                style="text-align: center;">View Analytics</a>
+
+            <!-- App 6: Class Analytics -->
+            <div class="premium-tool-card">
+                <div class="premium-icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M18 20V10M12 20V4M6 20v-6"></path>
+                        <path d="M3 20h18"></path>
+                    </svg>
+                </div>
+                <h4 class="premium-tool-title">Class Analytics</h4>
+                <p class="premium-tool-desc">
+                    Visualize macro-level class performance metrics, topic mastery, and overall engagement rates.
+                </p>
+                <a href="{% url 'analytics:faculty_dashboard' %}" class="premium-tool-btn">View Reports</a>
+            </div>
         </div>
     </div>
 </div>

@@ -99,14 +99,20 @@ def signup_view(request):
             user = form.save()
             role = form.cleaned_data.get('role')
             
-            # Create or update UserProfile (signal might have already created a default one)
-            UserProfile.objects.update_or_create(
-                user=user, 
-                defaults={
-                    'role': role, 
-                    'full_name': form.cleaned_data.get('full_name')
-                }
-            )
+            # Update the profile via the cached relationship to prevent login signals from overwriting it!
+            if hasattr(user, 'account_profile') and getattr(user, 'account_profile') is not None:
+                profile = user.account_profile
+                profile.role = role
+                profile.full_name = form.cleaned_data.get('full_name')
+                profile.save()
+            else:
+                UserProfile.objects.update_or_create(
+                    user=user, 
+                    defaults={
+                        'role': role, 
+                        'full_name': form.cleaned_data.get('full_name')
+                    }
+                )
             
             login(request, user)
             messages.success(request, f"Welcome, {user.username}! You signed up as a {role}.")

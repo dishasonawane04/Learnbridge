@@ -10,17 +10,19 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         :root {
-            --bg-dark: #0f172a;
-            --bg-card: #1e293b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #10b981;
-            /* Green for faculty */
+            --bg-dark: #0d1117;
+            --bg-card: #161b24;
+            --text-main: #f0f4f8;
+            --text-muted: #8b97aa;
+            --accent: #7c5cff;
+            --accent-hover: #6c63ff;
+            --border-color: rgba(255, 255, 255, 0.08);
         }
 
         body {
             font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-dark);
+            background: radial-gradient(circle at top center, rgba(124, 92, 255, 0.08), transparent 55%), linear-gradient(180deg, #0d1117 0%, #0b1020 100%);
+            background-attachment: fixed;
             color: var(--text-main);
             margin: 0;
             padding: 0;
@@ -28,9 +30,10 @@
         }
 
         .navbar {
-            background: rgba(15, 23, 42, 0.95);
+            background: rgba(13, 17, 23, 0.8);
+            backdrop-filter: blur(10px);
             padding: 1rem 2rem;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -39,7 +42,7 @@
         .navbar .logo {
             font-size: 1.5rem;
             font-weight: 700;
-            color: var(--text-main);
+            color: #ffffff;
             text-decoration: none;
             display: flex;
             align-items: center;
@@ -47,7 +50,9 @@
         }
 
         .navbar .logo span {
-            color: var(--accent);
+            background: linear-gradient(135deg, #7c5cff, #6c63ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .container {
@@ -57,41 +62,76 @@
         }
 
         h1 {
+            color: #ffffff;
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
             margin-bottom: 0.5rem;
+        }
+
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(124, 92, 255, 0.35);
+            box-shadow: 0 0 10px rgba(124, 92, 255, 0.35);
+            border-radius: 2px;
         }
 
         .subtitle {
             color: var(--text-muted);
             margin-bottom: 2rem;
+            margin-top: 10px;
+        }
+
+        .table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            overflow-x: auto;
         }
 
         .student-table {
             width: 100%;
             border-collapse: collapse;
-            background: var(--bg-card);
-            border-radius: 12px;
-            overflow: hidden;
         }
 
         .student-table th,
         .student-table td {
             text-align: left;
             padding: 1rem 1.5rem;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .student-table th {
-            background: rgba(255, 255, 255, 0.05);
+            background: linear-gradient(180deg, rgba(124, 92, 255, 0.12), rgba(124, 92, 255, 0.05));
             font-weight: 600;
-            color: var(--text-muted);
+            color: #dfe5f5;
+        }
+
+        .student-table tr {
+            transition: 0.2s ease;
         }
 
         .student-table tr:hover {
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(124, 92, 255, 0.06);
+        }
+
+        .student-table td {
+            color: var(--text-muted);
+        }
+
+        .student-table td:first-child {
+            color: var(--text-main);
         }
 
         .student-link {
-            color: var(--text-main);
+            color: #f0f4f8;
             text-decoration: none;
             font-weight: 600;
             display: flex;
@@ -105,25 +145,35 @@
 
         .btn-view {
             padding: 0.5rem 1rem;
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--accent);
-            border-radius: 6px;
+            background: rgba(124, 92, 255, 0.08);
+            border: 1px solid rgba(124, 92, 255, 0.18);
+            color: #c9bcff;
+            border-radius: 10px;
             text-decoration: none;
             font-size: 0.9rem;
             font-weight: 600;
+            display: inline-block;
+            transition: all 0.2s ease;
         }
 
         .btn-view:hover {
-            background: var(--accent);
-            color: white;
+            background: rgba(124, 92, 255, 0.16);
+            box-shadow: 0 0 10px rgba(124, 92, 255, 0.22);
+            color: #c9bcff;
         }
 
         .btn-home {
-            background: var(--accent);
+            background: linear-gradient(135deg, #6c63ff, #7c5cff);
             color: white;
             padding: 0.5rem 1rem;
             border-radius: 8px;
             text-decoration: none;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+
+        .btn-home:hover {
+            box-shadow: 0 0 12px rgba(124, 92, 255, 0.35);
         }
     </style>
 </head>
@@ -135,14 +185,14 @@
             <i class="ph ph-chalkboard-teacher"></i>
             LearnBridge<span>.Faculty</span>
         </a>
-        <a href="/" class="btn-home">Back to Hub</a>
+        <a href="{% url 'core:faculty_dashboard' %}" class="btn-home">Back to Dashboard</a>
     </nav>
 
     <div class="container">
         <h1>Class Progress Overview</h1>
         <p class="subtitle">Monitor student engagement and performance.</p>
 
-        <div style="overflow-x: auto;">
+        <div class="table-container">
             <table class="student-table">
                 <thead>
                     <tr>
@@ -169,14 +219,14 @@
                         <td>
                             {% if student.status == 'Needs Help' %}
                             <span
-                                style="background: rgba(239, 68, 68, 0.2); color: #ef4444; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.85rem;">Needs
+                                style="background: rgba(255, 120, 120, 0.14); color: #ff7878; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.85rem;">Needs
                                 Help</span>
                             {% elif student.status == 'Inactive' %}
                             <span
-                                style="background: rgba(148, 163, 184, 0.2); color: #94a3b8; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.85rem;">Inactive</span>
+                                style="background: rgba(255, 255, 255, 0.06); color: #9aa6b8; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.85rem;">Inactive</span>
                             {% else %}
                             <span
-                                style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.85rem;">On
+                                style="background: rgba(124, 92, 255, 0.16); color: #b8a8ff; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.85rem;">On
                                 Track</span>
                             {% endif %}
                         </td>
