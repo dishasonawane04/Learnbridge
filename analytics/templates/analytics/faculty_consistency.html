@@ -1,0 +1,347 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consistency Score Analysis - LearnBridge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-dark: #0d1117;
+            --bg-card: #161b24;
+            --text-main: #f0f4f8;
+            --text-muted: #8b97aa;
+            --accent: #7c5cff;
+            --accent-hover: #6c63ff;
+            --border-color: rgba(255, 255, 255, 0.08);
+
+            --high-bg: rgba(34, 197, 94, 0.1);
+            --high-text: #4ade80;
+            --moderate-bg: rgba(124, 92, 255, 0.1);
+            --moderate-text: #c9bcff;
+            --irregular-bg: rgba(239, 68, 68, 0.1);
+            --irregular-text: #f87171;
+            --new-bg: rgba(255, 255, 255, 0.05);
+            --new-text: #dfe5f5;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top center, rgba(124, 92, 255, 0.08), transparent 55%), linear-gradient(180deg, #0d1117 0%, #0b1020 100%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(13, 17, 23, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .navbar .logo span {
+            background: linear-gradient(135deg, #7c5cff, #6c63ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        h1 {
+            color: #ffffff;
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(124, 92, 255, 0.35);
+            box-shadow: 0 0 10px rgba(124, 92, 255, 0.35);
+            border-radius: 2px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            margin-top: 10px;
+        }
+
+        .table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            overflow-x: auto;
+        }
+
+        .student-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .student-table th,
+        .student-table td {
+            text-align: left;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .student-table th {
+            background: linear-gradient(180deg, rgba(124, 92, 255, 0.12), rgba(124, 92, 255, 0.05));
+            font-weight: 600;
+            color: #dfe5f5;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+
+        .student-table tr {
+            transition: 0.2s ease;
+        }
+
+        .student-table tr:hover {
+            background: rgba(124, 92, 255, 0.04);
+        }
+
+        .student-name {
+            font-weight: 600;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .status-badge {
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.4rem 0.8rem;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .status-badge.high {
+            background: var(--high-bg);
+            color: var(--high-text);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .status-badge.moderate {
+            background: var(--moderate-bg);
+            color: var(--moderate-text);
+            border: 1px solid rgba(124, 92, 255, 0.2);
+        }
+
+        .status-badge.irregular {
+            background: var(--irregular-bg);
+            color: var(--irregular-text);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .status-badge.new {
+            background: var(--new-bg);
+            color: var(--new-text);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .streak-info {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .metric-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .insight-box {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            opacity: 0.9;
+            max-width: 300px;
+            line-height: 1.4;
+        }
+
+        .btn-home {
+            background: linear-gradient(135deg, #6c63ff, #7c5cff);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+
+        .btn-home:hover {
+            box-shadow: 0 0 12px rgba(124, 92, 255, 0.35);
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .filter-tab {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .filter-tab:hover,
+        .filter-tab.active {
+            background: rgba(124, 92, 255, 0.15);
+            border-color: var(--accent);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="logo">
+            <i class="ph ph-chalkboard-teacher"></i>
+            LearnBridge<span>.Faculty</span>
+        </a>
+        <a href="{% url 'core:faculty_dashboard' %}" class="btn-home">Back to Dashboard</a>
+    </nav>
+
+    <div class="container">
+        <h1>Attention / Consistency Score</h1>
+        <p class="subtitle">Analyze student engagement stability and identifying those who need extra encouragement.</p>
+
+        <div class="filter-tabs">
+            <div class="filter-tab active" onclick="filterStudents('all')">All Students</div>
+            <div class="filter-tab" onclick="filterStudents('high')">🔥 High</div>
+            <div class="filter-tab" onclick="filterStudents('moderate')">⏳ Moderate</div>
+            <div class="filter-tab" onclick="filterStudents('irregular')">⚠️ Irregular</div>
+        </div>
+
+        <div class="table-container">
+            <table class="student-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Consistency Status</th>
+                        <th>Activity Metrics</th>
+                        <th>Guidance Insight</th>
+                    </tr>
+                </thead>
+                <tbody id="studentBody">
+                    {% for student in students %}
+                    <tr class="student-row" data-status="{{ student.metrics.color_class }}">
+                        <td>
+                            <div class="student-name">
+                                <i class="ph ph-user-circle" style="font-size: 1.5rem; color: var(--accent);"></i>
+                                {{ student.full_name|default:student.user.username }}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge {{ student.metrics.color_class }}">
+                                {{ student.metrics.status_icon }} {{ student.metrics.status_label }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="streak-info">
+                                <div class="metric-box">
+                                    <span class="metric-value">{{ student.metrics.streak }} Days</span>
+                                    <span class="metric-label">Current Streak</span>
+                                </div>
+                                <div class="metric-box">
+                                    <span class="metric-value">{{ student.metrics.active_7d }}/7 Days</span>
+                                    <span class="metric-label">Frequency</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="insight-box">
+                                {{ student.metrics.insight }}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 4rem;">
+                            No engagement data available yet. Tracking is active from now on.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function filterStudents(status) {
+            const rows = document.querySelectorAll('.student-row');
+            const tabs = document.querySelectorAll('.filter-tab');
+
+            tabs.forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            rows.forEach(row => {
+                if (status === 'all' || row.dataset.status === status) {
+                    row.style.display = 'table-row';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,305 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Screen Time Analysis - LearnBridge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-dark: #0d1117;
+            --bg-card: #161b24;
+            --text-main: #f0f4f8;
+            --text-muted: #8b97aa;
+            --accent: #7c5cff;
+            --accent-hover: #6c63ff;
+            --border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top center, rgba(124, 92, 255, 0.08), transparent 55%), linear-gradient(180deg, #0d1117 0%, #0b1020 100%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(13, 17, 23, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .navbar .logo span {
+            background: linear-gradient(135deg, #7c5cff, #6c63ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        h1 {
+            color: #ffffff;
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(124, 92, 255, 0.35);
+            box-shadow: 0 0 10px rgba(124, 92, 255, 0.35);
+            border-radius: 2px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            margin-top: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            overflow-x: auto;
+        }
+
+        .student-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .student-table th,
+        .student-table td {
+            text-align: left;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .student-table th {
+            background: linear-gradient(180deg, rgba(124, 92, 255, 0.12), rgba(124, 92, 255, 0.05));
+            font-weight: 600;
+            color: #dfe5f5;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+
+        .student-table tr {
+            transition: 0.2s ease;
+        }
+
+        .student-table tr:hover {
+            background: rgba(124, 92, 255, 0.06);
+        }
+
+        .student-name {
+            font-weight: 600;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .insight-text {
+            font-size: 0.9rem;
+            color: #c9bcff;
+            background: rgba(124, 92, 255, 0.1);
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            border: 1px solid rgba(124, 92, 255, 0.15);
+            display: inline-block;
+        }
+
+        .tool-badge {
+            font-size: 0.85rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tool-badge.primary {
+            background: rgba(124, 92, 255, 0.15);
+            color: #b8a8ff;
+            border-color: rgba(124, 92, 255, 0.2);
+        }
+
+        .btn-home {
+            background: linear-gradient(135deg, #6c63ff, #7c5cff);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+
+        .btn-home:hover {
+            box-shadow: 0 0 12px rgba(124, 92, 255, 0.35);
+        }
+
+        .course-breakdown {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .course-breakdown div {
+            margin-bottom: 0.25rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="logo">
+            <i class="ph ph-chalkboard-teacher"></i>
+            LearnBridge<span>.Faculty</span>
+        </a>
+        <a href="{% url 'core:faculty_dashboard' %}" class="btn-home">Back to Dashboard</a>
+    </nav>
+
+    <div class="container">
+        <h1>Smart Screen Time Analysis</h1>
+        <p class="subtitle">Deep insights into how your students are engaging with learning tools.</p>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_students }}</div>
+                <div class="stat-label">Total Students</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">7.4h</div>
+                <div class="stat-label">Avg. Weekly Usage</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">AI Tutor</div>
+                <div class="stat-label">Most Popular Tool</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="student-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Total Time</th>
+                        <th>Usage Breakdown</th>
+                        <th>Insights</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>
+                            <div class="student-name">
+                                <i class="ph ph-user-circle" style="font-size: 1.5rem; color: var(--accent);"></i>
+                                {{ student.full_name|default:student.user.username }}
+                            </div>
+                        </td>
+                        <td>
+                            <span style="font-weight: 700; color: #ffffff;">{{ student.total_minutes }}</span>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);"> mins</span>
+                        </td>
+                        <td>
+                            <div style="margin-bottom: 0.5rem;">
+                                <span class="tool-badge primary">Most: {{ student.most_used }}</span>
+                                <span class="tool-badge">Least: {{ student.least_used }}</span>
+                            </div>
+                            <div class="course-breakdown">
+                                {% for course in student.course_breakdown|slice:":2" %}
+                                <div>{{ course.title }}: {{ course.minutes }}m</div>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="insight-text">
+                                <i class="ph ph-lightbulb-filament" style="margin-right: 0.25rem;"></i>
+                                {{ student.insight }}
+                            </div>
+                        </td>
+                        <td>
+                            <a href="{% url 'analytics:faculty_student_detail' student.user.id %}"
+                                style="color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.9rem;">
+                                Full Report <i class="ph ph-arrow-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 4rem;">
+                            No screen-time data available yet for your students.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</body>
+
+</html>

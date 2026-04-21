@@ -1,0 +1,708 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz History – {{ full_name }} – LearnBridge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-dark: #0d1117;
+            --bg-card: #161b24;
+            --text-main: #f0f4f8;
+            --text-muted: #8b97aa;
+            --accent: #7c5cff;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --green: #4ade80;
+            --green-bg: rgba(34, 197, 94, 0.10);
+            --green-border: rgba(34, 197, 94, 0.22);
+            --yellow: #fbbf24;
+            --yellow-bg: rgba(251, 191, 36, 0.10);
+            --yellow-border: rgba(251, 191, 36, 0.22);
+            --red: #f87171;
+            --red-bg: rgba(239, 68, 68, 0.10);
+            --red-border: rgba(239, 68, 68, 0.22);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top center, rgba(124, 92, 255, 0.08), transparent 55%),
+                linear-gradient(180deg, #0d1117 0%, #0b1020 100%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .navbar .logo span {
+            background: linear-gradient(135deg, #7c5cff, #6c63ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .navbar-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.4rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-back:hover {
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        /* ── Page header ── */
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.9rem;
+            margin: 0 0 0.3rem 0;
+            position: relative;
+            display: inline-block;
+        }
+
+        .page-header h1::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(124, 92, 255, 0.4);
+            border-radius: 2px;
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            margin: 0.75rem 0 0 0;
+        }
+
+        /* ── Overview cards row ── */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .overview-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .overview-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            transition: 0.2s;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(124, 92, 255, 0.25);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .stat-sub {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Trend badge */
+        .trend-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .trend-improving {
+            background: var(--green-bg);
+            color: var(--green);
+            border: 1px solid var(--green-border);
+        }
+
+        .trend-stable {
+            background: rgba(124, 92, 255, 0.1);
+            color: #c9bcff;
+            border: 1px solid rgba(124, 92, 255, 0.22);
+        }
+
+        .trend-needs {
+            background: var(--red-bg);
+            color: var(--red);
+            border: 1px solid var(--red-border);
+        }
+
+        .trend-nodata {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+
+        /* ── Section titles ── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #fff;
+            margin: 0;
+        }
+
+        .section-header i {
+            color: var(--accent);
+            font-size: 1.3rem;
+        }
+
+        /* ── Table ── */
+        .table-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: linear-gradient(180deg, rgba(124, 92, 255, 0.12), rgba(124, 92, 255, 0.05));
+            color: #dfe5f5;
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 1rem 1.25rem;
+            text-align: left;
+        }
+
+        td {
+            padding: 0.95rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.93rem;
+        }
+
+        td:first-child {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(124, 92, 255, 0.04);
+        }
+
+        /* Score badges */
+        .score-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.65rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .score-badge.high {
+            background: var(--green-bg);
+            color: var(--green);
+            border: 1px solid var(--green-border);
+        }
+
+        .score-badge.medium {
+            background: var(--yellow-bg);
+            color: var(--yellow);
+            border: 1px solid var(--yellow-border);
+        }
+
+        .score-badge.low {
+            background: var(--red-bg);
+            color: var(--red);
+            border: 1px solid var(--red-border);
+        }
+
+        /* Correct / wrong chips */
+        .chip-correct {
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        .chip-wrong {
+            color: var(--red);
+            font-weight: 600;
+        }
+
+        /* View detail btn */
+        .btn-detail {
+            padding: 0.35rem 0.85rem;
+            background: rgba(124, 92, 255, 0.08);
+            border: 1px solid rgba(124, 92, 255, 0.22);
+            color: #c9bcff;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            white-space: nowrap;
+        }
+
+        .btn-detail:hover {
+            background: rgba(124, 92, 255, 0.18);
+            box-shadow: 0 0 10px rgba(124, 92, 255, 0.22);
+            color: #c9bcff;
+        }
+
+        /* ── Two-col bottom grid ── */
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .bottom-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        /* Mistake bars */
+        .mistake-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .mistake-label {
+            min-width: 130px;
+            max-width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        .mistake-bar-wrap {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .mistake-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #f87171, #ef4444);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .mistake-count {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--red);
+            min-width: 30px;
+            text-align: right;
+        }
+
+        /* Insight lines */
+        .insight-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            padding: 0.65rem 0.85rem;
+            border-radius: 10px;
+            background: rgba(124, 92, 255, 0.06);
+            border: 1px solid rgba(124, 92, 255, 0.12);
+            margin-bottom: 0.6rem;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+
+        .insight-item i {
+            color: var(--accent);
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3.5rem 1rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* type pills */
+        .type-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            padding: 0.2rem 0.6rem;
+            border-radius: 50px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin: 0.2rem;
+        }
+
+        /* Accuracy color helpers */
+        .accuracy-val {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .acc-high {
+            color: var(--green);
+        }
+
+        .acc-mid {
+            color: var(--yellow);
+        }
+
+        .acc-low {
+            color: var(--red);
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="logo">
+            <i class="ph ph-chalkboard-teacher"></i>
+            LearnBridge<span>.Faculty</span>
+        </a>
+        <div class="navbar-actions">
+            <a href="{% url 'analytics:faculty_dashboard' %}" class="btn-back">
+                <i class="ph ph-arrow-left"></i> Back to Analytics
+            </a>
+            <a href="{% url 'core:faculty_dashboard' %}" class="btn-back"
+                style="background: linear-gradient(135deg, #6c63ff, #7c5cff); color: #fff; border-color: transparent;">
+                Dashboard
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1><i class="ph ph-chart-line" style="color: var(--accent);"></i> Quiz History + Analysis</h1>
+            <p>Student: <strong style="color: #fff;">{{ full_name }}</strong>
+                &nbsp;|&nbsp; All quiz attempts and performance breakdown</p>
+        </div>
+
+        <!-- Overview Stats -->
+        <div class="overview-grid">
+            <div class="stat-card">
+                <span class="stat-label">Total Attempts</span>
+                <span class="stat-value">{{ total_attempts }}</span>
+                <span class="stat-sub">quizzes taken</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Average Score</span>
+                <span class="stat-value">{{ avg_score }}%</span>
+                <span class="stat-sub">across all quizzes</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Highest Score</span>
+                <span class="stat-value" style="color: var(--green);">{{ high_score }}%</span>
+                <span class="stat-sub">best attempt</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Lowest Score</span>
+                <span class="stat-value" style="color: var(--red);">{{ low_score }}%</span>
+                <span class="stat-sub">weakest attempt</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Performance Trend</span>
+                <div style="margin-top: 0.35rem;">
+                    {% if trend == 'Improving' %}
+                    <span class="trend-badge trend-improving"><i class="ph ph-trend-up"></i> Improving</span>
+                    {% elif trend == 'Needs Attention' %}
+                    <span class="trend-badge trend-needs"><i class="ph ph-warning"></i> Needs Attention</span>
+                    {% elif trend == 'Stable' %}
+                    <span class="trend-badge trend-stable"><i class="ph ph-equals"></i> Stable</span>
+                    {% else %}
+                    <span class="trend-badge trend-nodata"><i class="ph ph-minus"></i> No Data</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz History Table -->
+        <div class="section-header">
+            <i class="ph ph-list-bullets"></i>
+            <h2>Quiz Attempt History</h2>
+        </div>
+
+        <div class="table-wrap">
+            {% if attempt_rows %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Quiz / Subject</th>
+                        <th>Course</th>
+                        <th>Date</th>
+                        <th>Questions</th>
+                        <th>Correct</th>
+                        <th>Wrong</th>
+                        <th>Score</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in attempt_rows %}
+                    <tr>
+                        <td style="color: var(--text-muted); font-size: 0.85rem;">{{ forloop.counter }}</td>
+                        <td>{{ row.attempt.subject|default:"Quiz Attempt" }}</td>
+                        <td>{{ row.attempt.course.title|default:"—" }}</td>
+                        <td>{{ row.attempt.created_at|date:"d M Y, g:i A" }}</td>
+                        <td>{{ row.attempt.total }}</td>
+                        <td><span class="chip-correct">✓ {{ row.correct }}</span></td>
+                        <td><span class="chip-wrong">✗ {{ row.wrong }}</span></td>
+                        <td>
+                            <span class="score-badge {{ row.score_class }}">
+                                {{ row.attempt.percentage|floatformat:1 }}%
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'analytics:faculty_quiz_attempt_detail' row.attempt.id %}"
+                                class="btn-detail">
+                                <i class="ph ph-eye"></i> View Detail
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <i class="ph ph-clipboard-text"></i>
+                <p>No quiz attempts recorded for this student yet.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Bottom Two-Col: Common Mistakes + Insight -->
+        <div class="bottom-grid">
+
+            <!-- Common Mistakes Card -->
+            <div class="card">
+                <div class="section-header" style="margin-bottom: 1.25rem;">
+                    <i class="ph ph-x-circle"></i>
+                    <h2 style="font-size: 1.1rem;">Common Mistakes Made by Student</h2>
+                </div>
+
+                {% if topic_mistakes %}
+                {% for topic, count in topic_mistakes %}
+                {% with max_count=topic_mistakes.0.1 %}
+                <div class="mistake-row">
+                    <span class="mistake-label" title="{{ topic }}">{{ topic }}</span>
+                    <div class="mistake-bar-wrap">
+                        <div class="mistake-bar mistake-bar-fill" data-pct="{% widthratio count max_count 100 %}"></div>
+                    </div>
+                    <span class="mistake-count">{{ count }}×</span>
+                </div>
+                {% endwith %}
+                {% endfor %}
+
+                {% if type_mistakes %}
+                <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <p
+                        style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 0 0 0.6rem 0;">
+                        By Question Type
+                    </p>
+                    {% for qtype, count in type_mistakes %}
+                    <span class="type-pill">
+                        <i class="ph ph-question"></i>
+                        {{ qtype }}: <strong style="color: var(--red);">{{ count }}</strong>
+                    </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% else %}
+                <div class="empty-state" style="padding: 2rem 1rem;">
+                    <i class="ph ph-check-circle" style="color: var(--green); opacity: 1;"></i>
+                    <p style="color: var(--green); font-weight: 600; margin-top: 0.5rem;">No mistakes recorded yet.</p>
+                    <p style="font-size: 0.85rem; margin-top: 0.25rem;">
+                        Topic-level data will appear after the student completes quizzes.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Faculty Insight Card -->
+            <div class="card">
+                <div class="section-header" style="margin-bottom: 1.25rem;">
+                    <i class="ph ph-lightbulb"></i>
+                    <h2 style="font-size: 1.1rem;">Faculty Insight</h2>
+                </div>
+
+                <!-- Quick accuracy stat -->
+                <div
+                    style="display: flex; gap: 1.5rem; margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border-color);">
+                    <div>
+                        <div
+                            style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">
+                            Overall Accuracy</div>
+                        <div
+                            class="accuracy-val
+                            {% if overall_accuracy >= 75 %}acc-high{% elif overall_accuracy >= 50 %}acc-mid{% else %}acc-low{% endif %}">
+                            {{ overall_accuracy }}%
+                        </div>
+                    </div>
+                    <div>
+                        <div
+                            style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">
+                            Total Wrong Answers</div>
+                        <div style="font-size: 1.4rem; font-weight: 700; color: var(--red);">{{ total_wrong }}</div>
+                    </div>
+                </div>
+
+                {% for line in insight_lines %}
+                <div class="insight-item">
+                    <i class="ph ph-arrow-right"></i>
+                    {{ line }}
+                </div>
+                {% empty %}
+                <div class="insight-item"
+                    style="background: rgba(74, 222, 128, 0.05); border-color: rgba(74, 222, 128, 0.15);">
+                    <i class="ph ph-check" style="color: var(--green);"></i>
+                    No quiz data available yet to generate insights.
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+    </div>
+
+</body>
+
+<script>
+    // Apply widths from data-pct to mistake bars (avoids Django tags in CSS styles)
+    document.querySelectorAll('.mistake-bar-fill').forEach(function (el) {
+        var pct = el.getAttribute('data-pct');
+        if (pct) { el.style.width = pct + '%'; }
+    });
+</script>
+
+</html>

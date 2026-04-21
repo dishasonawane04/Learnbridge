@@ -68,3 +68,8 @@ class StudentAnswer(models.Model):
     correct_option = models.CharField(max_length=255)
     is_correct = models.BooleanField()
     explanation = models.TextField(blank=True)
+    # Optional topic metadata for mistake analysis
+    topic = models.CharField(max_length=200, blank=True, default='')
+    subtopic = models.CharField(max_length=200, blank=True, default='')
+    difficulty = models.CharField(max_length=50, blank=True, default='')
+    question_type = models.CharField(max_length=50, blank=True, default='MCQ')

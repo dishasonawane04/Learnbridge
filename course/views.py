@@ -10,6 +10,7 @@ from .services.intelligence import AIInsightService
 from ai_engine.document_loader import load_document
 from ai_engine.chunker import split_into_chunks
 from ai_engine.vector_store import create_vector_db
+from analytics.models import ActivityLog
 
 @login_required
 def course_list(request):
@@ -64,6 +65,15 @@ def course_dashboard(request, course_id):
     # Determine if any content exists (Primary file, Materials, or Units)
     has_content = materials.exists() or units.exists() or bool(course.uploaded_file)
 
+    # Log Activity
+    ActivityLog.objects.create(
+        user=request.user,
+        app_name='course',
+        activity_type='course_view',
+        course=course,
+        topic=course.title
+    )
+
     return render(request, 'course/course_dashboard.html', {
         'course': course,
         'materials': materials,
@@ -94,6 +104,16 @@ def upload_notes(request, course_id):
         # Consolidate context after all new materials are added
         from core.ai.services import CourseContextEngine
         CourseContextEngine.consolidate_course_notes(course.id)
+
+        # Log Activity
+        ActivityLog.objects.create(
+            user=request.user,
+            app_name='course',
+            activity_type='material_upload',
+            course=course,
+            topic=course.title,
+            metadata={'count': len(files)}
+        )
                 
     return redirect('course:course_dashboard', course_id=course.id)
 

@@ -1,9 +1,825 @@
-{% extends 'analytics/student_dashboard.html' %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
 
-{% block title %}Student Detail: {{ target_user.first_name }} - LearnBridge{% endblock %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Profile – {{ display_name }} – LearnBridge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card: #161b24;
+            --text: #f0f4f8;
+            --muted: #8b97aa;
+            --accent: #7c5cff;
+            --border: rgba(255, 255, 255, 0.08);
+            --green: #4ade80;
+            --green-bg: rgba(34, 197, 94, 0.10);
+            --green-bd: rgba(34, 197, 94, 0.22);
+            --yellow: #fbbf24;
+            --yellow-bg: rgba(251, 191, 36, 0.10);
+            --yellow-bd: rgba(251, 191, 36, 0.22);
+            --red: #f87171;
+            --red-bg: rgba(239, 68, 68, 0.10);
+            --red-bd: rgba(239, 68, 68, 0.22);
+            --blue: #60a5fa;
+            --blue-bg: rgba(96, 165, 250, 0.10);
+            --blue-bd: rgba(96, 165, 250, 0.22);
+        }
 
-{% block navbar_override %}
-<!-- We want to override the navbar link to go back to teacher dashboard -->
-<!-- But since I didn't use blocks in base dashboard, I'll just create a separate file to be safe and clean or I should have used inheritance. -->
-<!-- Re-writing full file for simplicity as it's separate context. -->
-{% endblock %}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top center, rgba(124, 92, 255, 0.08), transparent 55%),
+                linear-gradient(180deg, #0d1117, #0b1020);
+            background-attachment: fixed;
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── Navbar ── */
+        .nav {
+            background: rgba(13, 17, 23, 0.88);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 0.9rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .logo {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .logo span {
+            background: linear-gradient(135deg, #7c5cff, #6c63ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: .6rem;
+        }
+
+        .btn-nav {
+            padding: .38rem .9rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: .88rem;
+            font-weight: 600;
+            transition: .2s;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-nav:hover {
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .btn-nav.primary {
+            background: linear-gradient(135deg, #6c63ff, #7c5cff);
+            color: #fff;
+            border: none;
+        }
+
+        .btn-nav.primary:hover {
+            box-shadow: 0 0 12px rgba(124, 92, 255, 0.4);
+        }
+
+        /* ── Layout ── */
+        .page {
+            max-width: 1180px;
+            margin: 1.75rem auto;
+            padding: 0 1.5rem;
+        }
+
+        /* ── Hero strip ── */
+        .hero {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(124, 92, 255, .3), rgba(108, 99, 255, .15));
+            border: 2px solid rgba(124, 92, 255, .3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #c9bcff;
+            flex-shrink: 0;
+        }
+
+        .hero-info h1 {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: .2rem;
+        }
+
+        .hero-info p {
+            color: var(--muted);
+            font-size: .88rem;
+        }
+
+        .hero-meta {
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .hero-meta .label {
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--muted);
+        }
+
+        .hero-meta .val {
+            font-size: .9rem;
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* ── Section label ── */
+        .sec-label {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .sec-label i {
+            color: var(--accent);
+            font-size: 1.2rem;
+        }
+
+        /* ── Grid layouts ── */
+        .grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.1rem;
+        }
+
+        .grid3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.1rem;
+        }
+
+        .grid4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.1rem;
+        }
+
+        @media(max-width:900px) {
+
+            .grid4,
+            .grid3 {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media(max-width:640px) {
+
+            .grid2,
+            .grid3,
+            .grid4 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── Card ── */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.35rem 1.5rem;
+            transition: .2s;
+        }
+
+        .card:hover {
+            border-color: rgba(124, 92, 255, 0.2);
+        }
+
+        /* ── Stat card ── */
+        .stat-lbl {
+            font-size: .73rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--muted);
+        }
+
+        .stat-val {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+            margin: .25rem 0 .2rem;
+        }
+
+        .stat-sub {
+            font-size: .82rem;
+            color: var(--muted);
+        }
+
+        /* ── Insight badge ── */
+        .insight {
+            margin-top: .85rem;
+            padding: .6rem .9rem;
+            border-radius: 9px;
+            font-size: .87rem;
+            line-height: 1.45;
+            display: flex;
+            align-items: flex-start;
+            gap: .5rem;
+        }
+
+        .insight i {
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .insight.positive {
+            background: var(--green-bg);
+            border: 1px solid var(--green-bd);
+            color: #a7f3d0;
+        }
+
+        .insight.positive i {
+            color: var(--green);
+        }
+
+        .insight.warning {
+            background: var(--red-bg);
+            border: 1px solid var(--red-bd);
+            color: #fca5a5;
+        }
+
+        .insight.warning i {
+            color: var(--red);
+        }
+
+        .insight.neutral {
+            background: rgba(124, 92, 255, .08);
+            border: 1px solid rgba(124, 92, 255, .18);
+            color: #c9bcff;
+        }
+
+        .insight.neutral i {
+            color: var(--accent);
+        }
+
+        /* ── Trend badge ── */
+        .trend {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            padding: .22rem .7rem;
+            border-radius: 50px;
+            font-size: .82rem;
+            font-weight: 600;
+        }
+
+        .trend.up {
+            background: var(--green-bg);
+            color: var(--green);
+            border: 1px solid var(--green-bd);
+        }
+
+        .trend.down {
+            background: var(--red-bg);
+            color: var(--red);
+            border: 1px solid var(--red-bd);
+        }
+
+        .trend.flat {
+            background: rgba(124, 92, 255, .1);
+            color: #c9bcff;
+            border: 1px solid rgba(124, 92, 255, .22);
+        }
+
+        .trend.warn {
+            background: var(--yellow-bg);
+            color: var(--yellow);
+            border: 1px solid var(--yellow-bd);
+        }
+
+        .trend.none {
+            background: rgba(255, 255, 255, .05);
+            color: var(--muted);
+            border: 1px solid var(--border);
+        }
+
+        /* ── Score chip ── */
+        .sc {
+            display: inline-block;
+            padding: .2rem .6rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: .8rem;
+        }
+
+        .sc.high {
+            background: var(--green-bg);
+            color: var(--green);
+            border: 1px solid var(--green-bd);
+        }
+
+        .sc.avg {
+            background: var(--yellow-bg);
+            color: var(--yellow);
+            border: 1px solid var(--yellow-bd);
+        }
+
+        .sc.low {
+            background: var(--red-bg);
+            color: var(--red);
+            border: 1px solid var(--red-bd);
+        }
+
+        .sc.none {
+            background: rgba(255, 255, 255, .04);
+            color: var(--muted);
+            border: 1px solid var(--border);
+        }
+
+        /* ── Weak topic pill ── */
+        .topic-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            background: var(--red-bg);
+            border: 1px solid var(--red-bd);
+            color: var(--red);
+            padding: .3rem .75rem;
+            border-radius: 50px;
+            font-size: .82rem;
+            font-weight: 600;
+            margin: .2rem;
+        }
+
+        .topic-count {
+            background: rgba(239, 68, 68, .25);
+            color: #fca5a5;
+            border-radius: 50px;
+            padding: 0 .45rem;
+            font-size: .75rem;
+            font-weight: 700;
+        }
+
+        /* ── Tool time row ── */
+        .tool-row {
+            display: flex;
+            align-items: center;
+            gap: .9rem;
+            margin-bottom: .7rem;
+        }
+
+        .tool-label {
+            width: 110px;
+            font-size: .88rem;
+            color: var(--text);
+        }
+
+        .bar-wrap {
+            flex: 1;
+            background: rgba(255, 255, 255, .06);
+            border-radius: 4px;
+            height: 7px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #7c5cff, #6c63ff);
+        }
+
+        .tool-mins {
+            font-size: .82rem;
+            color: var(--muted);
+            min-width: 50px;
+            text-align: right;
+        }
+
+        /* ── Quiz history table ── */
+        .hist-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .hist-table th,
+        .hist-table td {
+            padding: .75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            font-size: .88rem;
+        }
+
+        .hist-table th {
+            font-size: .73rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #dfe5f5;
+            background: linear-gradient(180deg, rgba(124, 92, 255, .1), rgba(124, 92, 255, .04));
+        }
+
+        .hist-table td {
+            color: var(--muted);
+        }
+
+        .hist-table td:first-child {
+            color: var(--text);
+        }
+
+        .hist-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .hist-table tr:hover td {
+            background: rgba(124, 92, 255, .035);
+        }
+
+        /* ── AI insight cards ── */
+        .ai-card {
+            display: flex;
+            align-items: flex-start;
+            gap: .75rem;
+            padding: .9rem 1.1rem;
+            border-radius: 12px;
+            margin-bottom: .65rem;
+            font-size: .9rem;
+            line-height: 1.5;
+        }
+
+        .ai-card i {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .ai-card.positive {
+            background: var(--green-bg);
+            border: 1px solid var(--green-bd);
+            color: #a7f3d0;
+        }
+
+        .ai-card.positive i {
+            color: var(--green);
+        }
+
+        .ai-card.warning {
+            background: var(--red-bg);
+            border: 1px solid var(--red-bd);
+            color: #fca5a5;
+        }
+
+        .ai-card.warning i {
+            color: var(--red);
+        }
+
+        .ai-card.neutral {
+            background: rgba(124, 92, 255, .07);
+            border: 1px solid rgba(124, 92, 255, .16);
+            color: #c9bcff;
+        }
+
+        .ai-card.neutral i {
+            color: var(--accent);
+        }
+
+        /* ── Section spacer ── */
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        /* ── Empty ── */
+        .empty-p {
+            color: var(--muted);
+            font-size: .9rem;
+            font-style: italic;
+            text-align: center;
+            padding: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="nav">
+        <a href="/" class="logo"><i class="ph ph-chalkboard-teacher"></i>LearnBridge<span>.Faculty</span></a>
+        <div class="nav-actions">
+            <a href="{% url 'analytics:faculty_quiz_history' target_user.id %}" class="btn-nav">
+                <i class="ph ph-chart-line"></i> Quiz History
+            </a>
+            <a href="{% url 'analytics:faculty_dashboard' %}" class="btn-nav">Back to Class</a>
+            <a href="{% url 'core:faculty_dashboard' %}" class="btn-nav primary">Dashboard</a>
+        </div>
+    </nav>
+
+    <div class="page">
+
+        <!-- ── Hero ── -->
+        <div class="hero">
+            <div class="avatar">{{ display_name|first|upper }}</div>
+            <div class="hero-info">
+                <h1>{{ display_name }}</h1>
+                <p>{{ target_user.email|default:target_user.username }}</p>
+            </div>
+            <div class="hero-meta">
+                <div class="label">Last Active</div>
+                <div class="val">
+                    {% if last_active %}{{ last_active|timesince }} ago{% else %}Never{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+         A. PERFORMANCE
+    ══════════════════════════════════════════════════════════ -->
+        <div class="section">
+            <div class="sec-label"><i class="ph ph-chart-line-up"></i> Performance</div>
+            <div class="grid4">
+                <!-- Avg score -->
+                <div class="card">
+                    <div class="stat-lbl">Avg Score</div>
+                    {% if avg_score is not None %}
+                    <div class="stat-val
+                    {% if avg_score >= 75 %}style=" color:var(--green)" {% elif avg_score < 50
+                        %}style="color:var(--red)" {% endif %}">
+                        {{ avg_score }}%
+                    </div>
+                    {% else %}
+                    <div class="stat-val" style="font-size:1.25rem;color:var(--muted)">No Data</div>
+                    {% endif %}
+                    <div class="stat-sub">across {{ attempt_count }} attempt{{ attempt_count|pluralize }}</div>
+                </div>
+                <!-- Highest score -->
+                <div class="card">
+                    <div class="stat-lbl">Highest Score</div>
+                    {% if high_score is not None %}
+                    <div class="stat-val" style="color:var(--green)">{{ high_score }}%</div>
+                    {% else %}
+                    <div class="stat-val" style="font-size:1.25rem;color:var(--muted)">—</div>
+                    {% endif %}
+                    <div class="stat-sub">best quiz attempt</div>
+                </div>
+                <!-- Latest score -->
+                <div class="card">
+                    <div class="stat-lbl">Latest Score</div>
+                    {% if latest_score is not None %}
+                    <div class="stat-val">{{ latest_score }}%</div>
+                    {% else %}
+                    <div class="stat-val" style="font-size:1.25rem;color:var(--muted)">—</div>
+                    {% endif %}
+                    <div class="stat-sub">most recent quiz</div>
+                </div>
+                <!-- Trend -->
+                <div class="card">
+                    <div class="stat-lbl">Trend</div>
+                    <div style="margin:.35rem 0;">
+                        {% if trend == 'Improving' %}
+                        <span class="trend up"><i class="ph ph-trend-up"></i> Improving</span>
+                        {% elif trend == 'Declining' %}
+                        <span class="trend down"><i class="ph ph-trend-down"></i> Declining</span>
+                        {% elif trend == 'Strong' %}
+                        <span class="trend up"><i class="ph ph-star"></i> Strong</span>
+                        {% elif trend == 'Needs Improvement' %}
+                        <span class="trend warn"><i class="ph ph-warning"></i> Needs Work</span>
+                        {% elif trend == 'No Data' %}
+                        <span class="trend none"><i class="ph ph-minus"></i> No Data</span>
+                        {% else %}
+                        <span class="trend flat"><i class="ph ph-equals"></i> {{ trend }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="stat-sub">based on recent quizzes</div>
+                </div>
+            </div>
+            <div
+                class="insight {% if 'improving' in perf_insight|lower or 'strong' in perf_insight|lower %}positive{% elif 'struggles' in perf_insight|lower or 'dropping' in perf_insight|lower %}warning{% else %}neutral{% endif %}">
+                <i class="ph ph-lightbulb"></i> {{ perf_insight }}
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+         B. SCREEN TIME
+    ══════════════════════════════════════════════════════════ -->
+        <div class="section">
+            <div class="sec-label"><i class="ph ph-clock"></i> Screen Time &amp; Study Habits</div>
+            <div class="grid2">
+                <!-- Stats -->
+                <div class="card">
+                    <div class="grid3" style="margin-bottom:1.1rem;">
+                        <div>
+                            <div class="stat-lbl">Total Study Time</div>
+                            <div class="stat-val" style="font-size:1.4rem">{{ total_minutes }} min</div>
+                        </div>
+                        <div>
+                            <div class="stat-lbl">Daily Avg</div>
+                            <div class="stat-val" style="font-size:1.4rem">{{ daily_avg_min }} min</div>
+                        </div>
+                        <div>
+                            <div class="stat-lbl">Peak Hours</div>
+                            <div class="stat-val" style="font-size:1rem; margin-top:.3rem;">{{ peak_label }}</div>
+                        </div>
+                    </div>
+                    <div
+                        class="insight {% if total_minutes < 30 %}warning{% elif total_minutes > 120 %}positive{% else %}neutral{% endif %}">
+                        <i class="ph ph-info"></i> {{ screen_insight }}
+                    </div>
+                </div>
+                <!-- Tool breakdown -->
+                <div class="card">
+                    <div
+                        style="font-size:.82rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:.85rem;">
+                        Time Per Tool (minutes)</div>
+                    {% if tool_time %}
+                    {% with max_mins=tool_time.values|dictsort|last %}
+                    {% for tool, mins in tool_time.items %}
+                    <div class="tool-row">
+                        <div class="tool-label">
+                            {% if tool == 'ai_tutor' %}AI Tutor
+                            {% elif tool == 'quiz' %}Quiz
+                            {% elif tool == 'flashcard' %}Flashcards
+                            {% else %}{{ tool|capfirst }}{% endif %}
+                        </div>
+                        <div class="bar-wrap">
+                            <div class="bar-fill" style="width:0%" data-mins="{{ mins }}">
+                            </div>
+                        </div>
+                        <div class="tool-mins">{{ mins }} min</div>
+                    </div>
+                    {% endfor %}
+                    {% endwith %}
+                    {% else %}
+                    <p class="empty-p">No detailed screen time data yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+         C. QUIZ HISTORY
+    ══════════════════════════════════════════════════════════ -->
+        <div class="section">
+            <div class="sec-label"><i class="ph ph-clipboard-text"></i> Quiz History</div>
+            <div class="card" style="padding:0; overflow:hidden;">
+                {% if quiz_rows %}
+                <table class="hist-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Subject / Course</th>
+                            <th>Date</th>
+                            <th>Questions</th>
+                            <th>Correct</th>
+                            <th>Wrong</th>
+                            <th>Score</th>
+                            <th>Detail</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in quiz_rows %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ row.attempt.subject|default:"Quiz Attempt" }}</td>
+                            <td>{{ row.attempt.created_at|date:"d M Y" }}</td>
+                            <td>{{ row.attempt.total }}</td>
+                            <td style="color:var(--green);font-weight:600;">✓ {{ row.attempt.score }}</td>
+                            <td style="color:var(--red);font-weight:600;">✗ {{ row.wrong }}</td>
+                            <td><span class="sc {{ row.chip }}">{{ row.attempt.percentage|floatformat:1 }}%</span></td>
+                            <td>
+                                <a href="{% url 'analytics:faculty_quiz_attempt_detail' row.attempt.id %}"
+                                    style="font-size:.82rem;color:var(--accent);text-decoration:none;font-weight:600;">
+                                    Review →
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="empty-p">No quiz attempts recorded yet.</p>
+                {% endif %}
+            </div>
+            {% if quiz_rows %}
+            <div
+                class="insight {% if 'strong' in quiz_hist_insight|lower or 'well-prepared' in quiz_hist_insight|lower %}positive{% elif 'low' in quiz_hist_insight|lower or 'gaps' in quiz_hist_insight|lower %}warning{% else %}neutral{% endif %}">
+                <i class="ph ph-lightbulb"></i> {{ quiz_hist_insight }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+         D. WEAK TOPICS
+    ══════════════════════════════════════════════════════════ -->
+        <div class="section">
+            <div class="sec-label"><i class="ph ph-x-circle"></i> Weak Topics &amp; Common Mistakes</div>
+            <div class="card">
+                {% if weak_topics %}
+                <div style="margin-bottom:1rem;">
+                    {% for topic, count in weak_topics %}
+                    <span class="topic-pill">
+                        <i class="ph ph-warning-circle"></i>
+                        {{ topic }}
+                        <span class="topic-count">{{ count }}×</span>
+                    </span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="empty-p">No specific weak topics detected yet. Topic data appears after quiz attempts.</p>
+                {% endif %}
+                <div class="insight {% if weak_topics %}warning{% else %}neutral{% endif %}">
+                    <i class="ph ph-info"></i> {{ weak_insight }}
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+         E. AI INSIGHTS
+    ══════════════════════════════════════════════════════════ -->
+        <div class="section">
+            <div class="sec-label"><i class="ph ph-brain"></i> AI Insights</div>
+            <div class="card" style="padding:1.25rem 1.5rem;">
+                <p
+                    style="font-size:.8rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:.85rem;">
+                    Auto-generated analysis based on student activity
+                </p>
+                {% for kind, text in ai_insights %}
+                <div class="ai-card {{ kind }}">
+                    {% if kind == 'positive' %}
+                    <i class="ph ph-check-circle"></i>
+                    {% elif kind == 'warning' %}
+                    <i class="ph ph-warning-circle"></i>
+                    {% else %}
+                    <i class="ph ph-info"></i>
+                    {% endif %}
+                    <span>{{ text }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div><!-- /page -->
+
+    <script>
+        // Normalise bar widths to a max of 100% based on the largest value
+        (function () {
+            var rows = document.querySelectorAll('.tool-row');
+            var maxMins = 0;
+            rows.forEach(function (r) {
+                var fill = r.querySelector('.bar-fill');
+                if (fill) maxMins = Math.max(maxMins, parseInt(fill.dataset.mins) || 0);
+            });
+            if (maxMins > 0) {
+                rows.forEach(function (r) {
+                    var fill = r.querySelector('.bar-fill');
+                    if (fill) {
+                        var pct = Math.round((parseInt(fill.dataset.mins) / maxMins) * 100);
+                        fill.style.width = pct + '%';
+                    }
+                });
+            }
+        })();
+    </script>
+
+</body>
+
+</html>

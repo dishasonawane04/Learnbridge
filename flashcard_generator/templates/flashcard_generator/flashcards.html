@@ -347,7 +347,7 @@
     </div>
 
     <script>
-        const deckId = {{ deck.id }};
+        const deckId = parseInt("{{ deck.id|default:0 }}");
         let cards = [];
         let currentIndex = 0;
         let isFlipped = false;
@@ -550,6 +550,19 @@
         // Init
         loadCards();
 
+    </script>
+
+    <!-- Screen Time Tracking -->
+    <script src="{% static 'analytics/js/track_screen_time.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.LearnBridgeTracker) {
+                LearnBridgeTracker.init({
+                    toolName: 'flashcard',
+                    courseId: "{{ deck.course.id|default:deck.unit.course.id|default:'' }}"
+                });
+            }
+        });
     </script>
 </body>
 

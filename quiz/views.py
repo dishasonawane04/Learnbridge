@@ -442,14 +442,18 @@ def submit_quiz(request):
         correct_answer = q['options'][q['correct_index']]
         explanation = q.get('explanation', '')
         
-        # Save per-question answer for analytics
+        # Save per-question answer for analytics (topic fields are optional)
         StudentAnswer.objects.create(
             attempt=attempt,
             question_text=q['question'],
             selected_option=user_answer,
             correct_option=correct_answer,
             is_correct=is_correct,
-            explanation=explanation
+            explanation=explanation,
+            topic=q.get('topic', ''),
+            subtopic=q.get('subtopic', ''),
+            difficulty=q.get('difficulty', ''),
+            question_type=q.get('type', 'MCQ'),
         )
         
         # Record history for repetition prevention

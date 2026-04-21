@@ -427,6 +427,51 @@
                 </p>
                 <a href="{% url 'analytics:faculty_dashboard' %}" class="premium-tool-btn">View Reports</a>
             </div>
+
+            <!-- App 7: Screen Time Analysis -->
+            <div class="premium-tool-card">
+                <div class="premium-icon-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+                <h4 class="premium-tool-title">Screen Time Analysis</h4>
+                <p class="premium-tool-desc">
+                    Track meaningful student engagement and tool-usage patterns across all courses.
+                </p>
+                <a href="{% url 'analytics:faculty_screen_time' %}" class="premium-tool-btn">View Insights</a>
+            </div>
+
+            <!-- App 8: Consistency Analysis -->
+            <div class="premium-tool-card">
+                <div class="premium-icon-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                    </svg>
+                </div>
+                <h4 class="premium-tool-title">Attention / Consistency Score</h4>
+                <p class="premium-tool-desc">
+                    Monitor student engagement stability via login streaks and rolling activity frequency.
+                </p>
+                <a href="{% url 'analytics:faculty_consistency' %}" class="premium-tool-btn">View Scores</a>
+            </div>
+
+            <!-- App 9: Quiz History + Analysis -->
+            <div class="premium-tool-card">
+                <div class="premium-icon-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"></path>
+                        <rect x="9" y="3" width="6" height="4" rx="1"></rect>
+                        <path d="M9 12l2 2 4-4"></path>
+                    </svg>
+                </div>
+                <h4 class="premium-tool-title">Quiz History + Analysis</h4>
+                <p class="premium-tool-desc">
+                    Review each student's quiz attempts, common mistake patterns, and performance trends over time.
+                </p>
+                <a href="{% url 'analytics:faculty_dashboard' %}" class="premium-tool-btn">View Quiz Analysis</a>
+            </div>
         </div>
     </div>
 </div>

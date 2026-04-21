@@ -1,0 +1,555 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Attempt Detail – LearnBridge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-dark: #0d1117;
+            --bg-card: #161b24;
+            --text-main: #f0f4f8;
+            --text-muted: #8b97aa;
+            --accent: #7c5cff;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --green: #4ade80;
+            --green-bg: rgba(34, 197, 94, 0.10);
+            --green-border: rgba(34, 197, 94, 0.22);
+            --red: #f87171;
+            --red-bg: rgba(239, 68, 68, 0.10);
+            --red-border: rgba(239, 68, 68, 0.22);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top center, rgba(124, 92, 255, 0.08), transparent 55%),
+                linear-gradient(180deg, #0d1117 0%, #0b1020 100%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .navbar .logo span {
+            background: linear-gradient(135deg, #7c5cff, #6c63ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.4rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-back:hover {
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Header */
+        .page-header {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+            margin: 0 0 0.4rem 0;
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .meta-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .meta-chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        /* Summary row */
+        .summary-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 700px) {
+            .summary-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .sum-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.1rem 1.35rem;
+        }
+
+        .sum-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 0.3rem;
+        }
+
+        .sum-val {
+            font-size: 1.65rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* Questions table */
+        .table-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 3rem;
+            overflow-x: auto;
+        }
+
+        .section-bar {
+            padding: 1rem 1.5rem;
+            background: linear-gradient(180deg, rgba(124, 92, 255, 0.12), rgba(124, 92, 255, 0.05));
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            color: #dfe5f5;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.95rem;
+        }
+
+        /* Question cards */
+        .q-card {
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 1.5rem;
+            transition: 0.2s;
+        }
+
+        .q-card:last-child {
+            border-bottom: none;
+        }
+
+        .q-card:hover {
+            background: rgba(124, 92, 255, 0.025);
+        }
+
+        .q-card.correct {
+            border-left: 3px solid var(--green);
+        }
+
+        .q-card.wrong {
+            border-left: 3px solid var(--red);
+        }
+
+        .q-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .q-num {
+            min-width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.82rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .q-num.correct {
+            background: var(--green-bg);
+            color: var(--green);
+            border: 1px solid var(--green-border);
+        }
+
+        .q-num.wrong {
+            background: var(--red-bg);
+            color: var(--red);
+            border: 1px solid var(--red-border);
+        }
+
+        .q-text {
+            font-size: 0.97rem;
+            color: var(--text-main);
+            line-height: 1.5;
+            flex: 1;
+        }
+
+        .q-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .answer-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-top: 0.85rem;
+        }
+
+        @media (max-width: 600px) {
+            .answer-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .answer-box {
+            border-radius: 10px;
+            padding: 0.65rem 0.9rem;
+            font-size: 0.88rem;
+        }
+
+        .answer-box-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+
+        .answer-box-val {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .answer-box.student-box {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-color);
+        }
+
+        .answer-box.student-box .answer-box-label {
+            color: var(--text-muted);
+        }
+
+        .answer-box.student-box.wrong-box {
+            background: var(--red-bg);
+            border-color: var(--red-border);
+        }
+
+        .answer-box.student-box.wrong-box .answer-box-label {
+            color: var(--red);
+        }
+
+        .answer-box.student-box.wrong-box .answer-box-val {
+            color: var(--red);
+        }
+
+        .answer-box.correct-box {
+            background: var(--green-bg);
+            border: 1px solid var(--green-border);
+        }
+
+        .answer-box.correct-box .answer-box-label {
+            color: var(--green);
+        }
+
+        .answer-box.correct-box .answer-box-val {
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        .explanation-box {
+            margin-top: 0.75rem;
+            padding: 0.65rem 0.9rem;
+            background: rgba(124, 92, 255, 0.06);
+            border: 1px solid rgba(124, 92, 255, 0.14);
+            border-radius: 10px;
+            font-size: 0.87rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .explanation-box strong {
+            color: #c9bcff;
+        }
+
+        /* tag */
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            padding: 0.15rem 0.55rem;
+            border-radius: 50px;
+            font-size: 0.76rem;
+            color: var(--text-muted);
+        }
+
+        .tag.accent {
+            background: rgba(124, 92, 255, 0.08);
+            border-color: rgba(124, 92, 255, 0.2);
+            color: #c9bcff;
+        }
+
+        /* empty state */
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .empty i {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 0.75rem;
+            opacity: 0.4;
+        }
+
+        /* result icon */
+        .result-icon {
+            font-size: 1.1rem;
+        }
+
+        /* Score color helpers */
+        .score-color {}
+
+        .score-green {
+            color: var(--green);
+        }
+
+        .score-yellow {
+            color: #fbbf24;
+        }
+
+        .score-red {
+            color: var(--red);
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="logo">
+            <i class="ph ph-chalkboard-teacher"></i>
+            LearnBridge<span>.Faculty</span>
+        </a>
+        <a href="{% url 'analytics:faculty_quiz_history' attempt.user.id %}" class="btn-back">
+            <i class="ph ph-arrow-left"></i> Back to Quiz History
+        </a>
+    </nav>
+
+    <div class="container">
+
+        <!-- Attempt Header -->
+        <div class="page-header">
+            <div>
+                <h1><i class="ph ph-clipboard-text" style="color: var(--accent);"></i>
+                    Quiz Attempt Review</h1>
+                <p>Student: <strong style="color: #fff;">{{ full_name }}</strong></p>
+                <div class="meta-chips">
+                    <span class="meta-chip">
+                        <i class="ph ph-books"></i>
+                        {{ attempt.course.title|default:"No Course" }}
+                    </span>
+                    <span class="meta-chip">
+                        <i class="ph ph-tag"></i>
+                        {{ attempt.subject|default:"General" }}
+                    </span>
+                    <span class="meta-chip">
+                        <i class="ph ph-calendar"></i>
+                        {{ attempt.created_at|date:"d M Y, g:i A" }}
+                    </span>
+                    <span class="meta-chip">
+                        <i class="ph ph-gauge"></i>
+                        {{ attempt.difficulty|default:"Mixed" }} Difficulty
+                    </span>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div
+                    style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 0.3rem;">
+                    Final Score
+                </div>
+                <div style="font-size: 2.5rem; font-weight: 700;"
+                    class="score-color {% if attempt.percentage >= 80 %}score-green{% elif attempt.percentage >= 50 %}score-yellow{% else %}score-red{% endif %}">
+                    {{ attempt.percentage|floatformat:1 }}%
+                </div>
+                <div style="font-size: 0.9rem; color: var(--text-muted);">
+                    {{ attempt.score }} / {{ attempt.total }} correct
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary stats -->
+        <div class="summary-row">
+            <div class="sum-card">
+                <div class="sum-label">Total Questions</div>
+                <div class="sum-val">{{ attempt.total }}</div>
+            </div>
+            <div class="sum-card">
+                <div class="sum-label">Correct Answers</div>
+                <div class="sum-val" style="color: var(--green);">{{ correct_count }}</div>
+            </div>
+            <div class="sum-card">
+                <div class="sum-label">Wrong Answers</div>
+                <div class="sum-val" style="color: var(--red);">{{ wrong_count }}</div>
+            </div>
+            <div class="sum-card">
+                <div class="sum-label">Accuracy</div>
+                <div class="sum-val">{{ attempt.percentage|floatformat:0 }}%</div>
+            </div>
+        </div>
+
+        <!-- Question-by-question -->
+        <div class="table-wrap">
+            <div class="section-bar">
+                <i class="ph ph-list-numbers"></i>
+                Question-by-Question Review
+            </div>
+
+            {% if answers %}
+            {% for ans in answers %}
+            <div class="q-card {% if ans.is_correct %}correct{% else %}wrong{% endif %}">
+
+                <div class="q-header">
+                    <div class="q-num {% if ans.is_correct %}correct{% else %}wrong{% endif %}">
+                        {{ forloop.counter }}
+                    </div>
+                    <div class="q-text">{{ ans.question_text }}</div>
+                    <div class="result-icon">
+                        {% if ans.is_correct %}
+                        <i class="ph ph-check-circle" style="color: var(--green); font-size: 1.4rem;"></i>
+                        {% else %}
+                        <i class="ph ph-x-circle" style="color: var(--red); font-size: 1.4rem;"></i>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Tags -->
+                <div class="q-meta">
+                    {% if ans.topic %}
+                    <span class="tag accent"><i class="ph ph-tag"></i> {{ ans.topic }}</span>
+                    {% endif %}
+                    {% if ans.subtopic %}
+                    <span class="tag"><i class="ph ph-dot-outline"></i> {{ ans.subtopic }}</span>
+                    {% endif %}
+                    {% if ans.difficulty %}
+                    <span class="tag"><i class="ph ph-gauge"></i> {{ ans.difficulty }}</span>
+                    {% endif %}
+                    {% if ans.question_type %}
+                    <span class="tag"><i class="ph ph-question"></i> {{ ans.question_type }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Answers -->
+                <div class="answer-row">
+                    <div class="answer-box student-box {% if not ans.is_correct %}wrong-box{% endif %}">
+                        <div class="answer-box-label">
+                            {% if ans.is_correct %}✓ Student's Answer{% else %}✗ Student's Answer{% endif %}
+                        </div>
+                        <div class="answer-box-val">{{ ans.selected_option|default:"Not answered" }}</div>
+                    </div>
+                    <div class="answer-box correct-box">
+                        <div class="answer-box-label">✓ Correct Answer</div>
+                        <div class="answer-box-val">{{ ans.correct_option }}</div>
+                    </div>
+                </div>
+
+                <!-- Explanation -->
+                {% if ans.explanation %}
+                <div class="explanation-box">
+                    <strong>Explanation:</strong> {{ ans.explanation }}
+                </div>
+                {% endif %}
+
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty">
+                <i class="ph ph-clipboard"></i>
+                <p>No per-question data recorded for this attempt.</p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</body>
+
+</html>

@@ -233,7 +233,7 @@
 
     <script>
         let currentIdx = 0;
-        const total = {{ questions| length }};
+        const total = parseInt("{{ questions|length }}");
 
         function setAnswer(btn, questionId, optionId, qIdx) {
             if (btn.classList.contains('disabled')) return;
@@ -291,4 +291,17 @@
         }
     </script>
 </div>
+
+<!-- Screen Time Tracking -->
+<script src="{% static 'analytics/js/track_screen_time.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.LearnBridgeTracker) {
+            LearnBridgeTracker.init({
+                toolName: 'quiz',
+                courseId: "{{ course.id|default:'' }}"
+            });
+        }
+    });
+</script>
 {% endblock %}

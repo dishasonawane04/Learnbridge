@@ -149,3 +149,16 @@
         }
     });
 </script>
+
+<!-- Screen Time Tracking -->
+<script src="{% static 'analytics/js/track_screen_time.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.LearnBridgeTracker) {
+            LearnBridgeTracker.init({
+                toolName: 'ai_tutor',
+                courseId: "{{ course.id|default:unit.course.id|default:'' }}"
+            });
+        }
+    });
+</script>
