@@ -224,6 +224,28 @@
             padding: 1rem;
         }
     }
+
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(6px);
+    }
+
+    .modal-content {
+        position: relative;
+        width: min(700px, 92vw);
+        max-height: 90vh;
+        overflow-y: auto;
+        border-radius: 18px;
+        background: rgb(15, 23, 42); 
+        border: 1px solid rgba(124, 92, 255, 0.3);
+        padding: 2.5rem;
+    }
 </style>
 {% endblock %}
 
@@ -266,7 +288,7 @@
     <div style="margin-bottom: 3.5rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <h3 class="section-title" style="margin-bottom: 0;"><i class="fas fa-tasks" style="color: var(--accent);"></i> Assignments & Tasks</h3>
-            <button class="btn btn-primary" onclick="document.getElementById('taskModal').style.display='flex'">
+            <button class="btn btn-primary" onclick="openTaskModal()">
                 <i class="fas fa-plus"></i> Assign New Task
             </button>
         </div>
@@ -533,77 +555,102 @@
         </div>
     </div>
 
-    <!-- Task Creation Modal -->
-    <div id="taskModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-        <div style="background: rgb(15, 23, 42); border: 1px solid rgba(124, 92, 255, 0.3); border-radius: 16px; padding: 2.5rem; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; position: relative;">
-            <button onclick="document.getElementById('taskModal').style.display='none'" style="position: absolute; right: 1.5rem; top: 1.5rem; background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
-            <h3 style="color: white; margin-bottom: 1.5rem;"><i class="fas fa-plus-circle" style="color: #7c5cff;"></i> Create New Task</h3>
-            <form action="{% url 'core:create_task_assignment' %}" method="POST">
-                {% csrf_token %}
-                <div style="margin-bottom: 1rem;">
-                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Task Title</label>
-                    <input type="text" name="title" required placeholder="e.g. Complete Regression Quiz" style="width: 100%; padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; box-sizing: border-box;">
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Description (Optional)</label>
-                    <textarea name="description" rows="3" placeholder="Short instructions..." style="width: 100%; padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; box-sizing: border-box;"></textarea>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Task Type</label>
-                        <select name="task_type" style="width: 100%; padding: 0.75rem; background: #161b24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
-                            <option value="quiz">Quiz</option>
-                            <option value="topic">Topic Revision</option>
-                            <option value="flashcards">Flashcards Practice</option>
-                            <option value="summary">Summary Reading</option>
-                            <option value="custom">Custom Task</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Course</label>
-                        <select name="course_id" required style="width: 100%; padding: 0.75rem; background: #161b24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
-                            {% for course in course_data %}
-                                <option value="{{ course.id }}">{{ course.title }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Deadline (Optional)</label>
-                        <input type="datetime-local" name="deadline" style="width: 100%; padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; box-sizing: border-box; color-scheme: dark;">
-                    </div>
-                    <div>
-                        <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Priority</label>
-                        <select name="priority" style="width: 100%; padding: 0.75rem; background: #161b24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
-                            <option value="low">Low</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="high">High</option>
-                        </select>
-                    </div>
-                </div>
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Assign To</label>
-                    <select name="assign_to" id="assignToSelect" onchange="document.getElementById('studentSelectDiv').style.display = this.value === 'selected' ? 'block' : 'none';" style="width: 100%; padding: 0.75rem; background: #161b24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; margin-bottom: 0.5rem;">
-                        <option value="entire_class">Entire Class</option>
-                        <option value="selected">Selected Students</option>
+</div>
+
+<!-- Task Creation Modal -->
+<div id="taskModal" class="modal-overlay" onclick="handleModalClick(event)">
+    <div class="modal-content">
+        <button onclick="closeTaskModal()" style="position: absolute; right: 1.5rem; top: 1.5rem; background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+        <h3 style="color: white; margin-bottom: 1.5rem;"><i class="fas fa-plus-circle" style="color: #7c5cff;"></i> Create New Task</h3>
+        <form action="{% url 'core:create_task_assignment' %}" method="POST">
+            {% csrf_token %}
+            <div style="margin-bottom: 1rem;">
+                <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Task Title</label>
+                <input type="text" name="title" required placeholder="e.g. Complete Regression Quiz" style="width: 100%; padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Description (Optional)</label>
+                <textarea name="description" rows="3" placeholder="Short instructions..." style="width: 100%; padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; box-sizing: border-box;"></textarea>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Task Type</label>
+                    <select name="task_type" style="width: 100%; padding: 0.75rem; background: #161b24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
+                        <option value="quiz">Quiz</option>
+                        <option value="topic">Topic Revision</option>
+                        <option value="flashcards">Flashcards Practice</option>
+                        <option value="summary">Summary Reading</option>
+                        <option value="custom">Custom Task</option>
                     </select>
-                    <div id="studentSelectDiv" style="display: none; max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem;">
-                        {% for student in available_students %}
-                            <div style="padding: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <input type="checkbox" name="student_ids" value="{{ student.id }}" id="std_{{ student.id }}">
-                                <label for="std_{{ student.id }}" style="color: white; margin: 0;">{{ student.account_profile.full_name|default:student.username }}</label>
-                            </div>
-                        {% empty %}
-                            <span style="color: var(--text-muted); font-size: 0.9rem; padding: 0.5rem;">No students available in the system.</span>
-                        {% endfor %}
-                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; border: none; background: linear-gradient(135deg, #6c63ff, #7c5cff); color: white; border-radius: 8px; font-weight: 600; cursor: pointer;">
-                    <i class="fas fa-paper-plane"></i> Assign Task
-                </button>
-            </form>
-        </div>
+                <div>
+                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Course</label>
+                    <select name="course_id" required style="width: 100%; padding: 0.75rem; background: #161b24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
+                        {% for course in course_data %}
+                            <option value="{{ course.id }}">{{ course.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Deadline (Optional)</label>
+                    <input type="datetime-local" name="deadline" style="width: 100%; padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; box-sizing: border-box; color-scheme: dark;">
+                </div>
+                <div>
+                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Priority</label>
+                    <select name="priority" style="width: 100%; padding: 0.75rem; background: #161b24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Assign To</label>
+                <select name="assign_to" id="assignToSelect" onchange="document.getElementById('studentSelectDiv').style.display = this.value === 'selected' ? 'block' : 'none';" style="width: 100%; padding: 0.75rem; background: #161b24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; margin-bottom: 0.5rem;">
+                    <option value="entire_class">Entire Class</option>
+                    <option value="selected">Selected Students</option>
+                </select>
+                <div id="studentSelectDiv" style="display: none; max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem;">
+                    {% for student in available_students %}
+                        <div style="padding: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="student_ids" value="{{ student.id }}" id="std_{{ student.id }}">
+                            <label for="std_{{ student.id }}" style="color: white; margin: 0;">{{ student.account_profile.full_name|default:student.username }}</label>
+                        </div>
+                    {% empty %}
+                        <span style="color: var(--text-muted); font-size: 0.9rem; padding: 0.5rem;">No students available in the system.</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; border: none; background: linear-gradient(135deg, #6c63ff, #7c5cff); color: white; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                <i class="fas fa-paper-plane"></i> Assign Task
+            </button>
+        </form>
     </div>
 </div>
+
+<script>
+    function openTaskModal() {
+        document.getElementById('taskModal').style.display = 'flex';
+        document.body.style.overflow = "hidden";
+    }
+
+    function closeTaskModal() {
+        document.getElementById('taskModal').style.display = 'none';
+        document.body.style.overflow = "";
+    }
+
+    function handleModalClick(event) {
+        if (event.target.id === 'taskModal') {
+            closeTaskModal();
+        }
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape" && document.getElementById('taskModal').style.display === 'flex') {
+            closeTaskModal();
+        }
+    });
+</script>
 {% endblock %}
