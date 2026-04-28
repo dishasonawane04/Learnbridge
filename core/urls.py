@@ -13,4 +13,9 @@ urlpatterns = [
     path('role-select/', views.role_selection, name='role_selection'),
     path('set-active-course/', views.set_active_course, name='set_active_course'),
     path('api/user/active-course/', views.active_course_api, name='active_course_api'),
+    
+    # Task Assignments
+    path('dashboard/faculty/tasks/create/', views.create_task_assignment, name='create_task_assignment'),
+    path('dashboard/student/tasks/<int:submission_id>/start/', views.start_task, name='start_task'),
+    path('dashboard/student/tasks/<int:submission_id>/complete/', views.complete_task, name='complete_task'),
 ]

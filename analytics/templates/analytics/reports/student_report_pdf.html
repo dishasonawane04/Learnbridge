@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Student Performance Report - {{ display_name }}</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #7c5cff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #7c5cff;
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .header p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            background-color: #f4f4f9;
+            border-left: 4px solid #7c5cff;
+            padding: 8px 12px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        table th,
+        table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        table th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+        }
+
+        .stat-grid {
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .stat-item {
+            width: 48%;
+            float: left;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #7c5cff;
+        }
+
+        .insight-box {
+            background-color: #f9f9ff;
+            border: 1px solid #e0e0ff;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .insight-box.warning {
+            background-color: #fff9f9;
+            border-color: #ffe0e0;
+        }
+
+        .topic-pill {
+            display: inline-block;
+            background-color: #fff0f0;
+            border: 1px solid #ffdcdc;
+            color: #d32f2f;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 10px;
+            color: #999;
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>LearnBridge AI - Performance Report</h1>
+        <p>Generated on {{ now|date:"F d, Y H:i" }}</p>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Student Information</div>
+        <div class="stat-grid">
+            <div class="stat-item">
+                <div class="stat-label">Name</div>
+                <div class="stat-value">{{ display_name }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Username / Email</div>
+                <div class="stat-value">{{ target_user.email|default:target_user.username }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Last Active</div>
+                <div class="stat-value">{% if last_active %}{{ last_active|date:"M d, Y H:i" }}{% else %}Never{% endif
+                    %}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Status</div>
+                <div class="stat-value">Active Learner</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Performance Summary</div>
+        <div class="stat-grid">
+            <div class="stat-item">
+                <div class="stat-label">Average Quiz Score</div>
+                <div class="stat-value">{{ avg_score }}%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Highest Score</div>
+                <div class="stat-value">{{ high_score }}%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Latest Score</div>
+                <div class="stat-value">{{ latest_score }}%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Performance Trend</div>
+                <div class="stat-value">{{ trend }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Activity & Engagement</div>
+        <div class="stat-grid">
+            <div class="stat-item">
+                <div class="stat-label">AI Tutor Interactions</div>
+                <div class="stat-value">{{ ai_interactions }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Flashcard Decks Generated</div>
+                <div class="stat-value">{{ flashcards_count }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Weak Topics</div>
+        {% if weak_topics %}
+        <p style="font-size: 13px; color: #666; margin-bottom: 10px;">The following topics have been identified as areas
+            for improvement based on recent mistakes:</p>
+        {% for topic, count in weak_topics %}
+        <span class="topic-pill">{{ topic }} ({{ count }}×)</span>
+        {% endfor %}
+        {% else %}
+        <p style="font-size: 13px; font-style: italic; color: #999;">No specific weak topics identified yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="section">
+        <div class="section-title">Quiz History (Recent)</div>
+        {% if attempts %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Course/Subject</th>
+                    <th>Questions</th>
+                    <th>Score</th>
+                    <th>Accuracy</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in attempts %}
+                <tr>
+                    <td>{{ a.created_at|date:"M d, Y" }}</td>
+                    <td>{{ a.subject|default:"General" }}</td>
+                    <td>{{ a.total }}</td>
+                    <td>{{ a.score }} / {{ a.total }}</td>
+                    <td
+                        style="{% if a.percentage >= 75 %}color:green{% elif a.percentage < 50 %}color:red{% endif %}; font-weight:bold;">
+                        {{ a.percentage|floatformat:1 }}%
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="font-size: 13px; font-style: italic; color: #999;">No quiz attempts recorded.</p>
+        {% endif %}
+    </div>
+
+    <div class="section">
+        <div class="section-title">AI Insights & Recommendations</div>
+        <div style="margin-bottom: 15px;">
+            <p style="font-size: 13px; font-weight: bold; color: #555; margin-bottom: 5px;">Insights:</p>
+            {% for insight in ai_insights %}
+            <div class="insight-box">• {{ insight }}</div>
+            {% endfor %}
+        </div>
+        <div>
+            <p style="font-size: 13px; font-weight: bold; color: #555; margin-bottom: 5px;">Recommended Actions:</p>
+            {% for rec in recommendations %}
+            <div class="insight-box warning">• {{ rec }}</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="footer">
+        LearnBridge AI Platform - Empowering Educators with Intelligence<br>
+        © 2026 LearnBridge AI. All rights reserved.
+    </div>
+</body>
+
+</html>

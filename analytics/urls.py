@@ -13,4 +13,7 @@ urlpatterns = [
     path('faculty/quiz-history/<int:user_id>/', views.faculty_quiz_history, name='faculty_quiz_history'),
     path('faculty/quiz-attempt/<int:attempt_id>/', views.faculty_quiz_attempt_detail, name='faculty_quiz_attempt_detail'),
     path('api/track-screen-time/', views.track_screen_time_api, name='api_track_screen_time'),
+    # Export Reports
+    path('faculty/export-student-report/<int:user_id>/', views.export_student_report, name='export_student_report'),
+    path('faculty/export-progress-report/', views.export_progress_report, name='export_progress_report'),
 ]

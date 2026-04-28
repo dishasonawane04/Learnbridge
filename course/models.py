@@ -363,3 +363,58 @@ class FlashcardChunk(models.Model):
 
     def __str__(self):
         return f"FC Chunk {self.order} for {self.course.title}"
+
+# --- Assignment / Task System Models ---
+
+class TaskAssignment(models.Model):
+    TASK_TYPE_CHOICES = (
+        ('quiz', 'Quiz'),
+        ('topic', 'Topic Revision'),
+        ('flashcards', 'Flashcards Practice'),
+        ('summary', 'Summary Reading'),
+        ('custom', 'Custom Task'),
+    )
+    PRIORITY_CHOICES = (
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    )
+    
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='assignments')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    task_type = models.CharField(max_length=20, choices=TASK_TYPE_CHOICES)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_assignments')
+    reference_id = models.CharField(max_length=255, blank=True, null=True, help_text="ID or name of the specific topic/quiz")
+    
+    deadline = models.DateTimeField(null=True, blank=True)
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.title} ({self.get_task_type_display()})"
+
+class TaskSubmission(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('overdue', 'Overdue'),
+        ('completed_late', 'Completed Late'),
+    )
+    
+    assignment = models.ForeignKey(TaskAssignment, on_delete=models.CASCADE, related_name='submissions')
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='task_submissions')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    score = models.FloatField(null=True, blank=True, help_text="If applicable, score achieved")
+    remarks = models.TextField(blank=True)
+    
+    class Meta:
+        unique_together = ('assignment', 'student')
+        
+    def __str__(self):
+        return f"{self.student.username} - {self.assignment.title} - {self.status}"

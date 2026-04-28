@@ -262,6 +262,64 @@
         </div>
     </div>
 
+    <!-- Assignments & Tasks Section -->
+    <div style="margin-bottom: 3.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3 class="section-title" style="margin-bottom: 0;"><i class="fas fa-tasks" style="color: var(--accent);"></i> Assignments & Tasks</h3>
+            <button class="btn btn-primary" onclick="document.getElementById('taskModal').style.display='flex'">
+                <i class="fas fa-plus"></i> Assign New Task
+            </button>
+        </div>
+
+        {% if tasks_data %}
+        <div class="glass-panel" style="padding: 1.5rem;">
+            <table style="width: 100%; text-align: left; border-collapse: collapse; color: white;">
+                <thead>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);">
+                        <th style="padding: 1rem;">Task Title</th>
+                        <th style="padding: 1rem;">Course</th>
+                        <th style="padding: 1rem;">Type</th>
+                        <th style="padding: 1rem;">Deadline</th>
+                        <th style="padding: 1rem;">Status (Assigned)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tasks_data %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 1rem;">
+                            <strong>{{ t.task.title }}</strong>
+                            {% if t.task.priority == 'high' %}
+                                <span class="badge" style="background:#ef4444; color: white; padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; margin-left: 0.5rem;">High Priority</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 1rem; color: var(--text-muted);">{{ t.task.course.title }}</td>
+                        <td style="padding: 1rem;"><span style="color:var(--accent);">{{ t.task.get_task_type_display }}</span></td>
+                        <td style="padding: 1rem; color: var(--text-muted);">
+                            {% if t.task.deadline %}{{ t.task.deadline|date:"d M, P" }}{% else %}-{% endif %}
+                        </td>
+                        <td style="padding: 1rem;">
+                            <div style="display: flex; gap: 0.75rem; font-size: 0.85rem;">
+                                <span style="color: #10b981;" title="Completed"><i class="fas fa-check-circle"></i> {{ t.completed }}</span>
+                                <span style="color: #fbbf24;" title="Pending/In Progress"><i class="fas fa-clock"></i> {{ t.pending|add:t.in_progress }}</span>
+                                <span style="color: #ef4444;" title="Overdue"><i class="fas fa-exclamation-circle"></i> {{ t.overdue }}</span>
+                                <span style="color: var(--text-muted); border-left: 1px solid rgba(255,255,255,0.2); padding-left: 0.5rem;" title="Total Assigned">Tot: {{ t.total_assigned }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="glass-panel" style="text-align: center; padding: 3rem 1rem;">
+            <div style="font-size: 3rem; color: rgba(255, 255, 255, 0.2); margin-bottom: 1rem;"><i class="fas fa-clipboard-list"></i></div>
+            <h4 style="color: white; margin-bottom: 0.5rem; font-size: 1.25rem;">No Tasks Assigned</h4>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Create learning tasks to track student progress directly.</p>
+            <button class="btn btn-primary px-4 py-2" onclick="document.getElementById('taskModal').style.display='flex'">Assign First Task</button>
+        </div>
+        {% endif %}
+    </div>
+
     <!-- Student Monitoring Section -->
     <div style="margin-bottom: 3.5rem;">
         <h3 class="section-title"><i class="fas fa-users-cog" style="color: var(--primary);"></i> Student Monitoring
@@ -472,6 +530,79 @@
                 </p>
                 <a href="{% url 'analytics:faculty_dashboard' %}" class="premium-tool-btn">View Quiz Analysis</a>
             </div>
+        </div>
+    </div>
+
+    <!-- Task Creation Modal -->
+    <div id="taskModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: rgb(15, 23, 42); border: 1px solid rgba(124, 92, 255, 0.3); border-radius: 16px; padding: 2.5rem; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; position: relative;">
+            <button onclick="document.getElementById('taskModal').style.display='none'" style="position: absolute; right: 1.5rem; top: 1.5rem; background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            <h3 style="color: white; margin-bottom: 1.5rem;"><i class="fas fa-plus-circle" style="color: #7c5cff;"></i> Create New Task</h3>
+            <form action="{% url 'core:create_task_assignment' %}" method="POST">
+                {% csrf_token %}
+                <div style="margin-bottom: 1rem;">
+                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Task Title</label>
+                    <input type="text" name="title" required placeholder="e.g. Complete Regression Quiz" style="width: 100%; padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Description (Optional)</label>
+                    <textarea name="description" rows="3" placeholder="Short instructions..." style="width: 100%; padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; box-sizing: border-box;"></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Task Type</label>
+                        <select name="task_type" style="width: 100%; padding: 0.75rem; background: #161b24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
+                            <option value="quiz">Quiz</option>
+                            <option value="topic">Topic Revision</option>
+                            <option value="flashcards">Flashcards Practice</option>
+                            <option value="summary">Summary Reading</option>
+                            <option value="custom">Custom Task</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Course</label>
+                        <select name="course_id" required style="width: 100%; padding: 0.75rem; background: #161b24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
+                            {% for course in course_data %}
+                                <option value="{{ course.id }}">{{ course.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Deadline (Optional)</label>
+                        <input type="datetime-local" name="deadline" style="width: 100%; padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; box-sizing: border-box; color-scheme: dark;">
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Priority</label>
+                        <select name="priority" style="width: 100%; padding: 0.75rem; background: #161b24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">Assign To</label>
+                    <select name="assign_to" id="assignToSelect" onchange="document.getElementById('studentSelectDiv').style.display = this.value === 'selected' ? 'block' : 'none';" style="width: 100%; padding: 0.75rem; background: #161b24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; margin-bottom: 0.5rem;">
+                        <option value="entire_class">Entire Class</option>
+                        <option value="selected">Selected Students</option>
+                    </select>
+                    <div id="studentSelectDiv" style="display: none; max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem;">
+                        {% for student in available_students %}
+                            <div style="padding: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="checkbox" name="student_ids" value="{{ student.id }}" id="std_{{ student.id }}">
+                                <label for="std_{{ student.id }}" style="color: white; margin: 0;">{{ student.account_profile.full_name|default:student.username }}</label>
+                            </div>
+                        {% empty %}
+                            <span style="color: var(--text-muted); font-size: 0.9rem; padding: 0.5rem;">No students available in the system.</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; border: none; background: linear-gradient(135deg, #6c63ff, #7c5cff); color: white; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                    <i class="fas fa-paper-plane"></i> Assign Task
+                </button>
+            </form>
         </div>
     </div>
 </div>

@@ -546,6 +546,10 @@
     <nav class="nav">
         <a href="/" class="logo"><i class="ph ph-chalkboard-teacher"></i>LearnBridge<span>.Faculty</span></a>
         <div class="nav-actions">
+            <a href="{% url 'analytics:export_student_report' target_user.id %}" class="btn-nav"
+                style="color:var(--accent); border-color:var(--accent);">
+                <i class="ph ph-file-pdf"></i> Export Report
+            </a>
             <a href="{% url 'analytics:faculty_quiz_history' target_user.id %}" class="btn-nav">
                 <i class="ph ph-chart-line"></i> Quiz History
             </a>
@@ -671,7 +675,6 @@
                         style="font-size:.82rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:.85rem;">
                         Time Per Tool (minutes)</div>
                     {% if tool_time %}
-                    {% with max_mins=tool_time.values|dictsort|last %}
                     {% for tool, mins in tool_time.items %}
                     <div class="tool-row">
                         <div class="tool-label">
@@ -687,7 +690,6 @@
                         <div class="tool-mins">{{ mins }} min</div>
                     </div>
                     {% endfor %}
-                    {% endwith %}
                     {% else %}
                     <p class="empty-p">No detailed screen time data yet.</p>
                     {% endif %}

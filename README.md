@@ -152,7 +152,7 @@ graph TD
 
 ### 1. Clone the Project
 ```bash
-git clone https://github.com/your-username/LearnBridge-AI.git
+git clone https://github.com/dishasonawane04/LearnBridge-AI.git
 cd LearnBridgeAI
 ```
 
@@ -232,9 +232,11 @@ LearnBridge AI isn't a wrapper around ChatGPT. It is a **full-stack vertical sol
 
 ### **Disha Sonawane**  
 *Focused on bridging the gap between AI research and practical educational tools.*
+GitHub: https://github.com/dishasonawane04
 
 ### **Rajeev Kumar**  
 *Focused on building scalable technology solutions and impactful AI-driven systems.*
+GitHub: https://github.com/rajeevkumar
 
 ###  Collaboration  
 *LearnBridge AI was developed collaboratively with a shared vision of transforming education through intelligent, practical, and user-friendly AI tools.*
@@ -250,4 +252,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 LearnBridge AI is more than an LMS—it's a digital mentor for students and a strategic advisor for faculty. By turning data into insights, it ensures that no student is left behind and every lesson is mastered.
 
 ---
-*Designed with  for the future of education.*
+Designed with ❤️ for the future of education.

@@ -12,6 +12,21 @@ from django.contrib.auth.models import User
 from accounts.decorators import faculty_required
 from prerequisite_checker.models import PrerequisiteSession
 from .services import ConsistencyEngine
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from django.http import HttpResponse
+from io import BytesIO
+
+def render_to_pdf(template_src, context_dict={}):
+    """Helper to render a template to a PDF response."""
+    template = get_template(template_src)
+    html = template.render(context_dict)
+    result = BytesIO()
+    # Ensure UTF-8 encoding for special characters
+    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+    if not pdf.err:
+        return HttpResponse(result.getvalue(), content_type='application/pdf')
+    return None
 
 @faculty_required
 def faculty_consistency_view(request):
@@ -110,12 +125,19 @@ def faculty_dashboard(request):
     Overview of all students' activity — with overview stats, enriched
     per-student data for client-side search/filter.
     """
-    from quiz.models import QuizAttempt
+    from quiz.models import QuizAttempt, StudentAnswer
     from course.models import Course
+    from collections import Counter
 
     now = timezone.now()
     active_window = timedelta(days=7)
     moderate_window = timedelta(days=30)
+
+    # ── Handle Course Filter ────────────────────────────────────────────
+    course_id = request.GET.get('course')
+    selected_course = None
+    if course_id and course_id != 'all':
+        selected_course = get_object_or_404(Course, id=course_id)
 
     profiles = UserProfile.objects.filter(role='Student').select_related('user')
 
@@ -140,6 +162,9 @@ def faculty_dashboard(request):
 
         # Real quiz average from QuizAttempt
         attempts = QuizAttempt.objects.filter(user=user)
+        if selected_course:
+            attempts = attempts.filter(course=selected_course)
+
         attempt_count = attempts.count()
         if attempt_count > 0:
             all_pcts = list(attempts.values_list('percentage', flat=True))
@@ -167,7 +192,7 @@ def faculty_dashboard(request):
 
         # Courses this student has attempted quizzes in
         course_ids = list(
-            attempts.exclude(course=None)
+            QuizAttempt.objects.filter(user=user).exclude(course=None)
             .values_list('course_id', flat=True)
             .distinct()
         )
@@ -207,29 +232,94 @@ def faculty_dashboard(request):
     )
 
     # ── Courses for filter dropdown ─────────────────────────────────────
-    course_ids_all = set()
+    all_attempted_course_ids = set()
     for s in student_data:
-        course_ids_all.update(s['course_ids'])
-    courses_for_filter = Course.objects.filter(id__in=course_ids_all).values('id', 'title').order_by('title')
+        all_attempted_course_ids.update(s['course_ids'])
+    courses_for_filter = Course.objects.filter(id__in=all_attempted_course_ids).values('id', 'title').order_by('title')
 
-    # ── Class Insights ──────────────────────────────────────────────────
-    from quiz.models import StudentAnswer
-    from collections import Counter
+    # ── Class Dashboard Data ────────────────────────────────────────────
+    # 1. Average Performance
+    class_perf_metrics = {
+        'avg_score': avg_performance or 0,
+        'total_attempts': QuizAttempt.objects.filter(course=selected_course).count() if selected_course else QuizAttempt.objects.all().count(),
+        'students_with_data': len(scored_students),
+        'status_label': 'Moderate performance',
+        'status_class': 'moderate',
+        'insight': 'Class performance is moderate. More practice can improve results.'
+    }
 
+    if avg_performance is None:
+        class_perf_metrics['status_label'] = 'No Data'
+        class_perf_metrics['status_class'] = 'no-data'
+        class_perf_metrics['insight'] = 'No quiz data available yet.'
+    elif avg_performance >= 75:
+        class_perf_metrics['status_label'] = 'Strong performance'
+        class_perf_metrics['status_class'] = 'strong'
+        class_perf_metrics['insight'] = 'Class performance is strong across recent quizzes.'
+    elif avg_performance < 50:
+        class_perf_metrics['status_label'] = 'Needs improvement'
+        class_perf_metrics['status_class'] = 'weak'
+        class_perf_metrics['insight'] = 'Class is struggling. A revision session is recommended.'
 
-    # Common weak topics across all students
-    all_wrong = StudentAnswer.objects.filter(is_correct=False).exclude(topic='').exclude(topic__isnull=True)
-    topic_counter = Counter(ans.topic.strip() for ans in all_wrong if (ans.topic or '').strip())
-    class_weak_topics = [(t, c) for t, c in topic_counter.most_common(6) if t.lower() not in ('', 'general', 'mixed')]
+    # 2. Top Students
+    top_students = sorted(
+        scored_students,
+        key=lambda x: (x['quiz_avg_raw'], x['attempt_count']),
+        reverse=True
+    )[:5]
 
-    # Students needing attention (low score or inactive)
+    # 3. Weak Topics
+    all_wrong_query = StudentAnswer.objects.filter(is_correct=False).exclude(topic='').exclude(topic__isnull=True)
+    if selected_course:
+        all_wrong_query = all_wrong_query.filter(attempt__course=selected_course)
+
+    # Group by topic and find count of mistakes + count of affected students
+    topic_data = {}
+    for ans in all_wrong_query.select_related('attempt__user'):
+        t = ans.topic.strip()
+        if not t or t.lower() in ('general', 'mixed'):
+            continue
+        
+        if t not in topic_data:
+            topic_data[t] = {'mistakes': 0, 'students': set()}
+        
+        topic_data[t]['mistakes'] += 1
+        topic_data[t]['students'].add(ans.attempt.user_id)
+
+    class_weak_topics_enriched = []
+    for topic, data in topic_data.items():
+        mistakes = data['mistakes']
+        student_count = len(data['students'])
+        
+        # A topic is critical if > 30% of student population is affected
+        is_critical = False
+        if len(scored_students) > 0:
+            is_critical = (student_count / len(scored_students)) >= 0.3
+        
+        # Simple recommendation logic
+        recommendation = f"Conduct revision session on {topic} basics."
+        if mistakes > 10:
+            recommendation = f"Urgent: Plan focused revision activity for {topic}."
+        if is_critical:
+            recommendation = f"High Impact: {student_count} students struggling with {topic}. Immediate revision recommended."
+        
+        class_weak_topics_enriched.append({
+            'name': topic,
+            'mistakes': mistakes,
+            'students_affected': student_count,
+            'is_critical': is_critical,
+            'recommendation': recommendation
+        })
+    
+    class_weak_topics_enriched = sorted(class_weak_topics_enriched, key=lambda x: x['mistakes'], reverse=True)[:3]
+
+    # ── Class Insights (Legacy/Existing) ────────────────────────────────
+    # Maintain existing variables for backward compatibility
+    class_weak_topics = [(t['name'], t['mistakes']) for t in class_weak_topics_enriched]
     needs_attention = [s for s in student_data if s['status'] in ('Needs Help', 'Inactive')][:5]
-
-    # Top performers
-    top_performers = sorted(
-        [s for s in student_data if s['quiz_avg_raw'] is not None],
-        key=lambda x: x['quiz_avg_raw'], reverse=True
-    )[:3]
+    top_performers = top_students[:3]
+    for s in top_performers:
+        s['quiz_avg_display'] = round(s['quiz_avg_raw'], 1)
 
     # Class-level AI insight text
     if avg_performance is None:
@@ -266,14 +356,14 @@ def faculty_dashboard(request):
         })
 
     # 2. Common weak topic → suggest revision class on that topic
-    if class_weak_topics:
-        top_topic, top_count = class_weak_topics[0]
+    if class_weak_topics_enriched:
+        top_topic_obj = class_weak_topics_enriched[0]
         recommendations.append({
-            'priority': 'urgent' if top_count >= 5 else 'moderate',
+            'priority': 'urgent' if top_topic_obj['mistakes'] >= 5 else 'moderate',
             'icon': 'ph-book-open',
-            'title': f'Revision Class: {top_topic}',
-            'desc': f'"{top_topic}" is the most common weak area across the class ({top_count} mistakes). A focused revision session is recommended.',
-            'badge': f'{top_count} mistakes',
+            'title': f'Revision Class: {top_topic_obj["name"]}',
+            'desc': f'"{top_topic_obj["name"]}" is the most common weak area across the class ({top_topic_obj["mistakes"]} mistakes). A focused revision session is recommended.',
+            'badge': f'{top_topic_obj["mistakes"]} mistakes',
         })
 
     # 3. Inactive students (inactive > 10 days) → suggest follow-up
@@ -333,20 +423,45 @@ def faculty_dashboard(request):
             'badge': 'No data',
         })
 
+    # ── Final Context Preparation ──────────────────────────────────────
     context = {
-
         'students': student_data,
         'total_students': total_students,
         'active_users': active_users,
         'avg_performance': avg_performance,
         'courses_for_filter': list(courses_for_filter),
-        # Class Insights
-        'class_weak_topics': class_weak_topics,
-        'needs_attention': needs_attention,
-        'top_performers': top_performers,
-        'class_insight': class_insight,
-        # Recommended Actions
+        'selected_course': selected_course,
+        
+        # Display-ready variables for Class Dashboard (Compact Redesign)
+        'class_avg_score_display': f"{avg_performance:.1f}" if avg_performance is not None else "0.0",
+        'avg_score_status': class_perf_metrics.get('status_class', 'no-data'),
+        'avg_score_label': class_perf_metrics.get('status_label', 'No Data'),
+        'total_attempts_display': str(class_perf_metrics.get('total_attempts', 0)),
+        'students_count_display': str(class_perf_metrics.get('students_with_data', 0)),
+        'class_dashboard_summary': class_insight,
+        
+        # Enriched top students (Max 3 for compact layout)
+        'top_students_display': [
+            {
+                'display_name': s['display_name'],
+                'quiz_avg_display': f"{s['quiz_avg_raw']:.1f}",
+                'attempt_count': s['attempt_count'],
+                'initial': s['display_name'][0].upper() if s['display_name'] else 'S'
+            }
+            for s in top_students[:3]
+        ],
+        
+        # Enriched weak topics (Max 2 for compact layout)
+        'weak_topics_display': class_weak_topics_enriched[:2],
+        
+        # Recommended Actions (To show in a 3-column grid)
         'recommendations': recommendations,
+        'recommendation_count': len(recommendations),
+        
+        # Compatibility/Existing
+        'class_perf': class_perf_metrics,
+        'needs_attention': needs_attention[:5],
+        'class_insight': class_insight,
     }
     return render(request, 'analytics/faculty_dashboard.html', context)
 
@@ -953,4 +1068,96 @@ def faculty_quiz_attempt_detail(request, attempt_id):
         'wrong_count': answers.filter(is_correct=False).count(),
     }
     return render(request, 'analytics/quiz_attempt_detail.html', context)
+
+
+@faculty_required
+def export_student_report(request, user_id):
+    """
+    Generates a professional PDF report for an individual student.
+    """
+    from quiz.models import QuizAttempt, StudentAnswer
+    from django.utils import timezone
+
+    target_user = get_object_or_404(User, id=user_id)
+    profile = UserProfile.objects.filter(user=target_user).first()
+    now = timezone.now()
+
+    # Reuse existing logic for consistency
+    display_name = (
+        (profile.full_name.strip() if profile and profile.full_name else '')
+        or f"{target_user.first_name} {target_user.last_name}".strip()
+        or target_user.username
+    )
+
+    logs = ActivityLog.objects.filter(user=target_user).order_by('-timestamp')
+    last_active = logs.first().timestamp if logs.exists() else None
+
+    ai_interactions = logs.filter(app_name='ai_tutor').count()
+    flashcards_count = logs.filter(app_name='flashcard', activity_type='deck_generated').count()
+
+    target_user = get_object_or_404(User, id=user_id)
+    profile = UserProfile.objects.filter(user=target_user).first()
+    now = timezone.now()
+
+    # Get centralized analytics
+    from .services import AnalyticsEngine
+    analytics = AnalyticsEngine.get_individual_student_analytics(target_user)
+
+    display_name = (
+        (profile.full_name.strip() if profile and profile.full_name else '')
+        or f"{target_user.first_name} {target_user.last_name}".strip()
+        or target_user.username
+    )
+
+    logs = ActivityLog.objects.filter(user=target_user).order_by('-timestamp')
+    last_active = logs.first().timestamp if logs.exists() else None
+
+    context = {
+        'target_user': target_user,
+        'profile': profile,
+        'display_name': display_name,
+        'now': now,
+        'last_active': last_active,
+        'ai_interactions': logs.filter(app_name='ai_tutor').count(),
+        'flashcards_count': logs.filter(app_name='flashcard', activity_type='deck_generated').count(),
+        'avg_score': analytics['avg_score'],
+        'high_score': analytics['high_score'],
+        'latest_score': analytics['latest_score'],
+        'trend': analytics['trend'],
+        'attempts': analytics['attempts_preview'],
+        'weak_topics': analytics['weak_topics'],
+        'ai_insights': analytics['ai_insights'],
+        'recommendations': analytics.get('recommendations', []),
+    }
+
+    # Add default recommendations if empty
+    if not context['recommendations']:
+        if context['avg_score'] < 50:
+            context['recommendations'].append("Schedule a 1-on-1 session to address core concept gaps.")
+        elif context['avg_score'] < 75:
+            context['recommendations'].append("Encourage student to use AI Tutor for challenging topics.")
+        else:
+            context['recommendations'].append("Provide advanced challenge quizzes to maintain momentum.")
+
+    return render_to_pdf('analytics/reports/student_report_pdf.html', context)
+
+
+@faculty_required
+def export_progress_report(request):
+    """
+    Generates a class-level progress report PDF.
+    """
+    from .services import AnalyticsEngine
+    analytics = AnalyticsEngine.get_class_analytics()
+
+    context = {
+        'now': timezone.now(),
+        'student_data': analytics['student_data'],
+        'total_students': analytics['total_students'],
+        'class_avg': analytics['avg_performance'],
+        'weak_areas': analytics['class_weak_topics'],
+        'recommendations': analytics['recommendations'],
+    }
+
+    return render_to_pdf('analytics/reports/progress_report_pdf.html', context)
 

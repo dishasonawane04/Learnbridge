@@ -189,12 +189,47 @@ def faculty_required(view_func):
 @login_required
 def student_dashboard(request):
     context, profile = _get_dashboard_context(request)
+    
+    from course.models import TaskSubmission
+    from django.utils import timezone
+    
+    user_submissions = TaskSubmission.objects.filter(student=request.user).select_related('assignment', 'assignment__course').order_by('assignment__deadline')
+    
+    now = timezone.now()
+    for sub in user_submissions:
+        if sub.status in ['pending', 'in_progress'] and sub.assignment.deadline and now > sub.assignment.deadline:
+            sub.status = 'overdue'
+            sub.save()
+            
+    context['pending_tasks'] = [s for s in user_submissions if s.status in ['pending', 'in_progress', 'overdue']]
+    context['completed_tasks'] = [s for s in user_submissions if s.status in ['completed', 'completed_late']]
     return render(request, 'core/student_dashboard.html', context)
 
 @login_required
 @faculty_required
 def faculty_dashboard(request):
     context, profile = _get_dashboard_context(request)
+    
+    from course.models import TaskAssignment
+    assigned_tasks = TaskAssignment.objects.filter(created_by=request.user).order_by('-created_at')
+    
+    tasks_data = []
+    for t in assigned_tasks:
+        submissions = t.submissions.all()
+        tasks_data.append({
+            'task': t,
+            'total_assigned': submissions.count(),
+            'completed': submissions.filter(status__in=['completed', 'completed_late']).count(),
+            'pending': submissions.filter(status='pending').count(),
+            'in_progress': submissions.filter(status='in_progress').count(),
+            'overdue': submissions.filter(status='overdue').count()
+        })
+    context['tasks_data'] = tasks_data
+    
+    from django.contrib.auth.models import User
+    students = User.objects.filter(account_profile__role__iexact='student').order_by('username')
+    context['available_students'] = students
+
     return render(request, 'core/faculty_dashboard.html', context)
 
 @login_required
@@ -226,3 +261,114 @@ def active_course_api(request):
             'url': f"/course/{active_course.id}/"
         })
     return JsonResponse({'status': 'null'}, safe=False)
+
+@login_required
+@faculty_required
+def create_task_assignment(request):
+    from datetime import datetime
+    
+    if request.method == 'POST':
+        try:
+            from course.models import TaskAssignment, TaskSubmission, Course
+            from django.contrib.auth.models import User
+            
+            title = request.POST.get('title')
+            description = request.POST.get('description', '')
+            task_type = request.POST.get('task_type')
+            course_id = request.POST.get('course_id')
+            priority = request.POST.get('priority', 'medium')
+            assign_to = request.POST.get('assign_to') # 'entire_class', 'individual', 'selected'
+            deadline_str = request.POST.get('deadline')
+            
+            deadline = None
+            if deadline_str:
+                from django.utils.dateparse import parse_datetime
+                # Handle possible missing timezone by appending 'Z' or handling timezone aware. We'll use parse_datetime.
+                deadline = parse_datetime(deadline_str)
+                if deadline is None:
+                    try:
+                        deadline = datetime.strptime(deadline_str, '%Y-%m-%dT%H:%M')
+                    except ValueError:
+                        pass
+            
+            course = Course.objects.get(id=course_id)
+            
+            task = TaskAssignment.objects.create(
+                title=title,
+                description=description,
+                task_type=task_type,
+                course=course,
+                created_by=request.user,
+                deadline=deadline,
+                priority=priority
+            )
+            
+            students_to_assign = []
+            if assign_to == 'entire_class':
+                students_to_assign = list(User.objects.filter(account_profile__role__iexact='student'))
+            else:
+                s_ids = request.POST.getlist('student_ids')
+                if s_ids:
+                    students_to_assign = list(User.objects.filter(id__in=s_ids))
+            
+            submissions = []
+            for student in students_to_assign:
+                submissions.append(TaskSubmission(
+                    assignment=task,
+                    student=student,
+                    status='pending'
+                ))
+            if submissions:
+                TaskSubmission.objects.bulk_create(submissions)
+            
+            messages.success(request, f"Task '{title}' successfully assigned to {len(students_to_assign)} student(s).")
+        except Exception as e:
+            messages.error(request, f"Error creating task: {str(e)}")
+            
+    return redirect('core:faculty_dashboard')
+
+@login_required
+def start_task(request, submission_id):
+    from course.models import TaskSubmission
+    from django.utils import timezone
+    from django.shortcuts import get_object_or_404
+    submission = get_object_or_404(TaskSubmission, id=submission_id, student=request.user)
+    
+    if submission.status == 'pending':
+        submission.status = 'in_progress'
+        submission.started_at = timezone.now()
+        submission.save()
+    
+    task = submission.assignment
+    if task.task_type == 'quiz':
+        return redirect('quiz:quiz_subjects') 
+    elif task.task_type == 'topic':
+        return redirect('ai_tutor:tutor_home') 
+    elif task.task_type == 'flashcards':
+        return redirect('flashcard_generator:flashcard_home')
+    elif task.task_type == 'summary':
+        return redirect('generator:study_plan')
+    else:
+        return redirect('core:student_dashboard')
+
+@login_required
+def complete_task(request, submission_id):
+    from course.models import TaskSubmission
+    from django.utils import timezone
+    from django.shortcuts import get_object_or_404
+    submission = get_object_or_404(TaskSubmission, id=submission_id, student=request.user)
+    
+    now = timezone.now()
+    if submission.assignment.deadline and now > submission.assignment.deadline:
+        submission.status = 'completed_late'
+    else:
+        submission.status = 'completed'
+        
+    submission.completed_at = now
+    submission.save()
+    
+    from django.contrib import messages
+    messages.success(request, f"Task '{submission.assignment.title}' marked as completed!")
+    return redirect('core:student_dashboard')
+
+

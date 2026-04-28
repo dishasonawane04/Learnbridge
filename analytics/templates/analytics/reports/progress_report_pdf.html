@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Class Progress Report</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #7c5cff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #7c5cff;
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .header p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            background-color: #f4f4f9;
+            border-left: 4px solid #7c5cff;
+            padding: 8px 12px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        table th,
+        table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        table th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+        }
+
+        .stat-grid {
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .stat-item {
+            width: 48%;
+            float: left;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #7c5cff;
+        }
+
+        .insight-box {
+            background-color: #f9f9ff;
+            border: 1px solid #e0e0ff;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 10px;
+            color: #999;
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>LearnBridge AI - Class Progress Report</h1>
+        <p>Generated on {{ now|date:"F d, Y H:i" }}</p>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Report Overview</div>
+        <div class="stat-grid">
+            <div class="stat-item">
+                <div class="stat-label">Total Students</div>
+                <div class="stat-value">{{ total_students }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Class Average Score</div>
+                <div class="stat-value">{{ class_avg }}%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Common Weak Areas</div>
+        {% if weak_areas %}
+        <p style="font-size: 13px; color: #666; margin-bottom: 10px;">The following topics have the highest count of
+            mistakes across the class:</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Total Mistakes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for topic, count in weak_areas %}
+                <tr>
+                    <td>{{ topic }}</td>
+                    <td>{{ count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="font-size: 13px; font-style: italic; color: #999;">No common weak areas identified yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="section">
+        <div class="section-title">Student Performance Summary</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Quiz Attempts</th>
+                    <th>Average Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in student_data %}
+                <tr>
+                    <td>{{ s.display_name }}</td>
+                    <td>{{ s.attempt_count }}</td>
+                    <td>
+                        {% if s.quiz_avg is not None %}
+                        {{ s.quiz_avg|floatformat:1 }}%
+                        {% else %}
+                        <span style="color: #999;">No Data</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Faculty Recommendations</div>
+        {% if recommendations %}
+        {% for rec in recommendations %}
+        <div class="insight-box">
+            <b>{{ rec.title }}</b>: {{ rec.desc }}
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="insight-box">
+            • <b>Targeted Revision</b>: Schedule a focused revision session for the top weak areas identified above.<br>
+            • <b>Engagement Follow-up</b>: Reach out to students with low or no quiz attempts to encourage platform
+            usage.<br>
+            • <b>Challenge Top Performers</b>: Assign advanced quizzes to students scoring above 85% to maintain their
+            momentum.
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="footer">
+        LearnBridge AI Platform - Empowering Educators with Intelligence<br>
+        © 2026 LearnBridge AI. All rights reserved.
+    </div>
+</body>
+
+</html>

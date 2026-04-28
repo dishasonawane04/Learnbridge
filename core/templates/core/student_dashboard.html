@@ -251,7 +251,50 @@
 
     </div>
 
-
+    <!-- 📌 Pending Tasks Section -->
+    {% if pending_tasks %}
+    <div style="margin-bottom: 3.5rem;">
+        <h3 class="section-title"><i class="fas fa-list-check" style="color: var(--warning);"></i> Pending Tasks</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
+            {% for sub in pending_tasks %}
+                <div class="glass-card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <h4 style="margin: 0; color: white; font-size: 1.15rem;">{{ sub.assignment.title }}</h4>
+                            <span class="badge" style="background: 
+                                {% if sub.status == 'overdue' %}#ef4444{% elif sub.assignment.priority == 'high' %}#ef4444{% elif sub.assignment.priority == 'medium' %}#fbbf24{% else %}#10b981{% endif %}; 
+                                color: white; padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; white-space: nowrap;">
+                                {% if sub.status == 'overdue' %}Overdue{% else %}{{ sub.assignment.get_priority_display }} Priority{% endif %}
+                            </span>
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.25rem;">
+                            <i class="fas fa-book"></i> {{ sub.assignment.course.title }}
+                        </p>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+                            <i class="fas fa-clock"></i> Due: {% if sub.assignment.deadline %}{{ sub.assignment.deadline|date:"d M, P" }}{% else %}No deadline{% endif %}
+                        </p>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                            {{ sub.assignment.description }}
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.8rem; font-weight: 600; color: var(--accent);">
+                            {{ sub.assignment.get_task_type_display }}
+                        </span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{% url 'core:start_task' sub.id %}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                                {% if sub.assignment.task_type == 'custom' %}Open{% else %}Start{% endif %}
+                            </a>
+                            <a href="{% url 'core:complete_task' sub.id %}" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; background: var(--success); border-color: var(--success);" title="Mark as Completed">
+                                <i class="fas fa-check"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
